@@ -13,6 +13,7 @@ import { runOnJS } from 'react-native-worklets';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@react-navigation/native';
+import UserCard from '../../components/UserCard';
 
 // --- DUMMY DATA ---
 const createUsers = (count: number, offset = 0) => Array.from({ length: count }).map((_, i) => ({
@@ -98,67 +99,6 @@ const HexItem = memo(({ item, panX, panY, onSelect }: any) => {
     </Animated.View>
   );
 });
-
-const UserCard = ({ user, onDismiss }: any) => {
-    const { colors } = useTheme();
-    const translateX = useSharedValue(0);
-    const translateY = useSharedValue(0);
-
-    const gesture = Gesture.Pan()
-        .onUpdate((event) => {
-            translateX.value = event.translationX;
-            translateY.value = event.translationY;
-        })
-        .onEnd((event) => {
-            if (Math.abs(event.translationX) > 100) {
-                translateX.value = withTiming(event.translationX > 0 ? SCREEN_WIDTH : -SCREEN_WIDTH, { duration: 300 }, () => {
-                    runOnJS(onDismiss)(user);
-                });
-            } else {
-                translateX.value = withSpring(0);
-                translateY.value = withSpring(0);
-            }
-        });
-
-    const cardStyle = useAnimatedStyle(() => {
-        const rotate = interpolate(translateX.value, [-SCREEN_WIDTH / 2, SCREEN_WIDTH / 2], [-15, 15], Extrapolation.CLAMP);
-        return {
-            transform: [
-                { translateX: translateX.value },
-                { translateY: translateY.value },
-                { rotate: `${rotate}deg` },
-            ],
-        };
-    });
-
-    const likeOpacity = useAnimatedStyle(() => ({
-        opacity: interpolate(translateX.value, [20, 80], [0, 1], Extrapolation.CLAMP),
-    }));
-
-    const nopeOpacity = useAnimatedStyle(() => ({
-        opacity: interpolate(translateX.value, [-80, -20], [1, 0], Extrapolation.CLAMP),
-    }));
-
-    return (
-        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
-            <GestureDetector gesture={gesture}>
-                <Animated.View style={[styles.card, { backgroundColor: colors.card }, cardStyle]}>
-                    <Image source={{ uri: user.imageUrl }} style={styles.cardImage} />
-                    <View style={styles.cardOverlay}>
-                        <Text style={styles.cardName}>{user.name}, {user.age}</Text>
-                        <Text style={styles.cardDistance}>{user.distance} km away</Text>
-                    </View>
-                    <Animated.View style={[styles.cardLabelContainer, { top: 30, left: 20, transform: [{ rotate: '-15deg' }] }, likeOpacity]}>
-                        <Text style={[styles.cardLabel, { color: '#4CAF50', borderColor: '#4CAF50' }]}>LIKE</Text>
-                    </Animated.View>
-                    <Animated.View style={[styles.cardLabelContainer, { top: 30, right: 20, transform: [{ rotate: '15deg' }] }, nopeOpacity]}>
-                        <Text style={[styles.cardLabel, { color: '#F44336', borderColor: '#F44336' }]}>NOPE</Text>
-                    </Animated.View>
-                </Animated.View>
-            </GestureDetector>
-        </View>
-    );
-};
 
 const spiralDirections = [
     { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
