@@ -1,0 +1,480 @@
+import React, { useMemo, useState, memo, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, Dimensions, Image, ActivityIndicator } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { runOnJS } from 'react-native-worklets';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as Haptics from 'expo-haptics';
+import { useTheme } from '@react-navigation/native';
+
+// --- DUMMY DATA ---
+const createUsers = (count: number, offset = 0) => Array.from({ length: count }).map((_, i) => ({
+    id: offset + i,
+    name: `User ${offset + i}`,
+    age: Math.floor(Math.random() * 15) + 18,
+    imageUrl: `https://picsum.photos/id/${offset + i + 100}/200/200`,
+    distance: (Math.random() * 15).toFixed(1),
+}));
+
+
+// --- CONFIGURATION & DIMENSIONS ---
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const HEX_SIZE = 100;
+const RADAR_HEIGHT = SCREEN_HEIGHT;
+const CENTER_X = SCREEN_WIDTH / 2;
+const CENTER_Y = RADAR_HEIGHT / 2;
+const ITEM_DIM = 140;
+const OFFSET = ITEM_DIM / 2;
+
+
+const axialToPixel = (q: number, r: number) => {
+  'worklet';
+  return {
+    x: HEX_SIZE * (Math.sqrt(3) * q + (Math.sqrt(3) / 2) * r),
+    y: HEX_SIZE * (1.5 * r),
+  };
+};
+
+
+const HexItem = memo(({ item, panX, panY, onSelect }: any) => {
+  const { colors } = useTheme();
+  const { user, q, r } = item;
+  const { x, y } = axialToPixel(q, r);
+
+  const style = useAnimatedStyle(() => {
+    'worklet';
+    const itemX = x + panX.value + CENTER_X;
+    const itemY = y + panY.value + CENTER_Y;
+
+    // Culling logic: check if the item is within the screen bounds + a buffer
+    const isVisible = 
+        itemX > -ITEM_DIM && 
+        itemX < SCREEN_WIDTH + ITEM_DIM &&
+        itemY > -ITEM_DIM &&
+        itemY < SCREEN_HEIGHT + ITEM_DIM;
+
+    if (!isVisible) {
+        return { display: 'none' };
+    }
+
+    const px = x + panX.value;
+    const py = y + panY.value;
+    const dist = Math.sqrt(px * px + py * py);
+
+    const scale = interpolate(dist, [0, 100, 450], [1.8, 1.0, 0.4], Extrapolation.CLAMP);
+    const opacity = interpolate(dist, [0, 220, 500], [1, 0.9, 0.05], Extrapolation.CLAMP);
+
+    return {
+      display: 'flex',
+      transform: [
+        { translateX: px + CENTER_X - OFFSET },
+        { translateY: py + CENTER_Y - OFFSET },
+        { scale: withSpring(scale, { damping: 20, stiffness: 90 }) }
+      ] as any,
+      opacity,
+      zIndex: Math.round(1000 - dist),
+    };
+  });
+
+  return (
+    <Animated.View style={[styles.hexWrap, style]}>
+      <Pressable
+        onPress={() => onSelect(user, x, y)}
+        style={({ pressed }) => [
+          styles.hexBtn,
+          { backgroundColor: colors.card, borderColor: colors.border },
+          pressed && styles.pressedBtn
+        ]}
+      >
+        <Image source={{ uri: user.imageUrl }} style={styles.bubbleImage} />
+      </Pressable>
+    </Animated.View>
+  );
+});
+
+const UserCard = ({ user, onDismiss }: any) => {
+    const { colors } = useTheme();
+    const translateX = useSharedValue(0);
+    const translateY = useSharedValue(0);
+
+    const gesture = Gesture.Pan()
+        .onUpdate((event) => {
+            translateX.value = event.translationX;
+            translateY.value = event.translationY;
+        })
+        .onEnd((event) => {
+            if (Math.abs(event.translationX) > 100) {
+                translateX.value = withTiming(event.translationX > 0 ? SCREEN_WIDTH : -SCREEN_WIDTH, { duration: 300 }, () => {
+                    runOnJS(onDismiss)(user);
+                });
+            } else {
+                translateX.value = withSpring(0);
+                translateY.value = withSpring(0);
+            }
+        });
+
+    const cardStyle = useAnimatedStyle(() => {
+        const rotate = interpolate(translateX.value, [-SCREEN_WIDTH / 2, SCREEN_WIDTH / 2], [-15, 15], Extrapolation.CLAMP);
+        return {
+            transform: [
+                { translateX: translateX.value },
+                { translateY: translateY.value },
+                { rotate: `${rotate}deg` },
+            ],
+        };
+    });
+
+    const likeOpacity = useAnimatedStyle(() => ({
+        opacity: interpolate(translateX.value, [20, 80], [0, 1], Extrapolation.CLAMP),
+    }));
+
+    const nopeOpacity = useAnimatedStyle(() => ({
+        opacity: interpolate(translateX.value, [-80, -20], [1, 0], Extrapolation.CLAMP),
+    }));
+
+    return (
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+            <GestureDetector gesture={gesture}>
+                <Animated.View style={[styles.card, { backgroundColor: colors.card }, cardStyle]}>
+                    <Image source={{ uri: user.imageUrl }} style={styles.cardImage} />
+                    <View style={styles.cardOverlay}>
+                        <Text style={styles.cardName}>{user.name}, {user.age}</Text>
+                        <Text style={styles.cardDistance}>{user.distance} km away</Text>
+                    </View>
+                    <Animated.View style={[styles.cardLabelContainer, { top: 30, left: 20, transform: [{ rotate: '-15deg' }] }, likeOpacity]}>
+                        <Text style={[styles.cardLabel, { color: '#4CAF50', borderColor: '#4CAF50' }]}>LIKE</Text>
+                    </Animated.View>
+                    <Animated.View style={[styles.cardLabelContainer, { top: 30, right: 20, transform: [{ rotate: '15deg' }] }, nopeOpacity]}>
+                        <Text style={[styles.cardLabel, { color: '#F44336', borderColor: '#F44336' }]}>NOPE</Text>
+                    </Animated.View>
+                </Animated.View>
+            </GestureDetector>
+        </View>
+    );
+};
+
+const spiralDirections = [
+    { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
+    { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 },
+];
+
+function* spiralCoordGenerator() {
+    yield { q: 0, r: 0 };
+    let radius = 1;
+    while (true) {
+        let q = spiralDirections[4].q * radius;
+        let r = spiralDirections[4].r * radius;
+        for (let side = 0; side < 6; side++) {
+            for (let step = 0; step < radius; step++) {
+                yield { q, r };
+                q += spiralDirections[side].q;
+                r += spiralDirections[side].r;
+            }
+        }
+        radius++;
+    }
+}
+
+export  default function Match() {
+    const { colors } = useTheme();
+    const insets = useSafeAreaInsets();
+    const [selectedUser, setSelectedUser] = useState<any>(null);
+    
+    const coordGenerator = useRef(spiralCoordGenerator());
+    const [honeycomb, setHoneycomb] = useState(() => {
+        const initialUsers = createUsers(30);
+        return initialUsers.map(user => {
+            const coords = coordGenerator.current.next().value;
+            return { user, ...coords, id: `hex-${user.id}` };
+        });
+    });
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    const panX = useSharedValue(0);
+    const panY = useSharedValue(0);
+    const startX = useSharedValue(0);
+    const startY = useSharedValue(0);
+    const gridBounds = useSharedValue({ minX: 0, maxX: 0, minY: 0, maxY: 0 });
+    const canvasScale = useSharedValue(1);
+
+    useMemo(() => {
+        if (honeycomb.length === 0) {
+            gridBounds.value = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+            return;
+        };
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        honeycomb.forEach(item => {
+            const p = axialToPixel(item.q, item.r);
+            minX = Math.min(minX, p.x);
+            maxX = Math.max(maxX, p.x);
+            minY = Math.min(minY, p.y);
+            maxY = Math.max(maxY, p.y);
+        });
+        gridBounds.value = { minX, maxX, minY, maxY };
+    }, [honeycomb]);
+
+    const loadMore = useCallback(() => {
+        if (isLoading) return;
+        setIsLoading(true);
+        console.log("Loading more users...");
+
+        setTimeout(() => {
+            const newUsers = createUsers(20, honeycomb.length);
+            const newItems = newUsers.map(user => {
+                const coords = coordGenerator.current.next().value;
+                return { user, ...coords, id: `hex-${user.id}` };
+            });
+            setHoneycomb(prev => [...prev, ...newItems]);
+            setIsLoading(false);
+        }, 1500);
+    }, [isLoading, honeycomb.length]);
+
+    const handleItemPress = (user: any, x: number, y: number) => {
+        panX.value = withSpring(-x, { damping: 18, stiffness: 100 });
+        panY.value = withSpring(-y, { damping: 18, stiffness: 100 });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setSelectedUser(user);
+    };
+
+    const panGesture = Gesture.Pan()
+        .onBegin(() => {
+            startX.value = panX.value;
+            startY.value = panY.value;
+        })
+        .onUpdate(e => {
+            panX.value = startX.value + e.translationX;
+            panY.value = startY.value + e.translationY;
+        })
+        .onEnd((e) => {
+            'worklet';
+            const predictedX = panX.value + e.velocityX * 0.12;
+            const predictedY = panY.value + e.velocityY * 0.12;
+            
+            let minDist = Infinity;
+            let targetX = 0;
+            let targetY = 0;
+
+            for (let i = 0; i < honeycomb.length; i++) {
+                const h = honeycomb[i];
+                const p = axialToPixel(h.q, h.r);
+                const px = p.x + predictedX;
+                const py = p.y + predictedY;
+                const d = px * px + py * py;
+                if (d < minDist) {
+                    minDist = d;
+                    targetX = p.x;
+                    targetY = p.y;
+                }
+            }
+            panX.value = withSpring(-targetX, { damping: 18, stiffness: 90, velocity: e.velocityX });
+            panY.value = withSpring(-targetY, { damping: 18, stiffness: 90, velocity: e.velocityY });
+            
+            const finalPanX = -targetX;
+            const finalPanY = -targetY;
+            
+            const THRESHOLD = 200;
+            const viewMaxX = -finalPanX + SCREEN_WIDTH / 2;
+            const viewMinX = -finalPanX - SCREEN_WIDTH / 2;
+            const viewMaxY = -finalPanY + SCREEN_HEIGHT / 2;
+            const viewMinY = -finalPanY - SCREEN_HEIGHT / 2;
+
+            if (
+                viewMaxX >= gridBounds.value.maxX - THRESHOLD || 
+                viewMinX <= gridBounds.value.minX + THRESHOLD ||
+                viewMaxY >= gridBounds.value.maxY - THRESHOLD ||
+                viewMinY <= gridBounds.value.minY + THRESHOLD
+            ) {
+                runOnJS(loadMore)();
+            }
+        });
+        
+    const longPressGesture = Gesture.LongPress()
+        .minDuration(200)
+        .onStart(() => {
+            canvasScale.value = withSpring(0.5, { damping: 20, stiffness: 150 });
+        })
+        .onEnd(() => {
+            canvasScale.value = withSpring(1);
+        })
+        .onFinalize(() => {
+            canvasScale.value = withSpring(1);
+        });
+
+    const composedGesture = Gesture.Simultaneous(panGesture, longPressGesture);
+    
+    const animatedCanvasStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: canvasScale.value }]
+    }));
+
+    const handleDismissCard = (userToRemove: any) => {
+        // Find index from the current honeycomb state
+        const currentIndex = honeycomb.findIndex(item => item.user.id === userToRemove.id);
+
+        // This should not happen if everything is correct
+        if (currentIndex === -1) { 
+            console.warn("Dismissed user not found in honeycomb array.");
+            // Fallback to original behavior
+            setSelectedUser(null);
+            setHoneycomb(prev => prev.filter(item => item.user.id !== userToRemove.id));
+            return;
+        }
+
+        // Create the new array of users for the honeycomb
+        const newHoneycomb = honeycomb.filter(item => item.user.id !== userToRemove.id);
+        
+        // Update the honeycomb state
+        setHoneycomb(newHoneycomb);
+
+        // Now, decide which user to show next
+        if (newHoneycomb.length > 0) {
+            // The next user is the one at the same index as the removed one,
+            // because the array shifted. We use modulo for wrap-around.
+            const nextIndex = currentIndex % newHoneycomb.length;
+            const nextUser = newHoneycomb[nextIndex].user;
+            setSelectedUser(nextUser);
+        } else {
+            // If no users are left, show nothing.
+            setSelectedUser(null);
+        }
+    };
+
+    return (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['bottom', 'left', 'right']}>
+                <View style={styles.radarWrapper}>
+                     <View style={[styles.radarHud, {top: insets.top}]}>
+                        <View style={{flex: 1}} />
+                        <View style={{alignItems: 'center'}}>
+                            <Text style={[styles.hudTitle, {color: colors.text}]}>Discover</Text>
+                            <Text style={[styles.hudLabel, {color: colors.text}]}>Find your match</Text>
+                        </View>
+                        <View style={{flex: 1, alignItems: 'flex-end'}}>
+                            {isLoading && <ActivityIndicator size="small" color={colors.primary} />}
+                        </View>
+                    </View>
+
+                    <GestureDetector gesture={composedGesture}>
+                        <Animated.View style={[styles.radarViewport, animatedCanvasStyle]}>
+                            {/* Radar Grid Circles */}
+                            <View style={[styles.radarRing, { width: 200, height: 200, left: CENTER_X - 100, top: CENTER_Y - 100 }]} pointerEvents="none" />
+                            <View style={[styles.radarRing, { width: 400, height: 400, left: CENTER_X - 200, top: CENTER_Y - 200 }]} pointerEvents="none" />
+                            <View style={[styles.radarRing, { width: 600, height: 600, left: CENTER_X - 300, top: CENTER_Y - 300, opacity: 0.2 }]} pointerEvents="none" />
+
+                            {honeycomb.map((item) => (
+                                <HexItem
+                                    key={item.id}
+                                    item={item}
+                                    panX={panX}
+                                    panY={panY}
+                                    onSelect={handleItemPress}
+                                />
+                            ))}
+
+                            {/* Fixed Crosshair (Magnet Point) */}
+                            <View style={[styles.crosshairContainer, { left: CENTER_X - 170, top: CENTER_Y - 170 }]} pointerEvents="none">
+                                <View style={styles.crossLineV} />
+                                <View style={styles.crossLineH} />
+                                <View style={styles.centerPulse} />
+                            </View>
+                        </Animated.View>
+                    </GestureDetector>
+                </View>
+
+                {selectedUser && <UserCard user={selectedUser} onDismiss={handleDismissCard} />}
+            </SafeAreaView>
+        </GestureHandlerRootView>
+    );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  radarWrapper: {flex:1, position: 'relative'},
+  radarHud: { 
+    position: 'absolute',
+    width: '100%', 
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 10, 
+    paddingHorizontal: 20,
+    paddingVertical: 10 
+  },
+  hudLabel: { fontSize: 12, fontWeight: '700', opacity: 0.6, letterSpacing: 2 },
+  hudTitle: { fontSize: 28, fontWeight: 'bold' },
+  radarViewport: { position:"relative", flex: 1, justifyContent: 'center', alignItems: 'center', /* removed overflow: hidden */ },
+  hexWrap: { position: 'absolute', left: 0, top: 0, width: ITEM_DIM, height: ITEM_DIM, alignItems: 'center', justifyContent: 'center' },
+  hexBtn: {
+    width: 96, height: 96, borderRadius: 48, 
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
+    shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 12, elevation: 6
+  },
+  pressedBtn: { transform: [{ scale: 0.95 }], opacity: 0.8 },
+  bubbleImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+  },
+  crosshairContainer: { position: 'absolute', width: 340, height: 340, alignItems: 'center', justifyContent: 'center' },
+  crossLineV: { position: 'absolute', width: 2, height: 48, backgroundColor: 'rgba(225,29,72,0.2)' },
+  crossLineH: { position: 'absolute', width: 48, height: 2, backgroundColor: 'rgba(225,29,72,0.2)' },
+  centerPulse: { width: 300, height: 300, borderRadius: 150, borderWidth: 2, borderColor: 'rgba(225,29,72,0.04)' },
+  radarRing: { position: 'absolute', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(127,127,127,0.1)' },
+  
+  // Card styles from previous implementation
+   card: {
+        position: 'absolute',
+        width: SCREEN_WIDTH * 0.9,
+        height: SCREEN_HEIGHT * 0.7,
+        alignSelf: 'center',
+        top: SCREEN_HEIGHT * 0.15,
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 10,
+    },
+    cardImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 20,
+    },
+    cardOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 20,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        borderBottomLeftRadius: 20,
+        borderBottomRightRadius: 20,
+    },
+    cardName: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    cardDistance: {
+        fontSize: 18,
+        color: 'white',
+        opacity: 0.8,
+    },
+    cardLabelContainer: {
+        position: 'absolute',
+    },
+    cardLabel: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        borderWidth: 2,
+        padding: 8,
+        borderRadius: 10,
+        opacity: 0.8
+    }
+});
