@@ -59,7 +59,7 @@ const UserCard = ({ user, onDismiss }: any) => {
 
     const animatedBlurStyle = useAnimatedStyle(() => ({
         intensity: interpolate(animationProgress.value, [0, 1], [0, Platform.OS === 'ios' ? 80 : 95]),
-        opacity: interpolate(animationProgress.value, [0, 0.1], [0, 1]),
+        opacity: interpolate(animationProgress.value, [0, 1], [0, 1]), // Opacity interpolates throughout the full animation
     }));
 
     const animatedImageContainerStyle = useAnimatedStyle(() => ({
@@ -119,7 +119,7 @@ const UserCard = ({ user, onDismiss }: any) => {
 
     return (
         <View style={styles.wrapper} pointerEvents="auto">
-            <AnimatedBlurView style={[StyleSheet.absoluteFill, animatedBlurStyle]} tint="light" />
+            <AnimatedBlurView style={[StyleSheet.absoluteFill, { opacity: 1, backgroundColor: 'rgba(255, 255, 255, 0.14)' }]} tint="light" />
             
             <Animated.View style={[styles.detailsContainer, animatedDetailsStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 150, paddingTop: insets.top + 20 + EXPANDED_AVATAR_SIZE + 10 + NAME_AGE_HEIGHT_ESTIMATE + 20 + ACTION_BUTTON_SIZE + 20}}>
