@@ -16,13 +16,29 @@ import { useTheme } from '@react-navigation/native';
 import UserCard from '../../components/UserCard';
 
 // --- DUMMY DATA ---
-const createUsers = (count: number, offset = 0) => Array.from({ length: count }).map((_, i) => ({
-    id: offset + i,
-    name: `User ${offset + i}`,
-    age: Math.floor(Math.random() * 15) + 18,
-    imageUrl: `https://picsum.photos/id/${offset + i + 100}/200/200`,
-    distance: (Math.random() * 15).toFixed(1),
-}));
+const ZODIACS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+const EDUCATIONS = ['High School', 'Bachelors', 'Masters', 'PhD'];
+const PERSONALITIES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'];
+const INTERESTS = [
+    {id: '1', name: 'Photography', emoji: '📷'}, {id: '2', name: 'Gaming', emoji: '🎮'}, {id: '3', name: 'Traveling', emoji: '✈️'},
+    {id: '4', name: 'Cooking', emoji: '🍳'}, {id: '5', name: 'Reading', emoji: '📚'}, {id: '6', name: 'Hiking', emoji: '🥾'},
+];
+
+const createUsers = (count: number, offset = 0) => Array.from({ length: count }).map((_, i) => {
+    const userIndex = offset + i;
+    return {
+        id: userIndex,
+        name: `User ${userIndex}`,
+        age: Math.floor(Math.random() * 15) + 18,
+        imageUrl: `https://picsum.photos/id/${userIndex + 100}/400/400`,
+        distance: (Math.random() * 15).toFixed(1),
+        about: `Just a dummy bio for user ${userIndex}. I enjoy long walks on the virtual beach and coding under the moonlight.`,
+        zodiac_sign: ZODIACS[userIndex % ZODIACS.length],
+        education: EDUCATIONS[userIndex % EDUCATIONS.length],
+        personality: PERSONALITIES[userIndex % PERSONALITIES.length],
+        interests: INTERESTS.slice(i % 3, i % 3 + 3),
+    }
+});
 
 
 // --- CONFIGURATION & DIMENSIONS ---
