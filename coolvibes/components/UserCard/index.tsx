@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import LikeIcon from '../Icons/LikeIcon';
 import DislikeIcon from '../Icons/DislikeIcon';
 import ChatIcon from '../Icons/ChatIcon';
@@ -131,7 +132,11 @@ const UserCard = ({ user, onDismiss }: any) => {
             </Animated.View>
 
             <Animated.View style={[styles.imageContainer, animatedImageContainerStyle]}>
-                <Pressable onPress={handleToggleExpand}>
+                <Pressable
+                    onPress={handleToggleExpand}
+                    onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                >
                     <Animated.Image source={{ uri: user.imageUrl }} style={[styles.cardImage, animatedImageStyle]} />
                     <Animated.View style={[styles.cardOverlay, animatedImageStyle, animatedOverlayStyle]} />
                 </Pressable>
@@ -143,13 +148,34 @@ const UserCard = ({ user, onDismiss }: any) => {
             </Animated.View>
 
             <Animated.View style={[animatedActionsPositionStyle]} pointerEvents="auto">
-                <Pressable style={styles.actionButton} onPress={() => handleAction('dislike')}>
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.actionButton,
+                        { opacity: pressed ? 0.7 : 1 }
+                    ]}
+                    onPress={() => handleAction('dislike')}
+                    onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                >
                     <DislikeIcon size={30} color="#F44336" />
                 </Pressable>
-                <Pressable style={styles.actionButton}>
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.actionButton,
+                        { opacity: pressed ? 0.7 : 1 }
+                    ]}
+                    onPress={() => { /* handle chat action */ }} // Assuming there will be a chat action here
+                    onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                >
                     <ChatIcon size={28} color="#2196F3" />
                 </Pressable>
-                <Pressable style={styles.actionButton} onPress={() => handleAction('like')}>
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.actionButton,
+                        { opacity: pressed ? 0.7 : 1 }
+                    ]}
+                    onPress={() => handleAction('like')}
+                    onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                >
                     <LikeIcon size={30} color="#4CAF50" />
                 </Pressable>
             </Animated.View>
