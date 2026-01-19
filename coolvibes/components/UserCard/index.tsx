@@ -20,6 +20,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_DIAMETER = SCREEN_WIDTH * 0.75;
 const ACTION_BUTTON_SIZE = 65;
 const EXPANDED_AVATAR_SIZE = 100;
+const NAME_AGE_HEIGHT_ESTIMATE = 60; // Estimated height for name and age texts (e.g., 28 + 18 + ~14 padding)
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -79,23 +80,51 @@ const UserCard = ({ user, onDismiss }: any) => {
         opacity: interpolate(animationProgress.value, [0.5, 1], [0, 1]),
     }));
 
-    const animatedActionsStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(animationProgress.value, [0, 0.2], [1, 0]),
-    }));
+
     
     const animatedCloseButtonStyle = useAnimatedStyle(() => ({
         opacity: interpolate(animationProgress.value, [0.8, 1], [0, 1]),
     }));
 
+    const animatedNameAgePositionStyle = useAnimatedStyle(() => {
+        const imageContainerTranslateY = interpolate(animationProgress.value, [0, 1], [SCREEN_HEIGHT / 2 - (CARD_DIAMETER / 2) - 80, insets.top + 20]);
+        const imageHeight = interpolate(animationProgress.value, [0, 1], [CARD_DIAMETER, EXPANDED_AVATAR_SIZE]);
+        const nameAgeTop = imageContainerTranslateY + imageHeight + 10; // 10 for spacing
+
+        return {
+            position: 'absolute',
+            top: nameAgeTop,
+            width: '100%',
+            alignItems: 'center',
+            zIndex: 25,
+        };
+    });
+
+    const animatedActionsPositionStyle = useAnimatedStyle(() => {
+        const imageContainerTranslateY = interpolate(animationProgress.value, [0, 1], [SCREEN_HEIGHT / 2 - (CARD_DIAMETER / 2) - 80, insets.top + 20]);
+        const imageHeight = interpolate(animationProgress.value, [0, 1], [CARD_DIAMETER, EXPANDED_AVATAR_SIZE]);
+        const nameAgeTop = imageContainerTranslateY + imageHeight + 10; // 10 for spacing
+        const actionsTop = nameAgeTop + NAME_AGE_HEIGHT_ESTIMATE + 20; // 20 for some spacing
+
+        return {
+            position: 'absolute',
+            top: actionsTop,
+            width: '100%',
+            flexDirection: 'row',
+            justifyContent: 'space-evenly',
+            alignItems: 'center',
+            zIndex: 20, // Ensure it's above other elements if needed
+        };
+    });
+
     return (
         <View style={styles.wrapper} pointerEvents="auto">
-            <AnimatedBlurView style={[StyleSheet.absoluteFill, animatedBlurStyle]} tint="dark" />
+            <AnimatedBlurView style={[StyleSheet.absoluteFill, animatedBlurStyle]} tint="light" />
             
             <Animated.View style={[styles.detailsContainer, animatedDetailsStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 150, paddingTop: insets.top + 20 + EXPANDED_AVATAR_SIZE + 20}}>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 150, paddingTop: insets.top + 20 + EXPANDED_AVATAR_SIZE + 10 + NAME_AGE_HEIGHT_ESTIMATE + 20 + ACTION_BUTTON_SIZE + 20}}>
                     <View style={styles.detailsHeader}>
-                        <Text style={[styles.cardName, {color: colors.text}]}>{user.name}, {user.age}</Text>
-                        <Text style={[styles.cardDistance, {color: colors.text, opacity: 0.7}]}>{user.distance} km away</Text>
+                        {/* Name, age, and distance are now displayed outside the ScrollView */}
                     </View>
                     <ProfileAboutView user={user} />
                 </ScrollView>
@@ -104,14 +133,16 @@ const UserCard = ({ user, onDismiss }: any) => {
             <Animated.View style={[styles.imageContainer, animatedImageContainerStyle]}>
                 <Pressable onPress={handleToggleExpand}>
                     <Animated.Image source={{ uri: user.imageUrl }} style={[styles.cardImage, animatedImageStyle]} />
-                    <Animated.View style={[styles.cardOverlay, animatedImageStyle, animatedOverlayStyle]}>
-                        <Text style={styles.overlayName}>{user.name}, {user.age}</Text>
-                        <Text style={styles.overlayDistance}>{user.distance} km away</Text>
-                    </Animated.View>
+                    <Animated.View style={[styles.cardOverlay, animatedImageStyle, animatedOverlayStyle]} />
                 </Pressable>
             </Animated.View>
 
-            <Animated.View style={[styles.actionsWrapper, { bottom: insets.bottom + 20 }, animatedActionsStyle]} pointerEvents={isExpanded ? 'none' : 'auto'}>
+            <Animated.View style={[animatedNameAgePositionStyle]}>
+                <Text style={[styles.cardName, { color: colors.text }]}>{user.name}, {user.age}</Text>
+                <Text style={[styles.cardDistance, { color: colors.text, opacity: 0.7 }]}>{user.distance} km away</Text>
+            </Animated.View>
+
+            <Animated.View style={[animatedActionsPositionStyle]} pointerEvents="auto">
                 <Pressable style={styles.actionButton} onPress={() => handleAction('dislike')}>
                     <DislikeIcon size={30} color="#F44336" />
                 </Pressable>
@@ -146,11 +177,11 @@ const styles = StyleSheet.create({
     },
     overlayName: { fontSize: 28, fontWeight: 'bold', color: 'white', textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: {width: -1, height: 1}, textShadowRadius: 10 },
     overlayDistance: { fontSize: 18, color: 'white', textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: {width: -1, height: 1}, textShadowRadius: 10 },
-    detailsContainer: { ...StyleSheet.absoluteFillObject },
+    detailsContainer: { ...StyleSheet.absoluteFillObject, backgroundColor: 'transparent' },
     detailsHeader: { alignItems: 'center', paddingBottom: 20 },
     cardName: { fontSize: 28, fontWeight: 'bold' },
     cardDistance: { fontSize: 18 },
-    actionsWrapper: { position: 'absolute', flexDirection: 'row', width: '100%', justifyContent: 'space-evenly', alignItems: 'center' },
+
     actionButton: {
         width: ACTION_BUTTON_SIZE,
         height: ACTION_BUTTON_SIZE,
