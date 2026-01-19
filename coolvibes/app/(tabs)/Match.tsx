@@ -271,6 +271,8 @@ export  default function Match() {
     }));
 
     const handleDismissCard = (userToRemove: any) => {
+
+        console.log("CODER")
         // Find index from the current honeycomb state
         const currentIndex = honeycomb.findIndex(item => item.user.id === userToRemove.id);
 
@@ -289,17 +291,7 @@ export  default function Match() {
         // Update the honeycomb state
         setHoneycomb(newHoneycomb);
 
-        // Now, decide which user to show next
-        if (newHoneycomb.length > 0) {
-            // The next user is the one at the same index as the removed one,
-            // because the array shifted. We use modulo for wrap-around.
-            const nextIndex = currentIndex % newHoneycomb.length;
-            const nextUser = newHoneycomb[nextIndex].user;
-            setSelectedUser(nextUser);
-        } else {
-            // If no users are left, show nothing.
-            setSelectedUser(null);
-        }
+         setSelectedUser(null);
     };
 
     return (

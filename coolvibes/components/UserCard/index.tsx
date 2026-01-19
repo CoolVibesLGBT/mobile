@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   interpolate,
+  runOnJS,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -35,8 +36,24 @@ const UserCard = ({ user, onDismiss }: any) => {
     }, [isExpanded, animationProgress]);
 
     const handleAction = (action: 'like' | 'dislike') => {
+        // Here, you might want a different animation before dismissing
         console.log(`User ${user.id} was ${action}d`);
         onDismiss(user);
+    };
+
+    const handleClose = () => {
+      
+        onDismiss(user)
+    };
+
+    const handleDismiss = () => {
+        // First, animate the card closed
+        animationProgress.value = withSpring(0, { damping: 20, stiffness: 120 }, (isFinished) => {
+            if (isFinished) {
+                // Then, once the animation is complete, call onDismiss
+                runOnJS(onDismiss)(user);
+            }
+        });
     };
 
     const animatedBlurStyle = useAnimatedStyle(() => ({
@@ -107,10 +124,11 @@ const UserCard = ({ user, onDismiss }: any) => {
             </Animated.View>
 
             <Animated.View style={[styles.closeButtonContainer, { top: insets.top + 10, right: 20 }, animatedCloseButtonStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
-                <Pressable onPress={handleToggleExpand} style={styles.closeButton}>
+                <Pressable onPress={handleClose} style={styles.closeButton}>
                     <CloseIcon size={20} color="white" />
                 </Pressable>
             </Animated.View>
+         
         </View>
     );
 };
