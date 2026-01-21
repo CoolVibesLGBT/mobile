@@ -131,7 +131,7 @@ export default function Chat() {
                             activeOpacity={0.8}
                             onPress={() =>
                                 router.push({
-                                    pathname: '/chat/[chatId]',
+                                    pathname: '/ChatDetail',
                                     params: { chatId: item.id },
                                 })}>
                             <Image source={{ uri: item.uri }} style={styles.messageAvatar} />
