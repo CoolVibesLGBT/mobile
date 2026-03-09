@@ -1,5 +1,5 @@
 import { StyleSheet, View, ScrollView, ImageBackground, TouchableOpacity, Linking, Platform, Text, StatusBar } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useTheme } from '@react-navigation/native';
 import { LocalizedStringToString } from '@/utils/utils';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export function PlaceDetail() {
   const route = useRoute();
   const navigation = useNavigation();
+  const { colors, dark } = useTheme();
   const { item } = route.params as { item: any };
 
   const title = LocalizedStringToString(item.title);
@@ -21,14 +22,14 @@ export function PlaceDetail() {
 
   const ActionButton = ({ icon, label, count }: { icon: any, label: string, count?: number }) => (
     <TouchableOpacity style={styles.actionButton}>
-      <MaterialCommunityIcons name={icon} size={24} color="#475569" />
-      <Text style={styles.actionButtonLabel}>{label}</Text>
-      {count && <Text style={styles.actionButtonCount}>{count}</Text>}
+      <MaterialCommunityIcons name={icon} size={24} color={dark ? '#CCC' : '#475569'} />
+      <Text style={[styles.actionButtonLabel, { color: dark ? '#CCC' : '#475569' }]}>{label}</Text>
+      {count && <Text style={[styles.actionButtonCount, { color: colors.text }]}>{count}</Text>}
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['bottom', 'left', 'right']}>
       <StatusBar barStyle="light-content" />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <ImageBackground source={{ uri: item.image }} style={styles.headerImage}>
@@ -37,37 +38,37 @@ export function PlaceDetail() {
           </TouchableOpacity>
         </ImageBackground>
 
-        <View style={styles.contentSheet}>
+        <View style={[styles.contentSheet, { backgroundColor: colors.background }]}>
           <View style={styles.titleSection}>
             {item.extras.place.tag && (
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>{item.extras.place.tag}</Text>
+              <View style={[styles.tag, { backgroundColor: dark ? '#222' : '#F1F1F1' }]}>
+                <Text style={[styles.tagText, { color: colors.text }]}>{item.extras.place.tag}</Text>
               </View>
             )}
-            <Text style={styles.title}>{title}</Text>
+            <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Location Details</Text>
+          <View style={[styles.card, { backgroundColor: dark ? '#1C1C1E' : '#FFFFFF', borderColor: dark ? '#333' : '#E2E8F0' }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Location Details</Text>
             <View style={styles.infoRow}>
-              <MaterialCommunityIcons name="map-marker-outline" size={22} color="#64748B" style={styles.infoIcon} />
-              <Text style={styles.infoText}>{item.extras.place.address}, {item.extras.place.town}, {item.extras.place.country}</Text>
+              <MaterialCommunityIcons name="map-marker-outline" size={22} color={dark ? '#AAA' : "#64748B"} style={styles.infoIcon} />
+              <Text style={[styles.infoText, { color: dark ? '#CCC' : '#475569' }]}>{item.extras.place.address}, {item.extras.place.town}, {item.extras.place.country}</Text>
             </View>
-            <TouchableOpacity style={styles.directionsButton} onPress={handleGetDirections}>
-              <Text style={styles.directionsButtonText}>Get Directions</Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color="white" />
+            <TouchableOpacity style={[styles.directionsButton, { backgroundColor: colors.text }]} onPress={handleGetDirections}>
+              <Text style={[styles.directionsButtonText, { color: colors.background }]}>Get Directions</Text>
+              <MaterialCommunityIcons name="arrow-right" size={20} color={colors.background} />
             </TouchableOpacity>
           </View>
 
           {item.note && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Notes</Text>
-              <Text style={styles.noteText}>{item.note}</Text>
+            <View style={[styles.card, { backgroundColor: dark ? '#1C1C1E' : '#FFFFFF', borderColor: dark ? '#333' : '#E2E8F0' }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Notes</Text>
+              <Text style={[styles.noteText, { color: dark ? '#CCC' : '#475569' }]}>{item.note}</Text>
             </View>
           )}
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Engagement</Text>
+          <View style={[styles.card, { backgroundColor: dark ? '#1C1C1E' : '#FFFFFF', borderColor: dark ? '#333' : '#E2E8F0' }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Engagement</Text>
             <View style={styles.actionsContainer}>
               <ActionButton icon="heart-outline" label="Likes" count={123} />
               <ActionButton icon="comment-text-outline" label="Comments" count={45} />

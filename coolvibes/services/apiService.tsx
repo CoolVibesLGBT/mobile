@@ -12,45 +12,46 @@ export class ApiService {
   async call<T = any>(action: ActionType, options: ApiRequestOptions = {}): Promise<T> {
     const method = options.method ?? 'GET';
 
-    if (method === 'GET') {
-      // GET isteği varsa query param ile action ve params gönder
-      const response = await httpClient.get('/', {
-        params: { action, ...options.params },
-      });
-      return response.data as T;
-    }
+    console.log(`[API REQUEST] Action: ${action} | Method: ${method}`, options.params || options.body || '');
 
+    try {
+      let response;
+      if (method === 'GET') {
+        response = await httpClient.get('/', {
+          params: { action, ...options.params },
+        });
+      } else {
+        // POST
+        if (options.body instanceof FormData) {
+          response = await httpClient.post('/', options.body);
+        } else {
+          const formData = new FormData();
+          formData.append('action', action);
 
-    if (method === 'POST') {
-      // Eğer zaten FormData geldiyse (istiyorsan böyle kontrol edebilirsin)
-      if (options.body instanceof FormData) {
-        return await httpClient.post('/', options.body);
-      }
-
-      // options.body Record<string, any> olmalı, FormData değil
-      const formData = new FormData();
-      formData.append('action', action);
-
-      if (options.body && typeof options.body === 'object') {
-        for (const key in options.body) {
-          if (Object.prototype.hasOwnProperty.call(options.body, key)) {
-            const val = options.body[key];
-            if (val !== undefined && val !== null) {
-              if (val instanceof File || val instanceof Blob) {
-                formData.append(key, val);
-              } else {
-                formData.append(key, val.toString());
+          if (options.body && typeof options.body === 'object') {
+            for (const key in options.body) {
+              if (Object.prototype.hasOwnProperty.call(options.body, key)) {
+                const val = (options.body as any)[key];
+                if (val !== undefined && val !== null) {
+                  if (val instanceof File || val instanceof Blob) {
+                    formData.append(key, val);
+                  } else {
+                    formData.append(key, val.toString());
+                  }
+                }
               }
             }
           }
+          response = await httpClient.post('/', formData);
         }
       }
 
-      const response = await httpClient.post('/', formData);
+      console.log(`[API RESPONSE] Action: ${action}`, response.data);
       return response.data as T;
+    } catch (error: any) {
+      console.error(`[API ERROR] Action: ${action}`, error.response?.data || error.message);
+      throw error;
     }
-
-    throw new Error(`Unsupported method: ${method}`);
   }
 
 
@@ -67,6 +68,10 @@ export class ApiService {
 
   async login(credentials: { nickname: string; password: string }) {
     return this.call(Actions.AUTH_LOGIN, { method: 'POST', body: credentials });
+  }
+
+  async register(data: { name: string; nickname: string; password: string; referralCode?: string, domain: string }) {
+    return this.call(Actions.AUTH_REGISTER, { method: 'POST', body: data });
   }
 
   async fetchChats(params: { limit?: number; cursor?: string }) {
@@ -128,7 +133,6 @@ export class ApiService {
   // Diğer metodlar da benzer şekilde
 
   async fetchNearbyPlaces(latitude: number | null, longitude: number | null, cursor: string | null = null, limit: number | null = null) {
-    console.log("GidenCursor", cursor)
     return this.call(Actions.CMD_PLACE_FETCH, {
       method: 'POST',
       body: { latitude: latitude, longitude: longitude, cursor: cursor, limit: limit },

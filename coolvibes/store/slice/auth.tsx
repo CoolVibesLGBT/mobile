@@ -10,10 +10,14 @@ const TOKEN_KEY = 'authToken';
 // Helper functions (tek noktadan yönetim)
 //
 async function saveToken(token: string) {
+  let formattedToken = token;
+  if (!token.startsWith('Bearer ')) {
+    formattedToken = `Bearer ${token}`;
+  }
   if (Platform.OS === 'web') {
-    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(TOKEN_KEY, formattedToken);
   } else {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await SecureStore.setItemAsync(TOKEN_KEY, formattedToken);
   }
 }
 
@@ -41,16 +45,46 @@ export const loginThunk = createAsyncThunk(
   async (credentials: { nickname: string; password: string }, thunkAPI) => {
     try {
       const res = await api.login(credentials);
-
-      const token = res.token;
+      
+      // Server response structure: { data: { token, user }, success: true }
+      const authData = res.data;
+      const token = authData?.token;
+      const user = authData?.user;
 
       if (token) {
-        await saveToken(token);
+        const formattedToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+        await saveToken(formattedToken);
+        return { token: formattedToken, user: user || null };
       }
 
-      return token;
+      return thunkAPI.rejectWithValue('Invalid response from server');
     } catch (err) {
       return thunkAPI.rejectWithValue('Login failed');
+    }
+  }
+);
+
+//
+// REGISTER
+//
+export const registerThunk = createAsyncThunk(
+  'auth/register',
+  async (data: { name: string; nickname: string; password: string; referralCode?: string, domain: string }, thunkAPI) => {
+    try {
+      const res = await api.register(data);
+      const authData = res.data;
+      const token = authData?.token;
+      const user = authData?.user;
+
+      if (token) {
+        const formattedToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+        await saveToken(formattedToken);
+        return { token: formattedToken, user: user || null };
+      }
+
+      return thunkAPI.rejectWithValue('Registration failed');
+    } catch (err) {
+      return thunkAPI.rejectWithValue('Registration failed');
     }
   }
 );
@@ -83,13 +117,24 @@ export const autoLoginThunk = createAsyncThunk(
 
     try {
       const res = await api.getAuthUserInfo();
+      const user = res.data?.user || res.user;
 
       return {
         token,
-        user: res.user,
+        user: user,
       };
-    } catch {
-      return null;
+    } catch (err: any) {
+      console.log('AUTO LOGIN FETCH USER INFO FAILED', err);
+      // If it's a 401 Unauthenticated, we MUST clear the token
+      if (err?.response?.status === 401) {
+        return null; 
+      }
+      
+      // For general network errors, keep the token but no user data
+      return {
+        token,
+        user: null,
+      };
     }
   }
 );
@@ -133,8 +178,11 @@ const authSlice = createSlice({
       state.initialized = true;
 
       if (!action.payload) {
-        state.token = null;
-        state.user = null;
+        // ONLY clear token if we don't have one already (prevents race with manual login)
+        if (!state.token) {
+          state.token = null;
+          state.user = null;
+        }
         return;
       }
 
@@ -149,10 +197,27 @@ const authSlice = createSlice({
 
     builder.addCase(loginThunk.fulfilled, (state, action) => {
       state.loading = false;
-      state.token = action.payload;
+      state.token = action.payload.token;
+      state.user = action.payload.user;
     });
 
     builder.addCase(loginThunk.rejected, (state, action) => {
+      state.loading = false;
+      state.error = String(action.payload);
+    });
+
+    builder.addCase(registerThunk.pending, state => {
+      state.loading = true;
+      state.error = null;
+    });
+
+    builder.addCase(registerThunk.fulfilled, (state, action) => {
+      state.loading = false;
+      state.token = action.payload.token;
+      state.user = action.payload.user;
+    });
+
+    builder.addCase(registerThunk.rejected, (state, action) => {
       state.loading = false;
       state.error = String(action.payload);
     });

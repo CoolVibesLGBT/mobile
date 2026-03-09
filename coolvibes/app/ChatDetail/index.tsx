@@ -13,8 +13,8 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation, useTheme } from "@react-navigation/native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Animated } from "react-native";
 import { BlurView } from "expo-blur";
 
@@ -58,6 +58,13 @@ interface User {
 
 export default function ChatDetail() {
   const navigation = useNavigation();
+
+  const { colors, dark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const textColor = colors.text;
+  const backgroundColor = colors.background;
+  const headerHeight = 60 + insets.top;
+  const bottomBarHeight = Platform.OS === 'ios' ? 88 : 68;
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -273,31 +280,11 @@ export default function ChatDetail() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea]}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <MaterialCommunityIcons name="chevron-left" size={32} color="black"/>
-            <View style={styles.badge}><Text style={styles.badgeText}>8</Text></View>
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerName}>{currentUser.name}</Text>
-            <Text style={styles.headerStatus}>{currentUser.status}</Text>
-          </View>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarChar}>{currentUser.avatarChar}</Text>
-          </View>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll} contentContainerStyle={styles.photoScrollContent}>
-          {currentUser.photos.map((url, index) => (
-            <View key={index} style={styles.photoWrapper}>
-              <Image source={{ uri: url }} style={styles.photo} />
-            </View>
-          ))}
-          <TouchableOpacity style={styles.photoAddButton}><Text style={styles.photoAddText}>+</Text></TouchableOpacity>
-        </ScrollView>
-
+    <View style={[styles.safeArea, { backgroundColor: backgroundColor }]}>
+      <KeyboardAvoidingView 
+        style={[styles.container, { paddingBottom: bottomBarHeight, paddingTop: headerHeight }]} 
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -375,7 +362,7 @@ export default function ChatDetail() {
           )}
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

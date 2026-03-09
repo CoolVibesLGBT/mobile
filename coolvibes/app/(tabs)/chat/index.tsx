@@ -12,6 +12,7 @@ import { fetchChats, resetChats } from '@/store/slice/chat';
 import { Constants } from '@/constants/Constants';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ const mockStories = [
 
 // Reusable stories list (compact = sticky variant)
 const Stories = ({ compact = false, showTitle }: { compact?: boolean; showTitle?: boolean }) => {
+    const { colors } = useTheme();
     const shouldShowTitle = typeof showTitle === 'boolean' ? showTitle : !compact;
     return (
         <View style={styles.storiesWrapper}>
@@ -36,14 +38,14 @@ const Stories = ({ compact = false, showTitle }: { compact?: boolean; showTitle?
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stories}>
                 {mockStories.map((s) => (
                     <TouchableOpacity key={s.id} style={styles.storyItem} activeOpacity={0.8} onPress={() => console.log(compact ? 'sticky pressed' : 'story pressed', s.id)}>
-                        <View style={[styles.avatarWrapper, s.id === 'likes' && styles.likesAvatar]}>
+                        <View style={[styles.avatarWrapper, s.id === 'likes' && [styles.likesAvatar, { borderColor: colors.text }]]}>
                             <Image source={{ uri: s.uri }} style={styles.avatar} />
                             {s.id === 'likes' ? (
-                                <View style={[styles.likesBadge, compact && styles.likesBadgeSticky]}>
-                                    <ThemedText style={{ color: 'white', fontWeight: '700', fontSize: 12 }}>{s.badge}</ThemedText>
+                                <View style={[styles.likesBadge, compact && styles.likesBadgeSticky, { backgroundColor: colors.text }]}>
+                                    <ThemedText style={{ color: colors.background, fontWeight: '700', fontSize: 12 }}>{s.badge}</ThemedText>
                                 </View>
                             ) : (
-                                <View style={styles.redDot} />
+                                <View style={[styles.redDot, { backgroundColor: colors.text }]} />
                             )}
                         </View>
                         {!compact && <ThemedText style={styles.storyLabel}>{s.label}</ThemedText>}
@@ -93,7 +95,8 @@ export default function Chat() {
     }, [chats, loading, error]);
     return (
         <ThemedView style={styles.container}>
-            <SafeAreaView style={{ flex: 1 }}>
+            <View style={{ flex: 1, paddingTop: 60 + insets.top }}>
+                {/* 
                 <View style={styles.headerRow} onLayout={(e) => (headerHeightRef.current = e.nativeEvent.layout.height)}>
                     <ThemedText type="title">Sohbet</ThemedText>
                     <View style={styles.headerIcons}>
@@ -113,6 +116,7 @@ export default function Chat() {
                         </TouchableOpacity>
                     </View>
                 </View>
+                */}
 
                 <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
                     <Stories compact={false} showTitle={true} />
@@ -160,7 +164,7 @@ export default function Chat() {
                     contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 120 }}
                 />
 
-            </SafeAreaView>
+            </View>
         </ThemedView >
     );
 }

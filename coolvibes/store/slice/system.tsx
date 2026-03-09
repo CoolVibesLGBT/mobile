@@ -21,7 +21,7 @@ interface SystemState {
 
 const initialState: SystemState = {
   data: null,
-  loading: false,
+  loading: true,
   error: null,
 };
 

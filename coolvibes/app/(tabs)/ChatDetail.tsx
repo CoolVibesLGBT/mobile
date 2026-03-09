@@ -13,8 +13,8 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation, useTheme } from "@react-navigation/native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Animated } from "react-native";
 import { BlurView } from "expo-blur";
 
@@ -57,7 +57,13 @@ interface User {
 }
 
 export default function ChatDetail() {
+  const { colors, dark } = useTheme();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+
+  const textColor = colors.text;
+  const backgroundColor = colors.background;
+  const borderColor = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -221,7 +227,7 @@ export default function ChatDetail() {
           <View style={[styles.messageAvatarContainer, styles.messageAvatarLeft]}>
             {isSelectionMode && (
               <TouchableOpacity style={styles.checkbox} onPress={() => toggleSelection(item.id)}>
-                <MaterialCommunityIcons name={isSelected ? "check-circle" : "circle-outline"} size={26} color={"black"} />
+                <MaterialCommunityIcons name={isSelected ? "check-circle" : "circle-outline"} size={26} color={textColor} />
               </TouchableOpacity>
             )}
             <Image source={{ uri: currentUser.avatarUrl }} style={[styles.messageAvatar]}/>
@@ -236,22 +242,22 @@ export default function ChatDetail() {
           onPressIn={() => handlePressIn(item.id)}
           onPressOut={() => handlePressOut(item.id)}
         >
-          <Animated.View style={[ styles.messageContainer, isMe ? styles.messageOut : styles.messageIn, { transform: [{ scale: getPressScale(item.id) }], opacity: activePressedId === item.id ? 0.8 : 1 } ]}>
+          <Animated.View style={[ styles.messageContainer, isMe ? [styles.messageOut, { backgroundColor: textColor }] : [styles.messageIn, { backgroundColor: dark ? '#1A1A1A' : '#ffffff' }], { transform: [{ scale: getPressScale(item.id) }], opacity: activePressedId === item.id ? 0.8 : 1 } ]}>
             {item.replyTo && (
-              <View style={styles.quoteBox}>
+              <View style={[styles.quoteBox, { backgroundColor: dark ? '#333' : '#F5F5F5', borderLeftColor: textColor }]}>
                 <View style={styles.quoteHeader}>
                   <Image source={{ uri: "https://picsum.photos/seed/reply/100/100" }} style={styles.quoteAvatar}/>
-                  <Text style={styles.quoteUser}>{item.replyTo.user}</Text>
+                  <Text style={[styles.quoteUser, { color: textColor }]}>{item.replyTo.user}</Text>
                 </View>
-                <Text style={styles.quoteText} numberOfLines={1}>{item.replyTo.text}</Text>
+                <Text style={[styles.quoteText, { color: backgroundColor }]} numberOfLines={1}>{item.replyTo.text}</Text>
               </View>
             )}
             <View style={{ minHeight: 40,minWidth:48 }}>
-              <Text style={styles.messageTextWithMeta}>{item.text}</Text>
+              <Text style={[styles.messageTextWithMeta, { color: isMe ? backgroundColor : textColor }]}>{item.text}</Text>
               <View style={styles.messageMetaAbsolute}>
-                <Text style={styles.messageTime}>{item.timestamp}</Text>
+                <Text style={[styles.messageTime, { color: isMe ? backgroundColor + 'CC' : textColor + '80' }]}>{item.timestamp}</Text>
                 {isMe && (
-                  <Ionicons name={ item.status === "read" ? "checkmark-done" : "checkmark" } size={14} color={item.status === "read" ? "#22c55e" : "#9ca3af"} />
+                  <Ionicons name={ item.status === "read" ? "checkmark-done" : "checkmark" } size={14} color={backgroundColor} />
                 )}
               </View>
             </View>
@@ -262,7 +268,7 @@ export default function ChatDetail() {
           <View style={[styles.messageAvatarContainer, styles.messageAvatarRight]}>
             {isSelectionMode && (
               <TouchableOpacity style={styles.checkbox} onPress={() => toggleSelection(item.id)}>
-                <MaterialCommunityIcons name={isSelected ? "check-circle" : "circle-outline"} size={26} color={"black"} />
+                <MaterialCommunityIcons name={isSelected ? "check-circle" : "circle-outline"} size={26} color={textColor} />
               </TouchableOpacity>
             )}
             <Image source={{ uri: myUser.avatarUrl }} style={[styles.messageAvatar]}/>
@@ -272,51 +278,36 @@ export default function ChatDetail() {
     );
   };
 
-  return (
-    <SafeAreaView style={[styles.safeArea]}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <MaterialCommunityIcons name="chevron-left" size={32} color="black"/>
-            <View style={styles.badge}><Text style={styles.badgeText}>8</Text></View>
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerName}>{currentUser.name}</Text>
-            <Text style={styles.headerStatus}>{currentUser.status}</Text>
-          </View>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarChar}>{currentUser.avatarChar}</Text>
-          </View>
-        </View>
+    const bottomBarHeight = Platform.OS === 'ios' ? 88 : 68;
+    const headerHeight = 60 + insets.top;
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll} contentContainerStyle={styles.photoScrollContent}>
-          {currentUser.photos.map((url, index) => (
-            <View key={index} style={styles.photoWrapper}>
-              <Image source={{ uri: url }} style={styles.photo} />
-            </View>
-          ))}
-          <TouchableOpacity style={styles.photoAddButton}><Text style={styles.photoAddText}>+</Text></TouchableOpacity>
-        </ScrollView>
+    return (
+      <View style={[styles.safeArea, { backgroundColor: backgroundColor }]}>
+        <KeyboardAvoidingView 
+          style={[styles.container, { paddingBottom: bottomBarHeight, paddingTop: headerHeight }]} 
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
 
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContentContainer}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          ListFooterComponent={
-            isTyping ? (
-              <View style={styles.messageRowThem}>
-                <Image source={{ uri: currentUser.avatarUrl }} style={styles.messageAvatar}/>
-                <View style={[styles.messageContainer, styles.messageIn, { paddingHorizontal: 15 }]}>
-                  <ActivityIndicator size="small" color="#999" />
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            style={styles.messagesContainer}
+            contentContainerStyle={[styles.messagesContentContainer, { paddingBottom: insets.bottom + 20 }]}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            ListFooterComponent={
+              isTyping ? (
+                <View style={styles.messageRowThem}>
+                  <Image source={{ uri: currentUser.avatarUrl }} style={styles.messageAvatar}/>
+                  <View style={[styles.messageContainer, styles.messageIn, { backgroundColor: dark ? '#222' : '#FFF', paddingHorizontal: 15 }]}>
+                    <ActivityIndicator size="small" color={textColor + '50'} />
+                  </View>
                 </View>
-              </View>
-            ) : null
-          }
-        />
+              ) : null
+            }
+          />
 
         <ChatInput
           currentUser={myUser}
@@ -332,50 +323,50 @@ export default function ChatDetail() {
         <Pressable style={styles.contextBackdrop} onPress={() => setContextVisible(false)}>
           {selectedMessage && (
             <View style={[ styles.contextContainer, selectedMessage?.sender === "me" ? styles.contextAlignRight : styles.contextAlignLeft ]}>
-              <View style={styles.reactionBar}>
+              <View style={[styles.reactionBar, { backgroundColor: dark ? '#222' : '#F5F5F5' }]}>
                 <Text style={styles.reactionEmoji}>❤️</Text><Text style={styles.reactionEmoji}>👍</Text><Text style={styles.reactionEmoji}>👎</Text><Text style={styles.reactionEmoji}>🔥</Text><Text style={styles.reactionEmoji}>🥰</Text><Text style={styles.reactionEmoji}>👏</Text><Text style={styles.reactionEmoji}>😁</Text><Text style={styles.reactionEmoji}>✓</Text>
               </View>
-              <BlurView experimentalBlurMethod="dimezisBlurView" intensity={100} tint="light" style={styles.contextMenuCard}>
-                <Text style={styles.contextReadText}>✓✓ okundu bugün {selectedMessage.timestamp}</Text>
-                <View style={styles.contextDivider} />
+              <BlurView experimentalBlurMethod="dimezisBlurView" intensity={100} tint={dark ? "dark" : "light"} style={[styles.contextMenuCard, { borderColor: borderColor }]}>
+                <Text style={[styles.contextReadText, { color: textColor + '99' }]}>✓✓ okundu bugün {selectedMessage.timestamp}</Text>
+                <View style={[styles.contextDivider, { backgroundColor: borderColor }]} />
                 <TouchableOpacity style={styles.menuItem} onPress={startReply}>
-                  <Text style={styles.menuItemText}>Yanıtla</Text>
-                  <MaterialCommunityIcons name="reply" size={24} color="black"/>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Yanıtla</Text>
+                  <MaterialCommunityIcons name="reply" size={24} color={textColor}/>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={styles.menuItemText}>Kopyala</Text>
-                  <MaterialCommunityIcons name="content-copy" size={24} color="black"/>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Kopyala</Text>
+                  <MaterialCommunityIcons name="content-copy" size={24} color={textColor}/>
                 </TouchableOpacity>
                 {selectedMessage?.sender === "me" && (
                   <TouchableOpacity style={styles.menuItem} onPress={startEdit}>
-                    <Text style={styles.menuItemText}>Düzenle</Text>
-                    <MaterialCommunityIcons name="comment-edit-outline" size={24} color="black" />
+                    <Text style={[styles.menuItemText, { color: textColor }]}>Düzenle</Text>
+                    <MaterialCommunityIcons name="comment-edit-outline" size={24} color={textColor} />
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={styles.menuItemText}>Sabitle</Text>
-                  <MaterialCommunityIcons name="pin-outline" size={24} color="black" />
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Sabitle</Text>
+                  <MaterialCommunityIcons name="pin-outline" size={24} color={textColor} />
                 </TouchableOpacity>
-                <View style={styles.contextDivider} />
+                <View style={[styles.contextDivider, { backgroundColor: borderColor }]} />
                 <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, styles.contextDelete]}>Benden Sil</Text>
-                  <MaterialCommunityIcons name="delete-outline" size={24} color="black" />
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Benden Sil</Text>
+                  <MaterialCommunityIcons name="delete-outline" size={24} color={textColor} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, styles.contextDelete]}>Herkesten Sil</Text>
-                  <MaterialCommunityIcons name="delete-alert-outline" size={24} color="black"/>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Herkesten Sil</Text>
+                  <MaterialCommunityIcons name="delete-alert-outline" size={24} color={textColor}/>
                 </TouchableOpacity>
-                <View style={styles.contextDivider} />
+                <View style={[styles.contextDivider, { backgroundColor: borderColor }]} />
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setContextVisible(false); toggleSelection(selectedMessage.id); setIsSelectionMode(true); }}>
-                  <Text style={[styles.menuItemText]}>Seç</Text>
-                  <MaterialCommunityIcons name="comment-check-outline" size={24} color="black"/>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Seç</Text>
+                  <MaterialCommunityIcons name="comment-check-outline" size={24} color={textColor}/>
                 </TouchableOpacity>
               </BlurView>
             </View>
           )}
         </Pressable>
       </Modal>
-    </SafeAreaView>
+      </View>
   );
 }
 
@@ -386,22 +377,14 @@ const styles = StyleSheet.create({
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingHorizontal: 12,
-      paddingTop: 10,
-      paddingBottom: 8,
-      backgroundColor: "transparent",
+      paddingHorizontal: 16,
+      paddingBottom: 12,
+      borderBottomWidth: 0.5,
     },
     backButton: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "rgba(255,255,255,0.8)",
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 20,
-      shadowColor: "#000",
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      shadowOffset: { width: 0, height: 1 },
+      paddingVertical: 4,
     },
     badge: {
       backgroundColor: "#000",
@@ -412,7 +395,7 @@ const styles = StyleSheet.create({
       justifyContent: "center",
       alignItems: "center",
     },
-    badgeText: { color: "white", fontSize: 10, fontWeight: "bold" },
+    badgeText: { color: "white", fontSize: 10, fontFamily: 'Inter-Bold' },
     headerCenter: {
       flex: 1,
       alignItems: "center",
@@ -423,19 +406,22 @@ const styles = StyleSheet.create({
       borderRadius: 25,
       marginHorizontal: 10,
     },
-    headerName: { fontWeight: "700", fontSize: 14, color: "#000" },
-    headerStatus: { fontSize: 10, color: "#666" },
+    headerName: { fontFamily: 'Outfit-Black', fontSize: 16, color: "#000", textTransform: 'uppercase', letterSpacing: 0.5 },
+    headerStatus: { fontSize: 10, color: "#666", fontFamily: 'Inter-SemiBold', marginTop: -2 },
     avatarCircle: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: "#28D3D3",
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: "#000",
       justifyContent: "center",
       alignItems: "center",
       borderWidth: 2,
       borderColor: "#fff",
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
     },
-    avatarChar: { color: "white", fontWeight: "bold", fontSize: 18 },
+    avatarChar: { color: "white", fontFamily: 'Outfit-Black', fontSize: 18 },
   
     photoScroll: { maxHeight: 100, marginVertical: 8, paddingLeft: 16 },
     photoScrollContent: { alignItems: "center", paddingRight: 20 },
@@ -492,8 +478,8 @@ const styles = StyleSheet.create({
     messageIn: { backgroundColor: "#fff", borderBottomLeftRadius: 4, alignSelf: "flex-start" },
     messageOut: { backgroundColor: "#e9fcd9", borderBottomRightRadius: 4, alignSelf: "flex-end" },
     messageMetaAbsolute: { position: "absolute", right: 0, bottom: 0, flexDirection: "row", alignItems: "center" },
-    messageTextWithMeta: { fontSize: 15, marginBottom: 16, color: "#111", lineHeight: 25 },
-    messageTime: { fontSize: 10, color: "#888" },
+    messageTextWithMeta: { fontSize: 15, marginBottom: 16, color: "#111", lineHeight: 22, fontFamily: 'Inter-Regular' },
+    messageTime: { fontSize: 10, color: "#888", fontFamily: 'Inter-SemiBold' },
     
     quoteBox: {
       backgroundColor: "#f0f4f8",
@@ -505,8 +491,8 @@ const styles = StyleSheet.create({
     },
     quoteHeader: { flexDirection: "row", alignItems: "center", marginBottom: 2 },
     quoteAvatar: { width: 20, height: 20, borderRadius: 4, marginRight: 6 },
-    quoteUser: { fontWeight: "600", color: "#3b82f6", fontSize: 12 },
-    quoteText: { fontSize: 12, color: "#444" },
+    quoteUser: { fontFamily: "Inter-Bold", color: "#3b82f6", fontSize: 12 },
+    quoteText: { fontSize: 12, color: "#444", fontFamily: 'Inter-Regular' },
   
     contextBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.15)", justifyContent: "center", alignItems: "center" },
     contextContainer: { alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
@@ -518,6 +504,6 @@ const styles = StyleSheet.create({
     contextReadText: { textAlign: "center", fontSize: 12, color: "#555", paddingVertical: 6 },
     contextDivider: { height: 1, backgroundColor: "#e4e4e4", marginVertical: 8 },
     menuItem: { flexDirection: "row", justifyContent: "space-between", padding: 16 },
-    menuItemText: { fontSize: 16, fontWeight: "500" },
-    contextDelete: { color: "#d00" },
+    menuItemText: { fontSize: 16, fontFamily: "Inter-SemiBold" },
+    contextDelete: { color: "#d00", fontFamily: 'Inter-Bold' },
   });
