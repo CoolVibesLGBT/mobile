@@ -13,6 +13,12 @@ export const store = configureStore({
     nearbyPlaces: placesReducer,
     nearbyUsers: nearbyUsersReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        warnAfter: 128, // Increase threshold for large system stats
+      },
+    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

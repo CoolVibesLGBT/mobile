@@ -39,6 +39,9 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
+
 function AuthGuard() {
   const { token, initialized } = useAppSelector(state => state.auth);
   const segments = useSegments();
@@ -68,9 +71,12 @@ function AuthGuard() {
   return null;
 }
 
-export default function RootLayout() {
+function ThemedApp() {
   const colorScheme = useColorScheme();
-  
+  const dispatch = useAppDispatch();
+  const { loading } = useAppSelector(state => state.system);
+  const { initialized } = useAppSelector(state => state.auth);
+
   const [fontsLoaded] = useFonts({
     'Inter-Regular': Inter_400Regular,
     'Inter-SemiBold': Inter_600SemiBold,
@@ -82,43 +88,34 @@ export default function RootLayout() {
     'Outfit-Black': Outfit_900Black,
   });
 
+  const setTestToken = async () => {
+    const existingToken = await (Platform.OS === 'web' ? localStorage.getItem('authToken') : SecureStore.getItemAsync('authToken'));
+    if (existingToken) return;
 
-  function Initializer() {
-    const dispatch = useAppDispatch();
-    const { loading } = useAppSelector(state => state.system);
-    const { initialized } = useAppSelector(state => state.auth);
+    if (Platform.OS === 'web') {
+      localStorage.setItem('authToken', TEST_ACCESS_TOKEN);
+      return;
+    }
+    await SecureStore.setItemAsync('authToken', TEST_ACCESS_TOKEN);
+  };
 
-    const setTestToken = async () => {
-      const existingToken = await (Platform.OS === 'web' ? localStorage.getItem('authToken') : SecureStore.getItemAsync('authToken'));
-      if (existingToken) return;
-
-      if (Platform.OS === 'web') {
-        localStorage.setItem('authToken', TEST_ACCESS_TOKEN);
-        return;
-      }
-      await SecureStore.setItemAsync('authToken', TEST_ACCESS_TOKEN);
+  useEffect(() => {
+    const init = async () => {
+      await setTestToken();
+      dispatch(fetchInitialSync());
+      dispatch(autoLoginThunk());
     };
+    init();
+  }, []);
 
+  useEffect(() => {
+    if (!loading && initialized && fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => {
+        // Ignore splash screen errors if it's already hidden
+      });
+    }
+  }, [loading, initialized, fontsLoaded]);
 
-    useEffect(() => {
-      const init = async () => {
-        await setTestToken();
-        dispatch(fetchInitialSync());
-        dispatch(autoLoginThunk());
-      };
-      init();
-    }, []);
-
-    useEffect(() => {
-      if (!loading && initialized && fontsLoaded) {
-        SplashScreen.hideAsync().catch(() => {
-          // Ignore splash screen errors if it's already hidden
-        });
-      }
-    }, [loading, initialized, fontsLoaded]);
-
-    return null;
-  }
 
   const CustomDarkTheme = {
     ...DarkTheme,
@@ -146,35 +143,39 @@ export default function RootLayout() {
     },
   };
 
-
-
   if (!fontsLoaded) return null;
 
+  return (
+    <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme}>
+      <AuthGuard />
+      <View style={{ flex: 1 }}>
+        <GlobalHeader />
+        <Stack screenOptions={{ 
+            headerShown: false, 
+            contentStyle: { 
+                backgroundColor: colorScheme === 'dark' ? Colors.dark.background : Colors.light.background,
+            } 
+        }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ presentation: 'fullScreenModal', headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          <Stack.Screen name="ChatDetail" options={{ headerShown: false }} />
+          <Stack.Screen name="CheckIn" options={{ headerShown: false }} />
+          <Stack.Screen name="Settings" options={{ headerShown: false }} />
+        </Stack>
+      </View>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+    </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
   return (
     <Provider store={store}>
       <SocketProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <BottomSheetModalProvider>
-            <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme}>
-              <Initializer />
-              <AuthGuard />
-              <View style={{ flex: 1 }}>
-                <GlobalHeader />
-                <Stack screenOptions={{ 
-                    headerShown: false, 
-                    contentStyle: { 
-                        backgroundColor: colorScheme === 'dark' ? Colors.dark.background : Colors.light.background,
-                    } 
-                }}>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="(auth)" options={{ presentation: 'fullScreenModal', headerShown: false }} />
-                  <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                  <Stack.Screen name="ChatDetail" options={{ headerShown: false }} />
-                  <Stack.Screen name="CheckIn" options={{ headerShown: false }} />
-                </Stack>
-              </View>
-              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-            </ThemeProvider>
+            <ThemedApp />
           </BottomSheetModalProvider>
         </GestureHandlerRootView>
       </SocketProvider>

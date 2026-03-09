@@ -21,13 +21,15 @@ export default function GlobalHeader() {
     const isAuth = (segments as any[])[0] === '(auth)';
     const isChatDetail = (segments as any[]).includes('ChatDetail');
     const isCheckIn = (segments as any[]).includes('CheckIn');
+    const isSettings = (segments as any[]).includes('Settings');
+    const isActivity = (segments as any[]).includes('Activity');
     const isMatch = (segments as any[]).includes('Match') || (segments as any[]).includes('MatchScreen');
 
     if (isAuth || isMatch) return null;
 
-    const rootSubSegments = ['index', 'chat', 'Profile', 'Discover', 'nearby'];
+    const rootSubSegments = ['index', 'chat', 'Profile', 'Discover', 'nearby', 'Activity'];
     const segs = segments as string[];
-    const isRoot = !isChatDetail && !isCheckIn && (
+    const isRoot = !isChatDetail && !isCheckIn && !isSettings && (
         segs.length === 0 ||
         (segs.length === 1 && segs[0] === '(tabs)') ||
         (segs.length === 2 && segs[0] === '(tabs)' && rootSubSegments.includes(segs[1]))
@@ -85,6 +87,20 @@ export default function GlobalHeader() {
                 </View>
             );
         }
+        if (isSettings) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>SETTINGS</Text>
+                </View>
+            );
+        }
+        if (isActivity) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>ACTIVITY</Text>
+                </View>
+            );
+        }
         return (
             <View style={styles.brandContainer}>
                 <Text style={brandText}>COOLVIBES</Text>
@@ -100,19 +116,34 @@ export default function GlobalHeader() {
                 </TouchableOpacity>
             );
         }
+        if (isSettings) {
+            return <View style={styles.avatarBtn} />;
+        }
         const avatarUri = authUser?.avatar_url || authUser?.avatarUrl || `https://i.pravatar.cc/150?u=me`;
         return (
-            <TouchableOpacity
-                onPress={() => router.push('/(tabs)/Profile')}
-                style={styles.avatarBtn}
-                activeOpacity={0.7}
-            >
-                {avatarUri ? (
-                    <Image source={{ uri: avatarUri }} style={styles.headerAvatar} contentFit="cover" />
-                ) : (
-                    <MaterialCommunityIcons name="account-circle-outline" size={28} color={colors.text} />
+            <View style={styles.rightButtons}>
+                {!isActivity && (
+                    <TouchableOpacity
+                        onPress={() => router.push('/(tabs)/Activity')}
+                        style={styles.headerBtn}
+                        activeOpacity={0.7}
+                    >
+                        <MaterialCommunityIcons name="bell-outline" size={24} color={colors.text} />
+                    </TouchableOpacity>
                 )}
-            </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => router.push('/(tabs)/Profile')}
+                    style={styles.avatarBtn}
+                    activeOpacity={0.7}
+                >
+                    {avatarUri ? (
+                        <Image source={{ uri: avatarUri }} style={styles.headerAvatar} contentFit="cover" />
+                    ) : (
+                        <MaterialCommunityIcons name="account-circle-outline" size={28} color={colors.text} />
+                    )}
+                </TouchableOpacity>
+            </View>
         );
     };
 
@@ -129,8 +160,8 @@ export default function GlobalHeader() {
                 {/* Left */}
                 <TouchableOpacity
                     onPress={() => {
-                        if (isCheckIn || isChatDetail) router.back();
-                        else if (isRoot) router.push('/search');
+                        if (isCheckIn || isChatDetail || isSettings) router.back();
+                        else if (isRoot) router.push('/Settings');
                         else router.back();
                     }}
                     style={styles.iconBtn}
@@ -139,7 +170,7 @@ export default function GlobalHeader() {
                 >
                     <MaterialCommunityIcons
                         name={isCheckIn ? 'close' : (isRoot ? 'tune-vertical' : 'chevron-left')}
-                        size={isCheckIn ? 26 : (isRoot ? 22 : 30)}
+                        size={isCheckIn ? 26 : (isRoot || isSettings ? 22 : 30)}
                         color={colors.text}
                     />
                 </TouchableOpacity>
@@ -201,6 +232,17 @@ const styles = StyleSheet.create({
     iconBtn: {
         width: 44,
         height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    rightButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    headerBtn: {
+        width: 40,
+        height: 40,
         alignItems: 'center',
         justifyContent: 'center',
     },

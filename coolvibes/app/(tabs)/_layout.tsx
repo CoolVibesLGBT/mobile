@@ -5,7 +5,7 @@ import { useTheme } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, withTiming, useSharedValue } from 'react-native-reanimated';
-import { Flame, Radar, MessageSquare, MapPin, Plus } from 'lucide-react-native';
+import { Flame, Radar, MessageSquare, MapPin, Plus, Bell } from 'lucide-react-native';
 
 // --- Tab Configuration ---
 const TAB_ICONS: Record<string, React.ElementType> = {
@@ -157,6 +157,7 @@ export default function TabLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="nearby" />
       <Tabs.Screen name="Match" />
+      <Tabs.Screen name="Activity" options={{ href: null }} />
       <Tabs.Screen name="chat" />
       <Tabs.Screen name="Profile" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} /> 

@@ -17,12 +17,14 @@ interface SystemState {
   data: InitialData | null;
   loading: boolean;
   error: string | null;
+  theme: 'system' | 'light' | 'dark';
 }
 
 const initialState: SystemState = {
   data: null,
   loading: true,
   error: null,
+  theme: 'system',
 };
 
 export const fetchInitialSync = createAsyncThunk<
@@ -45,6 +47,9 @@ const systemSlice = createSlice({
   name: 'system',
   initialState,
   reducers: {
+    setTheme(state, action: PayloadAction<'system' | 'light' | 'dark'>) {
+      state.theme = action.payload;
+    },
     clearSystemState(state) {
       state.data = null;
       state.error = null;
@@ -68,5 +73,5 @@ const systemSlice = createSlice({
   },
 });
 
-export const { clearSystemState } = systemSlice.actions;
+export const { clearSystemState, setTheme } = systemSlice.actions;
 export default systemSlice.reducer;

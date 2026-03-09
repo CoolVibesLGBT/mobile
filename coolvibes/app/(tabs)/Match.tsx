@@ -182,7 +182,7 @@ export default function MatchScreen() {
     const gridBounds = useSharedValue({ minX: 0, maxX: 0, minY: 0, maxY: 0 });
     const canvasScale = useSharedValue(1);
 
-    useMemo(() => {
+    useEffect(() => {
         if (honeycomb.length === 0) {
             gridBounds.value = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
             return;
@@ -196,7 +196,7 @@ export default function MatchScreen() {
             maxY = Math.max(maxY, p.y);
         });
         gridBounds.value = { minX, maxX, minY, maxY };
-    }, [honeycomb]);
+    }, [honeycomb, gridBounds]);
 
     const loadMore = useCallback(() => {
         if (isLoading) return;
