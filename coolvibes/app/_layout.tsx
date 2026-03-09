@@ -26,7 +26,7 @@ import {
   Outfit_900Black 
 } from '@expo-google-fonts/outfit';
 import { TEST_ACCESS_TOKEN } from '@/config';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -43,22 +43,27 @@ function AuthGuard() {
   const { token, initialized } = useAppSelector(state => state.auth);
   const segments = useSegments();
   const router = useRouter();
+  // Ref-based lock: prevents double-navigate when token + segments both change
+  const navigatingRef = useRef(false);
 
   useEffect(() => {
     if (!initialized) return;
+    if (navigatingRef.current) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const isLoginPage = segments[segments.length - 1] === 'login';
 
     if (!token && !inAuthGroup) {
-      // User is NOT logged in and NOT in the auth group -> Redirect to login
+      navigatingRef.current = true;
       router.replace('/(auth)/login');
+      setTimeout(() => { navigatingRef.current = false; }, 800);
     } else if (token && inAuthGroup) {
-      // User IS logged in but tried to go to auth screens -> Redirect to main app
-      // Use replace to avoid history stack buildup
+      navigatingRef.current = true;
       router.replace('/(tabs)');
+      setTimeout(() => { navigatingRef.current = false; }, 800);
     }
-  }, [token, initialized, segments[0]]);
+  // Deliberately only depend on token + initialized — segments would cause re-fire mid-transition
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, initialized]);
 
   return null;
 }

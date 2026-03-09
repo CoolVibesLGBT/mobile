@@ -1,6 +1,8 @@
 import { Platform } from 'react-native';
 import { Colors } from './Colors';
 
+export { Colors };
+
 export const Theme = {
   colors: Colors,
   spacing: {

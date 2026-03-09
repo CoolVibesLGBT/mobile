@@ -108,7 +108,7 @@ export default function ChatDetail() {
   const currentUser: User = {
     id: "them",
     name: "RIGHT6652",
-    status: "son görülme yakınlarda",
+    status: "seen recently",
     avatarChar: "R",
     avatarUrl: "https://i.pravatar.cc/150?u=right6652",
     distance: "2.4 km",
@@ -323,10 +323,10 @@ export default function ChatDetail() {
                 <Text style={styles.reactionEmoji}>❤️</Text><Text style={styles.reactionEmoji}>👍</Text><Text style={styles.reactionEmoji}>👎</Text><Text style={styles.reactionEmoji}>🔥</Text><Text style={styles.reactionEmoji}>🥰</Text><Text style={styles.reactionEmoji}>👏</Text><Text style={styles.reactionEmoji}>😁</Text><Text style={styles.reactionEmoji}>✓</Text>
               </View>
               <BlurView experimentalBlurMethod="dimezisBlurView" intensity={100} tint="light" style={styles.contextMenuCard}>
-                <Text style={styles.contextReadText}>✓✓ okundu bugün {selectedMessage.timestamp}</Text>
+                <Text style={styles.contextReadText}>✓✓ Read today at {selectedMessage.timestamp}</Text>
                 <View style={styles.contextDivider} />
                 <TouchableOpacity style={styles.menuItem} onPress={startReply}>
-                  <Text style={styles.menuItemText}>Yanıtla</Text>
+                  <Text style={styles.menuItemText}>Reply</Text>
                   <MaterialCommunityIcons name="reply" size={24} color="black"/>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
@@ -335,7 +335,7 @@ export default function ChatDetail() {
                 </TouchableOpacity>
                 {selectedMessage?.sender === "me" && (
                   <TouchableOpacity style={styles.menuItem} onPress={startEdit}>
-                    <Text style={styles.menuItemText}>Düzenle</Text>
+                    <Text style={styles.menuItemText}>Edit</Text>
                     <MaterialCommunityIcons name="comment-edit-outline" size={24} color="black" />
                   </TouchableOpacity>
                 )}
@@ -354,7 +354,7 @@ export default function ChatDetail() {
                 </TouchableOpacity>
                 <View style={styles.contextDivider} />
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setContextVisible(false); toggleSelection(selectedMessage.id); setIsSelectionMode(true); }}>
-                  <Text style={[styles.menuItemText]}>Seç</Text>
+                  <Text style={[styles.menuItemText]}>Select</Text>
                   <MaterialCommunityIcons name="comment-check-outline" size={24} color="black"/>
                 </TouchableOpacity>
               </BlurView>

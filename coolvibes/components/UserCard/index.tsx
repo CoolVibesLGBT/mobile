@@ -168,7 +168,7 @@ const UserCard = ({ user, onDismiss }: any) => {
                     style={[styles.mainActionButton, { backgroundColor: iconColor }]}
                     onPress={() => handleAction('chat')}
                 >
-                    <MaterialCommunityIcons name="message-heart" size={30} color={dark ? '#000' : '#FFF'} />
+                    <MaterialCommunityIcons name="chat" size={30} color={dark ? '#000' : '#FFF'} />
                 </TouchableOpacity>
 
                 <TouchableOpacity

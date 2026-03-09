@@ -20,7 +20,7 @@ if (Platform.OS === 'android') {
 
 
 const mockGridData = [
-    { id: 'g1', name: 'Ayşe', uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400' },
+    { id: 'g1', name: 'Ayse', uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400' },
     { id: 'g2', name: 'Mehmet', uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400' },
     { id: 'g3', name: 'Fatma', uri: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=400' },
     { id: 'g4', name: 'Ali', uri: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400' },
@@ -32,7 +32,7 @@ const mockGridData = [
     { id: 'g10', name: 'Cem', uri: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400' },
     { id: 'g11', name: 'Deniz', uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400' },
     { id: 'g12', name: 'Emre', uri: 'https://images.unsplash.com/photo-1521119989659-a83eee488058?w=400' },
-    { id: 'g13', name: 'Gül', uri: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400' },
+    { id: 'g13', name: 'Gul', uri: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400' },
     { id: 'g14', name: 'Hakan', uri: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400' },
     { id: 'g15', name: 'Seda', uri: 'https://images.unsplash.com/photo-1517365830460-955ce3ccd263?w=400' },
 ];

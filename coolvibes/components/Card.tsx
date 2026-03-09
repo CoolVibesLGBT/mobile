@@ -32,7 +32,7 @@ export function Card({
 }: CardProps) {
   // numbers array'indeki 0'ları null'a çevir (TombalaCard formatından component formatına)
   const cardNumbers = useMemo(() => {
-    return numbers.map((row) => row.map((num) => (num === 0 ? null : num)));
+    return numbers.map((row: number[]) => row.map((num: number) => (num === 0 ? null : num)));
   }, [numbers]);
 
   const isMarked = (num: number | null) => {
@@ -83,7 +83,7 @@ export function Card({
           <View>
             <Text style={styles.dotText}>●</Text>
           </View>
-          <Text style={styles.soldText}>{soldCount} adet satıldı</Text>
+          <Text style={styles.soldText}>{soldCount} sold</Text>
         </View>
         {/* <Pressable style={styles.buyButton} onPress={onBuyPress}>
           <Text style={styles.buyButtonText}>SATIN AL</Text>
@@ -93,9 +93,9 @@ export function Card({
 
       {/* Grid */}
       <View style={styles.gridContainer}>
-        {cardNumbers.map((row, rowIndex) => (
+        {cardNumbers.map((row: (number | null)[], rowIndex: number) => (
           <View key={rowIndex} style={styles.row}>
-            {row.map((num, colIndex) => (
+            {row.map((num: number | null, colIndex: number) => (
               <View
                 key={`${rowIndex}-${colIndex}`}
                 style={[
@@ -135,11 +135,11 @@ export function Card({
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.prizeSection}>
-          <Text style={styles.prizeLabel}>1.Çinko:</Text>
+          <Text style={styles.prizeLabel}>1st Line:</Text>
           <Text style={styles.prizeAmount}>{cinko1Prize}</Text>
         </View>
         <View style={styles.prizeSection}>
-          <Text style={styles.prizeLabel}>2.Çinko:</Text>
+          <Text style={styles.prizeLabel}>2nd Line:</Text>
           <Text style={styles.prizeAmount}>{cinko2Prize}</Text>
         </View>
         <View style={styles.prizeSection}>

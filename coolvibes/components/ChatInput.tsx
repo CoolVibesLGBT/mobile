@@ -442,7 +442,7 @@ export default function ChatInput({
         setRecordingDuration(0);
         recordingTimerRef.current = setInterval(() => {
           setRecordingDuration((prev) => prev + 1);
-        }, 1000);
+        }, 1000) as unknown as NodeJS.Timeout;
       }
     } catch (e) {
       console.error("Failed to start recording", e);
@@ -460,7 +460,7 @@ export default function ChatInput({
       if (audioRecorder.uri) {
         setSelectedMedia((prev) => [
           ...prev,
-          { type: "audio", name: `Ses Kaydı (${formatDuration(recordingDuration)})`, uri: audioRecorder.uri ?? "" },
+          { type: "audio", name: `Voice Note (${formatDuration(recordingDuration)})`, uri: audioRecorder.uri ?? "" },
         ]);
       }
     } catch (e) {
@@ -531,7 +531,7 @@ export default function ChatInput({
                   <View style={styles.recordingContainer}>
                     <Animated.View style={[styles.recordingIndicator, { opacity: recordingOpacity }]} />
                     <Text style={styles.recordingText}>
-                      Kaydediliyor... {formatDuration(recordingDuration)}
+                    Recording... {formatDuration(recordingDuration)}
                     </Text>
                   </View>
                 ) : (
@@ -540,7 +540,7 @@ export default function ChatInput({
                       <View style={[styles.previewBar, editingMessage ? styles.previewEdit : styles.previewReply]}>
                         <View style={styles.previewContent}>
                           <Text style={styles.previewLabel}>
-                            {editingMessage ? "Mesajı Düzenle" : `${replyingTo?.sender === "me" ? "Sen" : currentUser.name} yanıtlanıyor`}
+                            {editingMessage ? "Edit Message" : `Replying to ${replyingTo?.sender === "me" ? "You" : currentUser.name}`}
                           </Text>
                           <Text style={styles.previewText} numberOfLines={1}>
                             {editingMessage?.text || replyingTo?.text}
@@ -581,7 +581,7 @@ export default function ChatInput({
                         ref={inputRef}
                         style={[styles.textInput]}
                         multiline
-                        placeholder="Mesaj yazın"
+                        placeholder="Type a message"
                         placeholderTextColor="#999"
                         value={inputText}
                         onChangeText={setInputText}
@@ -654,11 +654,11 @@ export default function ChatInput({
               <View style={[styles.sheetGrid]}>
                 <TouchableOpacity style={styles.sheetButton} onPress={openCamera}>
                   <View style={[styles.sheetIconBox, { backgroundColor: '#FFEDF3' }]}><MaterialCommunityIcons name="camera" size={30} color="#FF2D55" /></View>
-                  <Text style={styles.sheetLabel}>Kamera</Text>
+                  <Text style={styles.sheetLabel}>Camera</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sheetButton} onPress={pickImage}>
                   <View style={[styles.sheetIconBox, { backgroundColor: '#F0EEFF' }]}><MaterialCommunityIcons name="image" size={30} color="#5856D6" /></View>
-                  <Text style={styles.sheetLabel}>Galeri</Text>
+                  <Text style={styles.sheetLabel}>Gallery</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sheetButton} onPress={pickVideo}>
                   <View style={[styles.sheetIconBox, { backgroundColor: '#F0EEFF' }]}><MaterialCommunityIcons name="video" size={30} color="#5856D6" /></View>
@@ -666,11 +666,11 @@ export default function ChatInput({
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sheetButton} onPress={() => setShowLocationPicker(true)}>
                   <View style={[styles.sheetIconBox, { backgroundColor: '#E8FBF0' }]}><MaterialCommunityIcons name="map-marker" size={30} color="#25D366" /></View>
-                  <Text style={styles.sheetLabel}>Konum</Text>
+                  <Text style={styles.sheetLabel}>Location</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sheetButton} onPress={openDocuments}>
                   <View style={[styles.sheetIconBox, { backgroundColor: '#E3F2FD' }]}><MaterialCommunityIcons name="file-document" size={30} color="#007AFF" /></View>
-                  <Text style={styles.sheetLabel}>Dosya</Text>
+                  <Text style={styles.sheetLabel}>File</Text>
                 </TouchableOpacity>
               </View>
             </BottomSheetView>
@@ -682,7 +682,7 @@ export default function ChatInput({
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               data={places}
-              keyExtractor={(item, index) => `${item.id}-${index}`}
+              keyExtractor={(item: any, index: number) => `${item.id}-${index}`}
               onEndReached={() => {
                 if (nextPageToken && !isLoadingPlaces) {
                   const lat = selectedLocationMap?.latitude || currentLocation?.latitude;
@@ -691,7 +691,7 @@ export default function ChatInput({
                 }
               }}
               onEndReachedThreshold={0.5}
-              renderItem={({ item }) => {
+              renderItem={({ item }: { item: any }) => {
                 const icon = getPlaceIcon(item.name);
                 return (
                   <TouchableOpacity style={styles.placeItem} onPress={() => {
@@ -717,7 +717,7 @@ export default function ChatInput({
                         <TouchableOpacity onPress={() => { setIsSearching(false); setSearchQuery(""); }}>
                           <Ionicons name="arrow-back" size={24} color="black" />
                         </TouchableOpacity>
-                        <TextInput autoFocus style={styles.searchBarInput} placeholder="Yerler ara..." value={searchQuery} onChangeText={setSearchQuery} />
+                        <TextInput autoFocus style={styles.searchBarInput} placeholder="Search places..." value={searchQuery} onChangeText={setSearchQuery} />
                         {isLoadingPlaces && <ActivityIndicator size="small" color="#999" style={{ marginRight: 5 }} />}
                         {searchQuery.length > 0 && (
                           <TouchableOpacity onPress={() => setSearchQuery("")}>
@@ -730,7 +730,7 @@ export default function ChatInput({
                         <TouchableOpacity onPress={() => setShowLocationPicker(false)}>
                           <Ionicons name="close" size={28} color="black" />
                         </TouchableOpacity>
-                        <Text style={styles.locTitle}>Konum</Text>
+                        <Text style={styles.locTitle}>Location</Text>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
                           {isLoadingPlaces && <ActivityIndicator size="small" color="#999" style={{ marginRight: 10 }} />}
                           <TouchableOpacity onPress={() => setIsSearching(true)}>
@@ -753,32 +753,32 @@ export default function ChatInput({
                   </View>
                   {!isSearching && (
                     <>
-                      <TouchableOpacity style={styles.locActionRow} onPress={() => { if (currentLocation) { setSelectedMedia(prev => [...prev, { type: 'live_location', name: "Canlı Konum", data: currentLocation }]); setShowLocationPicker(false); bottomSheetModalRef.current?.dismiss(); } }}>
+                      <TouchableOpacity style={styles.locActionRow} onPress={() => { if (currentLocation) { setSelectedMedia(prev => [...prev, { type: 'live_location', name: "Live Location", data: currentLocation }]); setShowLocationPicker(false); bottomSheetModalRef.current?.dismiss(); } }}>
                         <View style={[styles.locActionIcon, { backgroundColor: "#25D366" },]}>
                           <MaterialCommunityIcons name="radio-tower" size={26} color="white" />
                         </View>
                         <View style={styles.locActionTextCol}>
-                          <Text style={styles.locActionTitle}>Canlı Konumumu Paylaş...</Text>
-                          <Text style={styles.locActionSub}>Hareket halindeyken gerçek zamanlı güncellenir</Text>
+                          <Text style={styles.locActionTitle}>Share Live Location...</Text>
+                          <Text style={styles.locActionSub}>Updates in real-time while you move</Text>
                         </View>
                       </TouchableOpacity>
 
-                      <TouchableOpacity onPress={() => { if (currentLocation) { setSelectedMedia(prev => [...prev, { type: 'location', name: "Mevcut Konum", data: currentLocation }]); setShowLocationPicker(false); bottomSheetModalRef.current?.dismiss(); } }} style={styles.locActionRow}>
+                      <TouchableOpacity onPress={() => { if (currentLocation) { setSelectedMedia(prev => [...prev, { type: 'location', name: "Current Location", data: currentLocation }]); setShowLocationPicker(false); bottomSheetModalRef.current?.dismiss(); } }} style={styles.locActionRow}>
                         <View style={[styles.locActionIcon, { backgroundColor: "white", borderWidth: 2, borderColor: "#007AFF", },]}>
                           <MaterialCommunityIcons name="map-marker-radius" size={22} color="#007AFF" />
                         </View>
                         <View style={styles.locActionTextCol}>
-                          <Text style={styles.locActionTitle}>Şu anki konumu gönder</Text>
-                          <Text style={styles.locActionSub}>15 metre kadar doğru</Text>
+                          <Text style={styles.locActionTitle}>Send Current Location</Text>
+                          <Text style={styles.locActionSub}>Accurate to 15 metres</Text>
                         </View>
                       </TouchableOpacity>
                     </>
                   )}
-                  <View style={styles.locDivider}><Text style={styles.locDividerText}>YA DA BİR YER SEÇİN</Text></View>
+                  <View style={styles.locDivider}><Text style={styles.locDividerText}>OR CHOOSE A PLACE</Text></View>
                 </View>
               }
               ListEmptyComponent={
-                isLoadingPlaces ? (<View style={{ padding: 30, alignItems: "center" }}><ActivityIndicator size="small" color="#999" /></View>) : (<View style={{ padding: 30, alignItems: "center" }}><Text style={{ color: "#888" }}>Yer bulunamadı</Text></View>)
+                isLoadingPlaces ? (<View style={{ padding: 30, alignItems: "center" }}><ActivityIndicator size="small" color="#999" /></View>) : (<View style={{ padding: 30, alignItems: "center" }}><Text style={{ color: "#888" }}>No places found</Text></View>)
               }
               ListFooterComponent={
                 isLoadingPlaces && places.length > 0 ? (<View style={{ padding: 20, alignItems: "center" }}><ActivityIndicator size="small" color="#999" /></View>) : null

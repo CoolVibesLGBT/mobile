@@ -21,9 +21,9 @@ export function ProfileAttributeCard({ title, count, total, children }: Props) {
     borderWidth: 1,
   };
   
-  const gradientColors = isDark 
+  const gradientColors = (isDark 
     ? ['rgba(40, 40, 40, 0.8)', 'rgba(30, 30, 30, 0.8)'] 
-    : ['#ffffff', '#fcfcfc'];
+    : ['#ffffff', '#fcfcfc']) as [string, string, ...string[]];
 
 
   return (
@@ -31,7 +31,7 @@ export function ProfileAttributeCard({ title, count, total, children }: Props) {
       <View style={styles.header}>
         <ThemedText style={styles.title}>{title}</ThemedText>
         {count !== undefined && total !== undefined && (
-          <ThemedText type="secondary" style={styles.count}>
+          <ThemedText style={styles.count}>
             {count} / {total}
           </ThemedText>
         )}

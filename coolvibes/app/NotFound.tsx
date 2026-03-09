@@ -1,11 +1,14 @@
-import { Text, Button } from '@react-navigation/elements';
-import { StyleSheet, View } from 'react-native';
+import { Link } from 'expo-router';
+import { StyleSheet, View, Text } from 'react-native';
 
-export function NotFound() {
+export default function NotFoundScreen() {
   return (
     <View style={styles.container}>
-      <Text>404</Text>
-      <Button screen="HomeTabs">Go to Home</Button>
+      <Text style={styles.title}>404</Text>
+      <Text style={styles.subtitle}>Page not found</Text>
+      <Link href="/" style={styles.link}>
+        <Text style={styles.linkText}>Go to Home</Text>
+      </Link>
     </View>
   );
 }
@@ -15,6 +18,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#666',
+    marginBottom: 24,
+  },
+  link: {
+    marginTop: 15,
+    paddingVertical: 15,
+  },
+  linkText: {
+    fontSize: 16,
+    color: '#2e78b7',
+    fontWeight: '600',
   },
 });

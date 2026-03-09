@@ -107,7 +107,7 @@ export default function ChatDetail() {
   const currentUser: User = {
     id: "them",
     name: "RIGHT6652",
-    status: "son görülme yakınlarda",
+    status: "seen recently",
     avatarChar: "R",
     avatarUrl: "https://i.pravatar.cc/150?u=right6652",
     distance: "2.4 km",
@@ -327,38 +327,38 @@ export default function ChatDetail() {
                 <Text style={styles.reactionEmoji}>❤️</Text><Text style={styles.reactionEmoji}>👍</Text><Text style={styles.reactionEmoji}>👎</Text><Text style={styles.reactionEmoji}>🔥</Text><Text style={styles.reactionEmoji}>🥰</Text><Text style={styles.reactionEmoji}>👏</Text><Text style={styles.reactionEmoji}>😁</Text><Text style={styles.reactionEmoji}>✓</Text>
               </View>
               <BlurView experimentalBlurMethod="dimezisBlurView" intensity={100} tint={dark ? "dark" : "light"} style={[styles.contextMenuCard, { borderColor: borderColor }]}>
-                <Text style={[styles.contextReadText, { color: textColor + '99' }]}>✓✓ okundu bugün {selectedMessage.timestamp}</Text>
+                <Text style={[styles.contextReadText, { color: textColor + '99' }]}>✓✓ Read today at {selectedMessage.timestamp}</Text>
                 <View style={[styles.contextDivider, { backgroundColor: borderColor }]} />
                 <TouchableOpacity style={styles.menuItem} onPress={startReply}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Yanıtla</Text>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Reply</Text>
                   <MaterialCommunityIcons name="reply" size={24} color={textColor}/>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Kopyala</Text>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Copy</Text>
                   <MaterialCommunityIcons name="content-copy" size={24} color={textColor}/>
                 </TouchableOpacity>
                 {selectedMessage?.sender === "me" && (
                   <TouchableOpacity style={styles.menuItem} onPress={startEdit}>
-                    <Text style={[styles.menuItemText, { color: textColor }]}>Düzenle</Text>
+                    <Text style={[styles.menuItemText, { color: textColor }]}>Edit</Text>
                     <MaterialCommunityIcons name="comment-edit-outline" size={24} color={textColor} />
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Sabitle</Text>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Pin</Text>
                   <MaterialCommunityIcons name="pin-outline" size={24} color={textColor} />
                 </TouchableOpacity>
                 <View style={[styles.contextDivider, { backgroundColor: borderColor }]} />
                 <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Benden Sil</Text>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Delete for Me</Text>
                   <MaterialCommunityIcons name="delete-outline" size={24} color={textColor} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Herkesten Sil</Text>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Delete for All</Text>
                   <MaterialCommunityIcons name="delete-alert-outline" size={24} color={textColor}/>
                 </TouchableOpacity>
                 <View style={[styles.contextDivider, { backgroundColor: borderColor }]} />
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setContextVisible(false); toggleSelection(selectedMessage.id); setIsSelectionMode(true); }}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Seç</Text>
+                  <Text style={[styles.menuItemText, { color: textColor }]}>Select</Text>
                   <MaterialCommunityIcons name="comment-check-outline" size={24} color={textColor}/>
                 </TouchableOpacity>
               </BlurView>

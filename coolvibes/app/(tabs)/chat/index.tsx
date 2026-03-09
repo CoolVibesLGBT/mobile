@@ -17,7 +17,7 @@ import { useTheme } from '@react-navigation/native';
 const { width } = Dimensions.get('window');
 
 const mockStories = [
-    { id: 'likes', label: 'Beğeniler', badge: 24, uri: 'https://picsum.photos/seed/likes/200' },
+    { id: 'likes', label: 'Likes', badge: 24, uri: 'https://picsum.photos/seed/likes/200' },
     { id: '1', label: 'Metin', uri: 'https://picsum.photos/seed/1/200' },
     { id: '2', label: 'Chk', uri: 'https://picsum.photos/seed/2/200' },
     { id: '3', label: 'Ram', uri: 'https://picsum.photos/seed/3/200' },
@@ -32,7 +32,7 @@ const Stories = ({ compact = false, showTitle }: { compact?: boolean; showTitle?
         <View style={styles.storiesWrapper}>
             {shouldShowTitle && (
                 <ThemedText style={styles.sectionTitle} type="defaultSemiBold">
-                    Beğeniler ve eşleşmeler
+                    Likes & Matches
                 </ThemedText>
             )}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stories}>
@@ -57,12 +57,12 @@ const Stories = ({ compact = false, showTitle }: { compact?: boolean; showTitle?
 };
 
 const mockMessages = [
-    { id: 'm1', name: 'Ayhan', text: 'İyiyim teşekkür ederim sağolun siz nasılsınız', uri: 'https://picsum.photos/seed/a/200' },
-    { id: 'm2', name: 'EFE', text: 'İyimmm teşekkür ederim siz nasılsınız', uri: 'https://picsum.photos/seed/b/200' },
-    { id: 'm3', name: 'Mert', text: 'Selam, nasılsın?', uri: 'https://picsum.photos/seed/c/200' },
-    { id: 'm4', name: 'Mert', text: 'Selam, nasılsın?', uri: 'https://picsum.photos/seed/c/200' },
-    { id: 'm5', name: 'Mert', text: 'Selam, nasılsın?', uri: 'https://picsum.photos/seed/c/200' },
-    { id: 'm6', name: 'Mert', text: 'Selam, nasılsın?', uri: 'https://picsum.photos/seed/c/200' },
+    { id: 'm1', name: 'Ayhan', text: 'I am good thanks, how are you?', uri: 'https://picsum.photos/seed/a/200' },
+    { id: 'm2', name: 'EFE',   text: 'I am great thanks, how about you?', uri: 'https://picsum.photos/seed/b/200' },
+    { id: 'm3', name: 'Mert',  text: 'Hey, how are you doing?', uri: 'https://picsum.photos/seed/c/200' },
+    { id: 'm4', name: 'Mert',  text: 'Hey, how are you doing?', uri: 'https://picsum.photos/seed/c/200' },
+    { id: 'm5', name: 'Mert',  text: 'Hey, how are you doing?', uri: 'https://picsum.photos/seed/c/200' },
+    { id: 'm6', name: 'Mert',  text: 'Hey, how are you doing?', uri: 'https://picsum.photos/seed/c/200' },
 
 ];
 
@@ -136,7 +136,12 @@ export default function Chat() {
                             onPress={() =>
                                 router.push({
                                     pathname: '/ChatDetail',
-                                    params: { chatId: item.id },
+                                    params: {
+                                        chatId: item.id,
+                                        name: item.name,
+                                        avatar: item.uri,
+                                        status: 'online',
+                                    },
                                 })}>
                             <Image source={{ uri: item.uri }} style={styles.messageAvatar} />
                             <View style={{ flex: 1, marginLeft: 12 }}>
@@ -152,7 +157,7 @@ export default function Chat() {
                     ListHeaderComponent={() => (
                         <>
                             <View style={styles.sectionHeaderRow}>
-                                <ThemedText style={styles.sectionTitle} type="defaultSemiBold">Mesajlar</ThemedText>
+                                <ThemedText style={styles.sectionTitle} type="defaultSemiBold">Messages</ThemedText>
 
                             </View>
 

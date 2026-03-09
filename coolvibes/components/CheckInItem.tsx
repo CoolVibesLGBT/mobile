@@ -77,7 +77,7 @@ export const CheckInItem: React.FC<{ item: CheckIn }> = ({ item }) => {
           const colors = TAG_COLORS[tag] || TAG_COLORS['Default'];
           return (
             <View key={tag} style={[styles.tag, {backgroundColor: colors.bg}]}>
-              {iconName && <MaterialCommunityIcons name={iconName} size={16} color={colors.icon} />}
+              {iconName && <MaterialCommunityIcons name={iconName as any} size={16} color={colors.icon} />}
               <Text style={[styles.tagText, {color: colors.text}]}>{tag}</Text>
             </View>
           );
