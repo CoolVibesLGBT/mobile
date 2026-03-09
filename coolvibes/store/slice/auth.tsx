@@ -174,6 +174,10 @@ const authSlice = createSlice({
       state.initialized = true;
     });
 
+    builder.addCase(loadStoredTokenThunk.rejected, (state) => {
+      state.initialized = true;
+    });
+
     builder.addCase(autoLoginThunk.fulfilled, (state, action) => {
       state.initialized = true;
 
@@ -190,6 +194,10 @@ const authSlice = createSlice({
       state.user = action.payload.user;
     });
 
+    builder.addCase(autoLoginThunk.rejected, (state) => {
+      state.initialized = true;
+    });
+
     builder.addCase(loginThunk.pending, state => {
       state.loading = true;
       state.error = null;
@@ -199,6 +207,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.token = action.payload.token;
       state.user = action.payload.user;
+      state.initialized = true;
     });
 
     builder.addCase(loginThunk.rejected, (state, action) => {
@@ -215,6 +224,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.token = action.payload.token;
       state.user = action.payload.user;
+      state.initialized = true;
     });
 
     builder.addCase(registerThunk.rejected, (state, action) => {

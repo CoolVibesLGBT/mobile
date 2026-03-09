@@ -20,6 +20,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
+import { useAppSelector } from '@/store/hooks';
 
 const { width, height } = Dimensions.get('window');
 
@@ -60,9 +61,9 @@ const MOCK_USERS: NearbyUser[] = [
 
 /* ── GRID CARD (adapts size + detail based on column count) ── */
 const GridCard = React.memo(({
-    user, dark, cols, onPress,
+    user, dark, cols, onPress, blurPhotos,
 }: {
-    user: NearbyUser; dark: boolean; cols: GridColsType; onPress: () => void;
+    user: NearbyUser; dark: boolean; cols: GridColsType; onPress: () => void; blurPhotos: boolean;
 }) => {
     const cardW = (width - H_PAD * 2 - GRID_GAP * (cols - 1)) / cols;
     const cardH = cols === 2 ? cardW * 1.45 : cols === 3 ? cardW * 1.5 : cardW * 1.6;
@@ -80,6 +81,7 @@ const GridCard = React.memo(({
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 transition={200}
+                blurRadius={blurPhotos ? 15 : 0}
             />
             <LinearGradient
                 colors={['transparent', 'rgba(0,0,0,0.82)']}
@@ -102,10 +104,10 @@ const GridCard = React.memo(({
 
 /* ── LIST ROW ── */
 const ListRow = React.memo(({
-    user, dark, colors, onChat, onLike, onDislike, onProfile,
+    user, dark, colors, onChat, onLike, onDislike, onProfile, blurPhotos,
 }: {
     user: NearbyUser; dark: boolean; colors: any;
-    onChat: () => void; onLike: () => void; onDislike: () => void; onProfile: () => void;
+    onChat: () => void; onLike: () => void; onDislike: () => void; onProfile: () => void; blurPhotos: boolean;
 }) => {
     const divider = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
     const sub = dark ? '#666' : '#AAA';
@@ -115,7 +117,7 @@ const ListRow = React.memo(({
         <View style={[styles.listRow, { borderBottomColor: divider }]}>
             <TouchableOpacity onPress={onProfile} activeOpacity={0.85}>
                 <View>
-                    <Image source={{ uri: user.imageUrl }} style={styles.listAvatar} contentFit="cover" />
+                    <Image source={{ uri: user.imageUrl }} style={styles.listAvatar} contentFit="cover" blurRadius={blurPhotos ? 10 : 0} />
                     {user.online && <View style={[styles.listOnlineDot, { borderColor: colors.background }]} />}
                 </View>
             </TouchableOpacity>
@@ -151,10 +153,10 @@ const ListRow = React.memo(({
 });
 
 /* ── MAP PIN ── */
-const MapPin = React.memo(({ user, dark }: { user: NearbyUser; dark: boolean }) => (
+const MapPin = React.memo(({ user, dark, blurPhotos }: { user: NearbyUser; dark: boolean; blurPhotos: boolean }) => (
     <View>
         <View style={[styles.pinRing, { borderColor: dark ? '#FFF' : '#000' }]}>
-            <Image source={{ uri: user.imageUrl }} style={styles.pinImg} contentFit="cover" />
+            <Image source={{ uri: user.imageUrl }} style={styles.pinImg} contentFit="cover" blurRadius={blurPhotos ? 8 : 0} />
         </View>
         {user.online && <View style={[styles.pinOnline, { borderColor: dark ? '#111' : '#FFF' }]} />}
     </View>
@@ -171,6 +173,7 @@ export default function NearbyScreen() {
     const [gridCols, setGridCols] = useState<GridColsType>(2);
     const [users, setUsers] = useState<NearbyUser[]>(MOCK_USERS);
     const [selectedUser, setSelectedUser] = useState<NearbyUser | null>(null);
+    const blurPhotos = useAppSelector(state => state.system.blurPhotos);
 
     const contentPaddingTop = GLOBAL_HEADER_HEIGHT + insets.top;
     const borderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
@@ -208,8 +211,8 @@ export default function NearbyScreen() {
     };
 
     const renderGridItem = useCallback(({ item }: { item: NearbyUser }) => (
-        <GridCard user={item} dark={dark} cols={gridCols} onPress={() => setSelectedUser(item)} />
-    ), [dark, gridCols]);
+        <GridCard user={item} dark={dark} cols={gridCols} onPress={() => setSelectedUser(item)} blurPhotos={blurPhotos} />
+    ), [dark, gridCols, blurPhotos]);
 
     const renderListItem = useCallback(({ item }: { item: NearbyUser }) => (
         <ListRow
@@ -218,8 +221,9 @@ export default function NearbyScreen() {
             onLike={() => handleLike(item.id)}
             onDislike={() => handleDislike(item.id)}
             onProfile={() => setSelectedUser(item)}
+            blurPhotos={blurPhotos}
         />
-    ), [dark, colors, goToChat, handleLike, handleDislike]);
+    ), [dark, colors, goToChat, handleLike, handleDislike, blurPhotos]);
 
     const VIEW_ICONS: { key: ViewModeType; icon: string }[] = [
         { key: 'grid', icon: 'view-grid' },
@@ -348,7 +352,7 @@ export default function NearbyScreen() {
                                     onPress={() => setSelectedUser(u)}
                                     tracksViewChanges={false}
                                 >
-                                    <MapPin user={u} dark={dark} />
+                                    <MapPin user={u} dark={dark} blurPhotos={blurPhotos} />
                                 </Marker>
                             ))}
                         </MapView>
@@ -385,7 +389,7 @@ export default function NearbyScreen() {
                         <ScrollView showsVerticalScrollIndicator={false}>
                             {/* User row */}
                             <View style={styles.sheetUserRow}>
-                                <Image source={{ uri: selectedUser.imageUrl }} style={styles.sheetAvatar} contentFit="cover" />
+                                <Image source={{ uri: selectedUser.imageUrl }} style={styles.sheetAvatar} contentFit="cover" blurRadius={blurPhotos ? 15 : 0} />
                                 <View style={styles.sheetUserInfo}>
                                     <Text style={[styles.sheetName, { color: colors.text }]}>{selectedUser.displayname}, {selectedUser.age}</Text>
                                     <Text style={[styles.sheetUsername, { color: dark ? '#666' : '#AAA' }]}>@{selectedUser.username}</Text>

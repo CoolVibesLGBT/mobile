@@ -18,6 +18,8 @@ interface SystemState {
   loading: boolean;
   error: string | null;
   theme: 'system' | 'light' | 'dark';
+  blurPhotos: boolean;
+  language: string;
 }
 
 const initialState: SystemState = {
@@ -25,6 +27,8 @@ const initialState: SystemState = {
   loading: true,
   error: null,
   theme: 'system',
+  blurPhotos: false,
+  language: 'en',
 };
 
 export const fetchInitialSync = createAsyncThunk<
@@ -50,6 +54,15 @@ const systemSlice = createSlice({
     setTheme(state, action: PayloadAction<'system' | 'light' | 'dark'>) {
       state.theme = action.payload;
     },
+    toggleBlur(state) {
+      state.blurPhotos = !state.blurPhotos;
+    },
+    setBlur(state, action: PayloadAction<boolean>) {
+      state.blurPhotos = action.payload;
+    },
+    setLanguage(state, action: PayloadAction<string>) {
+      state.language = action.payload;
+    },
     clearSystemState(state) {
       state.data = null;
       state.error = null;
@@ -73,5 +86,5 @@ const systemSlice = createSlice({
   },
 });
 
-export const { clearSystemState, setTheme } = systemSlice.actions;
+export const { clearSystemState, setTheme, toggleBlur, setBlur, setLanguage } = systemSlice.actions;
 export default systemSlice.reducer;

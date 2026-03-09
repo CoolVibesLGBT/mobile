@@ -46,6 +46,7 @@ export default function Everyone() {
 
 
     const { chats, loading, error, cursor } = useAppSelector(state => state.chat);
+    const blurPhotos = useAppSelector(state => state.system.blurPhotos);
 
     useEffect(() => {
         loadChats();
@@ -96,7 +97,12 @@ export default function Everyone() {
                             })
                         }
                     >
-                        <Image source={{ uri: item.uri }} style={styles.gridImage} resizeMode="cover" />
+                        <Image 
+                            source={{ uri: item.uri }} 
+                            style={styles.gridImage} 
+                            resizeMode="cover" 
+                            blurRadius={blurPhotos ? 15 : 0}
+                        />
                         <View style={styles.gridOverlay}>
                             <ThemedText style={styles.gridName} numberOfLines={1}>{item.name}</ThemedText>
                         </View>

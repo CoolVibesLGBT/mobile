@@ -4,7 +4,7 @@ import { LocalizedStringToString } from '@/utils/utils';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export function PlaceDetail() {
+export default function PlaceDetail() {
   const route = useRoute();
   const navigation = useNavigation();
   const { colors, dark } = useTheme();

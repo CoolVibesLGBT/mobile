@@ -35,6 +35,7 @@ import {
     History
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useAppSelector } from '@/store/hooks';
 
 const { width } = Dimensions.get('window');
 
@@ -69,7 +70,7 @@ const VISITED = [
 
 // --- Components ---
 
-const NotificationItem = memo(({ item, dark }: any) => {
+const NotificationItem = memo(({ item, dark, blurPhotos }: any) => {
     const getIcon = () => {
         switch (item.type) {
             case 'like': return <Heart size={14} color="#FF3B30" fill="#FF3B30" />;
@@ -85,7 +86,7 @@ const NotificationItem = memo(({ item, dark }: any) => {
             <View style={styles.itemLeft}>
                 <View style={styles.avatarContainer}>
                     {item.avatar ? (
-                        <Image source={{ uri: item.avatar }} style={styles.itemAvatar} />
+                        <Image source={{ uri: item.avatar }} style={styles.itemAvatar} blurRadius={blurPhotos ? 12 : 0} />
                     ) : (
                         <View style={[styles.itemAvatar, { backgroundColor: dark ? '#1A1A1A' : '#F5F5F5', alignItems: 'center', justifyContent: 'center' }]}>
                              <Bell size={24} color={dark ? '#333' : '#CCC'} />
@@ -105,11 +106,11 @@ const NotificationItem = memo(({ item, dark }: any) => {
     );
 });
 
-const SocialItem = memo(({ item, dark }: any) => {
+const SocialItem = memo(({ item, dark, blurPhotos }: any) => {
     return (
         <TouchableOpacity style={[styles.itemContainer, { borderBottomColor: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]} activeOpacity={0.7}>
             <View style={styles.itemLeft}>
-                <Image source={{ uri: item.avatar }} style={styles.itemAvatar} />
+                <Image source={{ uri: item.avatar }} style={styles.itemAvatar} blurRadius={blurPhotos ? 12 : 0} />
                 <View style={styles.itemInfo}>
                     <Text style={[styles.itemTitle, { color: dark ? '#FFF' : '#000', fontFamily: 'Inter-Bold' }]}>{item.user}</Text>
                     <Text style={[styles.itemSubtitle, { color: dark ? '#666' : '#999' }]} numberOfLines={1}>{item.bio}</Text>
@@ -130,11 +131,11 @@ const SocialItem = memo(({ item, dark }: any) => {
     );
 });
 
-const VisitItem = memo(({ item, dark }: any) => {
+const VisitItem = memo(({ item, dark, blurPhotos }: any) => {
     return (
         <TouchableOpacity style={[styles.itemContainer, { borderBottomColor: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]} activeOpacity={0.7}>
             <View style={styles.itemLeft}>
-                <Image source={{ uri: item.avatar }} style={styles.itemAvatar} />
+                <Image source={{ uri: item.avatar }} style={styles.itemAvatar} blurRadius={blurPhotos ? 12 : 0} />
                 <View style={styles.itemInfo}>
                     <Text style={[styles.itemTitle, { color: dark ? '#E0E0E0' : '#333' }]}>
                         <Text style={{ fontFamily: 'Inter-Bold', color: dark ? '#FFF' : '#000' }}>{item.user}</Text> {item.type === 'viewer' ? 'viewed your profile' : 'profile you visited'}
@@ -149,6 +150,7 @@ const VisitItem = memo(({ item, dark }: any) => {
 
 export default function ActivityScreen() {
     const { colors, dark } = useTheme();
+    const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const [activeTab, setActiveTab] = useState<'alerts' | 'social' | 'visitors' | 'visited'>('alerts');
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -161,10 +163,10 @@ export default function ActivityScreen() {
     ];
 
     const renderItem = useCallback(({ item }: any) => {
-        if (activeTab === 'alerts') return <NotificationItem item={item} dark={dark} />;
-        if (activeTab === 'social') return <SocialItem item={item} dark={dark} />;
-        return <VisitItem item={item} dark={dark} />;
-    }, [activeTab, dark]);
+        if (activeTab === 'alerts') return <NotificationItem item={item} dark={dark} blurPhotos={blurPhotos} />;
+        if (activeTab === 'social') return <SocialItem item={item} dark={dark} blurPhotos={blurPhotos} />;
+        return <VisitItem item={item} dark={dark} blurPhotos={blurPhotos} />;
+    }, [activeTab, dark, blurPhotos]);
 
     const getData = () => {
         switch(activeTab) {

@@ -75,7 +75,7 @@ function ThemedApp() {
   const colorScheme = useColorScheme();
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector(state => state.system);
-  const { initialized } = useAppSelector(state => state.auth);
+  const { initialized, token } = useAppSelector(state => state.auth);
 
   const [fontsLoaded] = useFonts({
     'Inter-Regular': Inter_400Regular,
@@ -102,6 +102,8 @@ function ThemedApp() {
   useEffect(() => {
     const init = async () => {
       await setTestToken();
+      // Explicit hide call early in case it's stuck
+      SplashScreen.hideAsync().catch(() => {});
       dispatch(fetchInitialSync());
       dispatch(autoLoginThunk());
     };
@@ -109,12 +111,20 @@ function ThemedApp() {
   }, []);
 
   useEffect(() => {
-    if (!loading && initialized && fontsLoaded) {
+    // Safety timeout: hide splash after 3 seconds no matter what
+    const timeout = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    }, 3000);
+
+    if (initialized && fontsLoaded) {
       SplashScreen.hideAsync().catch(() => {
         // Ignore splash screen errors if it's already hidden
       });
+      clearTimeout(timeout);
     }
-  }, [loading, initialized, fontsLoaded]);
+
+    return () => clearTimeout(timeout);
+  }, [initialized, fontsLoaded, token]);
 
 
   const CustomDarkTheme = {

@@ -32,12 +32,13 @@ import {
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as Location from "expo-location";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import BottomSheet, {
-  BottomSheetModal,
+import {
+  BottomSheetModal as GorhomBottomSheetModal,
   BottomSheetModalProvider,
   BottomSheetFlatList,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
+import BaseBottomSheetModal from "@/components/BaseBottomSheetModal";
 import { GOOGLE_PLACES_KEY } from "@/config";
 
 // --- Types & Interfaces ---
@@ -191,7 +192,7 @@ export default function ChatInput({
   const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
 
   const inputRef = useRef<TextInput>(null);
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const bottomSheetModalRef = useRef<GorhomBottomSheetModal>(null);
   const bottomSheetFlatListRef = useRef<any>(null);
 
   useEffect(() => {
@@ -641,14 +642,7 @@ export default function ChatInput({
             </View>
           )}
         </KeyboardAvoidingView>
-        <BottomSheetModal
-          ref={bottomSheetModalRef}
-          index={0}
-          enablePanDownToClose={true}
-          enableDynamicSizing={true}
-          handleIndicatorStyle={{ backgroundColor: "#ccc", width: 40 }}
-          containerStyle={{ marginTop: insets.top }}
-        >
+        <BaseBottomSheetModal ref={bottomSheetModalRef}>
           {!showLocationPicker ? (
             <BottomSheetView style={{ paddingBottom: insets.bottom }}>
               <View style={[styles.sheetGrid]}>
@@ -787,7 +781,7 @@ export default function ChatInput({
             />
           )
           }
-        </BottomSheetModal>
+        </BaseBottomSheetModal>
       </>
 
   );

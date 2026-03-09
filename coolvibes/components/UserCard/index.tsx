@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAppSelector } from '@/store/hooks';
 import ProfileAboutView from '../ProfileAboutView';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -24,6 +25,7 @@ const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 const UserCard = ({ user, onDismiss }: any) => {
     const { colors, dark } = useTheme();
+    const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const insets = useSafeAreaInsets();
     const [isExpanded, setIsExpanded] = useState(false);
     const animationProgress = useSharedValue(0);
@@ -137,6 +139,7 @@ const UserCard = ({ user, onDismiss }: any) => {
                     <Animated.Image 
                         source={{ uri: user.imageUrl }} 
                         style={[styles.cardImage, { borderColor: dark ? '#222' : '#EEE' }, animatedImageStyle]} 
+                        blurRadius={blurPhotos ? 20 : 0}
                     />
                     <Animated.View style={[styles.cardOverlay, animatedImageStyle, animatedOverlayStyle]} />
                     <View style={styles.premiumBadge}>

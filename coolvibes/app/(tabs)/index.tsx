@@ -9,41 +9,18 @@ import {
     Platform,
 } from 'react-native';
 import { useTheme } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import Animated, { 
     FadeIn, 
-    FadeOut, 
     useAnimatedStyle, 
     withSpring,
     useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DiscoverScreen from './Discover';
+import VibesScreen from '@/components/Vibes/VibesScreen';
 
 const { width } = Dimensions.get('window');
-
-const VibesPlaceholder = () => {
-    const { colors, dark } = useTheme();
-    return (
-        <View style={styles.vibesContainer}>
-            <View style={[styles.vibesCard, { backgroundColor: dark ? '#111' : '#F9F9F9' }]}>
-                <Image 
-                    source={require('../../assets/icons/vibes.webp')} 
-                    style={styles.vibesLargeIcon} 
-                    contentFit="contain"
-                />
-                <Text style={[styles.vibesTitle, { color: colors.text }]}>Vibes Mode</Text>
-                <Text style={[styles.vibesSubtitle, { color: dark ? '#666' : '#999' }]}>
-                    A premium visual experience for discovering the most atmospheric moments in the community.
-                </Text>
-                <TouchableOpacity style={[styles.vibesButton, { backgroundColor: colors.text }]}>
-                    <Text style={[styles.vibesButtonText, { color: colors.background }]}>Enter Vibes</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
-};
 
 export default function HomeScreen() {
     const { colors, dark } = useTheme();
@@ -120,7 +97,7 @@ export default function HomeScreen() {
                     </Animated.View>
                 ) : (
                     <Animated.View entering={FadeIn} style={{ flex: 1 }}>
-                        <VibesPlaceholder />
+                        <VibesScreen />
                     </Animated.View>
                 )}
             </View>
@@ -168,49 +145,5 @@ const styles = StyleSheet.create({
         height: 3,
         width: 40,
         borderRadius: 2,
-    },
-    vibesContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-    },
-    vibesCard: {
-        width: '100%',
-        padding: 40,
-        borderRadius: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    vibesLargeIcon: {
-        width: 120,
-        height: 120,
-        marginBottom: 24,
-    },
-    vibesTitle: {
-        fontSize: 28,
-        fontFamily: 'Outfit-Black',
-        marginBottom: 12,
-        textAlign: 'center',
-        letterSpacing: -0.5,
-    },
-    vibesSubtitle: {
-        fontSize: 15,
-        fontFamily: 'Inter-Regular',
-        textAlign: 'center',
-        lineHeight: 22,
-        opacity: 0.8,
-        marginBottom: 32,
-    },
-    vibesButton: {
-        paddingHorizontal: 32,
-        paddingVertical: 14,
-        borderRadius: 25,
-    },
-    vibesButtonText: {
-        fontSize: 14,
-        fontFamily: 'Inter-Bold',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
     },
 });

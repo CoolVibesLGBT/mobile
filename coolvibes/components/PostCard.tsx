@@ -12,6 +12,7 @@ import Animated, {
     interpolate,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useAppSelector } from '@/store/hooks';
 
 interface PostCardProps {
     user: {
@@ -31,6 +32,7 @@ const { width } = Dimensions.get('window');
 
 const PostCard: React.FC<PostCardProps> = ({ user, image, caption, likes, comments, time }) => {
     const { colors, dark } = useTheme();
+    const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const [isLiked, setIsLiked] = useState(false);
     const likeScale = useSharedValue(1);
     const [likeCount, setLikeCount] = useState(likes);
@@ -86,6 +88,7 @@ const PostCard: React.FC<PostCardProps> = ({ user, image, caption, likes, commen
                     style={[styles.postImage, { backgroundColor: dark ? '#1C1C1E' : '#F2F2F7' }]} 
                     contentFit="cover" 
                     transition={300}
+                    blurRadius={blurPhotos ? 25 : 0}
                 />
             </Pressable>
 

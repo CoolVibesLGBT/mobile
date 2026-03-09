@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useMemo, useRef } from 'react';
 import {
     View,
     Text,
@@ -23,14 +23,16 @@ import {
     ChevronRight,
     UserX,
     LogOut,
+    Check,
 } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomSheetModal as GorhomBottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { ThemedView } from '@/components/ThemedView';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slice/auth';
-import { setTheme } from '@/store/slice/system';
+import { setTheme, toggleBlur, setLanguage } from '@/store/slice/system';
+import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 
 // --- Sub-components (Adapted for Mobile) ---
 
@@ -115,16 +117,21 @@ const Section = memo(({ title, children, dark }: any) => (
 
 export default function SettingsScreen() {
     const { colors, dark } = useTheme();
-    const router = useRouter();
     const insets = useSafeAreaInsets();
     const dispatch = useAppDispatch();
+    const blurPhotos = useAppSelector(state => state.system.blurPhotos);
+    const language = useAppSelector(state => state.system.language);
+    const languageSheetRef = useRef<GorhomBottomSheetModal>(null);
+    const languageOptions = useMemo(() => ([
+        { code: 'en', label: 'English', description: 'Default CoolVibes experience' },
+        { code: 'tr', label: 'Türkçe', description: 'Arayüzü Türkçe kullan' },
+    ]), []);
     
     // Mock local settings
     const [settings, setSettings] = useState({
         pushNotifications: true,
         emailNotifications: false,
         messageNotifications: true,
-        blurPhotos: false,
         showOnlineStatus: true,
     });
 
@@ -142,6 +149,15 @@ export default function SettingsScreen() {
             ]
         );
     };
+
+    const openLanguageSheet = useCallback(() => {
+        languageSheetRef.current?.present();
+    }, []);
+
+    const handleLanguageChange = useCallback((value: string) => {
+        dispatch(setLanguage(value));
+        languageSheetRef.current?.dismiss();
+    }, [dispatch]);
 
     const handleDeleteAccount = () => {
         Alert.alert(
@@ -168,7 +184,7 @@ export default function SettingsScreen() {
                 contentContainerStyle={[
                     styles.scrollContent, 
                     { 
-                        paddingTop: 60 + insets.top + 20, 
+                        paddingTop: 24, 
                         paddingBottom: insets.bottom + 20 
                     }
                 ]}
@@ -187,8 +203,8 @@ export default function SettingsScreen() {
                     <SettingItem
                         icon={Languages}
                         label="Language"
-                        subtitle="EN"
-                        onPress={() => {}}
+                        subtitle={language === 'en' ? 'English' : 'Türkçe'}
+                        onPress={openLanguageSheet}
                         dark={dark}
                         border={false}
                     />
@@ -227,11 +243,11 @@ export default function SettingsScreen() {
 
                 <Section title="Privacy" dark={dark}>
                     <SettingItem
-                        icon={settings.blurPhotos ? EyeOff : Eye}
+                        icon={blurPhotos ? EyeOff : Eye}
                         label="Blur Photos in Posts"
-                        subtitle={settings.blurPhotos ? 'Photos are blurred' : 'Photos are clear'}
-                        onPress={() => toggleSetting('blurPhotos')}
-                        value={settings.blurPhotos}
+                        subtitle={blurPhotos ? 'Photos are blurred' : 'Photos are clear'}
+                        onPress={() => dispatch(toggleBlur())}
+                        value={blurPhotos}
                         isToggle
                         dark={dark}
                     />
@@ -274,6 +290,41 @@ export default function SettingsScreen() {
                     />
                 </Section>
             </ScrollView>
+
+            <BaseBottomSheetModal ref={languageSheetRef}>
+                <BottomSheetView style={[styles.languageSheetContent, { paddingBottom: insets.bottom + 16, backgroundColor: dark ? '#050505' : '#FFFFFF' }]}>
+                    <Text style={[styles.sheetTitle, { color: colors.text }]}>Choose Language</Text>
+                    {languageOptions.map(option => {
+                        const isActive = language === option.code;
+                        return (
+                            <TouchableOpacity
+                                key={option.code}
+                                style={[
+                                    styles.languageOption,
+                                    { borderColor: dark ? '#1F1F1F' : '#F0F0F0', backgroundColor: dark ? '#111111' : '#FDFDFD' },
+                                    isActive && { borderColor: dark ? '#FFFFFF' : '#111111' }
+                                ]}
+                                activeOpacity={0.8}
+                                onPress={() => handleLanguageChange(option.code)}
+                            >
+                                <View style={styles.languageOptionText}>
+                                    <Text style={[styles.languageOptionLabel, { color: colors.text }]}>{option.label}</Text>
+                                    <Text style={[styles.languageOptionDescription, { color: dark ? '#9CA3AF' : '#6B7280' }]}>
+                                        {option.description}
+                                    </Text>
+                                </View>
+                                <View style={[
+                                    styles.languageIndicator,
+                                    { borderColor: dark ? '#333333' : '#D1D5DB', backgroundColor: dark ? '#0A0A0A' : '#FFFFFF' },
+                                    isActive && { backgroundColor: dark ? '#ffffff12' : '#111111' }
+                                ]}>
+                                    {isActive && <Check size={16} color={dark ? '#FFFFFF' : '#FFFFFF'} strokeWidth={3} />}
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </BottomSheetView>
+            </BaseBottomSheetModal>
         </ThemedView>
     );
 }
@@ -337,5 +388,44 @@ const styles = StyleSheet.create({
     valueText: {
         fontSize: 14,
         fontWeight: '500',
+    },
+    languageSheetContent: {
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        gap: 12,
+    },
+    sheetTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 4,
+    },
+    languageOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderRadius: 16,
+        borderWidth: 1,
+    },
+    languageOptionText: {
+        flex: 1,
+        marginRight: 12,
+    },
+    languageOptionLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    languageOptionDescription: {
+        fontSize: 12,
+        marginTop: 4,
+    },
+    languageIndicator: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
     },
 });

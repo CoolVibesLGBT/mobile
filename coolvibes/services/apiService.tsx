@@ -78,6 +78,10 @@ export class ApiService {
     return this.call(Actions.CMD_FETCH_CHATS, { method: 'POST', body: params });
   }
 
+  async fetchVibes(params: { limit?: number; cursor?: string }) {
+    return this.call(Actions.POST_VIBES, { method: 'POST', body: params });
+  }
+
   async sendMessage(chatId: string, content: string) {
     return this.call(Actions.CMD_SEND_MESSAGE, {
       method: 'POST',
@@ -89,6 +93,13 @@ export class ApiService {
     return this.call(Actions.CMD_CHAT_CREATE, {
       method: 'POST',
       body: { participant_ids: participantIds },
+    });
+  }
+
+  async handlePostLike(postId: string) {
+    return this.call(Actions.CMD_POST_LIKE, {
+      method: 'POST',
+      body: { post_id: postId },
     });
   }
 

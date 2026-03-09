@@ -40,14 +40,16 @@ export default function GlobalHeader() {
     const chatUserStatus: string = (params?.status as string) || 'online';
     const chatUserAvatar: string = (params?.avatar as string) || `https://i.pravatar.cc/150?u=${chatUserName}`;
 
+    const isOverlayHeader = !isSettings;
     const containerStyle: ViewStyle = {
         height: 60 + insets.top,
         paddingTop: insets.top,
         width: '100%',
-        position: 'absolute',
-        top: 0,
-        zIndex: 1000,
+        zIndex: isOverlayHeader ? 1000 : 1,
         backgroundColor: 'transparent',
+        ...(isOverlayHeader
+            ? { position: 'absolute', top: 0 }
+            : { position: 'relative' }),
     };
 
     const contentStyle: ViewStyle = {
@@ -169,8 +171,8 @@ export default function GlobalHeader() {
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                     <MaterialCommunityIcons
-                        name={isCheckIn ? 'close' : (isRoot ? 'tune-vertical' : 'chevron-left')}
-                        size={isCheckIn ? 26 : (isRoot || isSettings ? 22 : 30)}
+                        name={isCheckIn || isSettings ? 'close' : (isRoot ? 'tune-vertical' : 'chevron-left')}
+                        size={isCheckIn || isSettings ? 26 : (isRoot ? 22 : 30)}
                         color={colors.text}
                     />
                 </TouchableOpacity>
