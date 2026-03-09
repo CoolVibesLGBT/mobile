@@ -58,7 +58,7 @@ function AuthGuard() {
       // Use replace to avoid history stack buildup
       router.replace('/(tabs)');
     }
-  }, [token, initialized, segments]);
+  }, [token, initialized, segments[0]]);
 
   return null;
 }
