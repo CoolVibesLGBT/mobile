@@ -50,23 +50,25 @@ function AuthGuard() {
   const navigatingRef = useRef(false);
 
   useEffect(() => {
+    // Only act after auth is initialized
     if (!initialized) return;
-    if (navigatingRef.current) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
     if (!token && !inAuthGroup) {
-      navigatingRef.current = true;
-      router.replace('/(auth)/login');
-      setTimeout(() => { navigatingRef.current = false; }, 800);
+      if (!navigatingRef.current) {
+        navigatingRef.current = true;
+        router.replace('/(auth)/login');
+        setTimeout(() => { navigatingRef.current = false; }, 500);
+      }
     } else if (token && inAuthGroup) {
-      navigatingRef.current = true;
-      router.replace('/(tabs)');
-      setTimeout(() => { navigatingRef.current = false; }, 800);
+      if (!navigatingRef.current) {
+        navigatingRef.current = true;
+        router.replace('/(tabs)');
+        setTimeout(() => { navigatingRef.current = false; }, 500);
+      }
     }
-  // Deliberately only depend on token + initialized — segments would cause re-fire mid-transition
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, initialized]);
+  }, [token, initialized, segments]);
 
   return null;
 }
@@ -76,6 +78,7 @@ function ThemedApp() {
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector(state => state.system);
   const { initialized, token } = useAppSelector(state => state.auth);
+  const segments = useSegments();
 
   const [fontsLoaded] = useFonts({
     'Inter-Regular': Inter_400Regular,
@@ -102,29 +105,35 @@ function ThemedApp() {
   useEffect(() => {
     const init = async () => {
       await setTestToken();
-      // Explicit hide call early in case it's stuck
-      SplashScreen.hideAsync().catch(() => {});
+      // Initial sync and auto login
       dispatch(fetchInitialSync());
       dispatch(autoLoginThunk());
     };
     init();
   }, []);
 
+  const isReady = initialized && fontsLoaded && !loading;
+
   useEffect(() => {
-    // Safety timeout: hide splash after 3 seconds no matter what
-    const timeout = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-    }, 3000);
-
-    if (initialized && fontsLoaded) {
-      SplashScreen.hideAsync().catch(() => {
-        // Ignore splash screen errors if it's already hidden
-      });
-      clearTimeout(timeout);
+    if (isReady) {
+      const inAuthGroup = segments[0] === '(auth)';
+      const needsRedirect = (!token && !inAuthGroup) || (token && inAuthGroup);
+      
+      if (!needsRedirect) {
+        const t = setTimeout(() => {
+          SplashScreen.hideAsync().catch(() => {});
+        }, 100);
+        return () => clearTimeout(t);
+      }
     }
+    
+    const hider = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    }, 5000);
+    return () => clearTimeout(hider);
+  }, [isReady, token, segments]);
 
-    return () => clearTimeout(timeout);
-  }, [initialized, fontsLoaded, token]);
+  if (!isReady) return null;
 
 
   const CustomDarkTheme = {
@@ -166,7 +175,7 @@ function ThemedApp() {
                 backgroundColor: colorScheme === 'dark' ? Colors.dark.background : Colors.light.background,
             } 
         }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
           <Stack.Screen name="(auth)" options={{ presentation: 'fullScreenModal', headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           <Stack.Screen name="ChatDetail" options={{ headerShown: false }} />

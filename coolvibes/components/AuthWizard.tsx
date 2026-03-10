@@ -98,7 +98,9 @@ const AuthWizard: React.FC<AuthWizardProps> = ({
             }));
 
             if (loginThunk.fulfilled.match(resultAction)) {
-                onClose();
+                // For modal mode, we close it immediately. 
+                // For standalone, we wait for the Global Guard (in _layout.tsx) to redirect us to (tabs)
+                if (mode === 'modal') onClose();
             } else {
                 setError('Login failed. Please check your credentials.');
             }
@@ -114,7 +116,9 @@ const AuthWizard: React.FC<AuthWizardProps> = ({
             }));
 
             if (registerThunk.fulfilled.match(resultAction)) {
-                onClose();
+                // For modal mode, we close it immediately. 
+                // For standalone, we wait for the Global Guard (in _layout.tsx) to redirect us to (tabs)
+                if (mode === 'modal') onClose();
             } else {
                 setError('Registration failed. Please try again.');
             }
