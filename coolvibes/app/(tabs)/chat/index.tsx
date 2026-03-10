@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { StyleSheet, View, Dimensions, FlatList, StatusBar, Pressable, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View, Dimensions, FlatList, StatusBar, Pressable, TouchableOpacity, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { RefreshCcw, Trash2, Pin, Eraser, X } from 'lucide-react-native';
+import { RefreshCcw, Trash2, Pin, Eraser, X, MessageSquare, CircleDot } from 'lucide-react-native';
 import { BottomSheetBackdrop, BottomSheetView, BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { ThemedText } from '@/components/ThemedText';
@@ -199,7 +199,14 @@ export default function ChatScreen() {
   const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
   const textColor = dark ? '#FFFFFF' : '#000000';
   const secondaryTextColor = dark ? '#666666' : '#999999';
+  const tabItemBg = dark ? '#0A0A0A' : '#F9F9F9';
   const headerHeight = 60 + insets.top;
+
+  const FILTER_TABS = [
+    { id: 'all', label: 'All', icon: MessageSquare },
+    { id: 'unread', label: 'Unread', icon: CircleDot },
+    { id: 'pinned', label: 'Pinned', icon: Pin },
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -255,25 +262,45 @@ export default function ChatScreen() {
                )}
              />
 
-             {/* Filter Tabs */}
-             <View style={[styles.filterRow, { borderBottomColor: borderColor }]}>
-                {(['all', 'unread', 'pinned'] as FilterKey[]).map((tab) => {
-                    const isActive = activeFilter === tab;
-                    return (
-                        <Pressable 
-                            key={tab} 
-                            onPress={() => setActiveFilter(tab)}
-                            style={[styles.filterTab, isActive && { borderBottomColor: textColor }]}
-                        >
-                            <ThemedText style={[
-                                styles.filterTabText, 
-                                { color: isActive ? textColor : secondaryTextColor, fontFamily: isActive ? 'Inter-Bold' : 'Inter-SemiBold' }
-                            ]}>
-                                {tab.toUpperCase()}
-                            </ThemedText>
-                        </Pressable>
-                    );
-                })}
+             {/* Premium Capsule filter tabs matching Activity screen */}
+             <View style={styles.filterContainer}>
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabScrollContent}
+                >
+                    {FILTER_TABS.map((tab) => {
+                        const isActive = activeFilter === tab.id;
+                        return (
+                            <TouchableOpacity 
+                                key={tab.id}
+                                onPress={() => setActiveFilter(tab.id as any)}
+                                style={[
+                                    styles.premiumTab,
+                                    { 
+                                        backgroundColor: isActive ? (dark ? '#FFF' : '#000') : tabItemBg,
+                                        borderColor: isActive ? (dark ? '#FFF' : '#000') : borderColor,
+                                    }
+                                ]}
+                                activeOpacity={0.8}
+                            >
+                                <tab.icon 
+                                    size={14} 
+                                    color={isActive ? (dark ? '#000' : '#FFF') : (dark ? '#444' : '#AAA')} 
+                                    strokeWidth={isActive ? 2.5 : 2} 
+                                />
+                                <ThemedText style={[
+                                    styles.premiumTabText,
+                                    { 
+                                        color: isActive ? (dark ? '#000' : '#FFF') : (dark ? '#666' : '#888'),
+                                    }
+                                ]}>
+                                    {tab.label}
+                                </ThemedText>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
              </View>
           </View>
         }
@@ -459,21 +486,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.8,
   },
-  filterRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 24,
-    borderBottomWidth: 1,
-    marginBottom: 8,
-  },
-  filterTab: {
+  filterContainer: {
+    width: '100%',
     paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    zIndex: 10,
   },
-  filterTabText: {
-    fontSize: 10,
-    letterSpacing: 1.5,
+  tabScrollContent: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  premiumTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 24,
+    borderWidth: 1,
+    gap: 8,
+  },
+  premiumTabText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Bold',
+    letterSpacing: -0.2,
   },
   chatRow: {
     flexDirection: 'row',
