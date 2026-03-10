@@ -6,14 +6,12 @@ import {
     TouchableOpacity,
     ScrollView,
     Switch,
-    Platform,
     Alert,
 } from 'react-native';
 import {
     Bell,
     Eye,
     EyeOff,
-    Trash2,
     MessageSquare,
     Heart,
     Moon,
@@ -29,6 +27,7 @@ import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModal as GorhomBottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slice/auth';
 import { setTheme, toggleBlur, setLanguage } from '@/store/slice/system';
@@ -36,7 +35,7 @@ import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 
 // --- Sub-components (Adapted for Mobile) ---
 
-const SettingItem = memo(({ icon: Icon, label, subtitle, onPress, value, isToggle, danger, dark, border = true }: any) => {
+const SettingItem = memo(function SettingItem({ icon: Icon, label, subtitle, onPress, value, isToggle, danger, dark, palette, border = true }: any) {
     return (
         <TouchableOpacity
             onPress={onPress}
@@ -44,7 +43,7 @@ const SettingItem = memo(({ icon: Icon, label, subtitle, onPress, value, isToggl
             activeOpacity={0.7}
             style={[
                 styles.itemContainer,
-                border && { borderBottomWidth: 1, borderBottomColor: dark ? '#1A1A1A' : '#F0F0F0' }
+                border && { borderBottomWidth: 1, borderBottomColor: palette.borderSubtle }
             ]}
         >
             <View style={styles.itemLeft}>
@@ -52,24 +51,24 @@ const SettingItem = memo(({ icon: Icon, label, subtitle, onPress, value, isToggl
                     styles.iconBox,
                     { backgroundColor: danger 
                         ? (dark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2') 
-                        : (dark ? '#1A1A1A' : '#F8F9FA') 
+                        : palette.secondaryBackground
                     }
                 ]}>
                     <Icon 
                         size={20} 
-                        color={danger ? '#EF4444' : (dark ? '#FFFFFF' : '#000000')} 
+                        color={danger ? '#EF4444' : palette.text}
                         strokeWidth={2} 
                     />
                 </View>
                 <View style={styles.textBox}>
                     <Text style={[
                         styles.label, 
-                        { color: danger ? '#EF4444' : (dark ? '#FFFFFF' : '#000000') }
+                        { color: danger ? '#EF4444' : palette.text }
                     ]}>
                         {label}
                     </Text>
                     {subtitle && (
-                        <Text style={[styles.subtitle, { color: '#666666' }]}>
+                        <Text style={[styles.subtitle, { color: palette.textMuted }]}>
                             {subtitle}
                         </Text>
                     )}
@@ -81,14 +80,14 @@ const SettingItem = memo(({ icon: Icon, label, subtitle, onPress, value, isToggl
                     <Switch
                         value={value}
                         onValueChange={onPress}
-                        trackColor={{ false: '#767577', true: dark ? '#FFFFFF' : '#000000' }}
-                        thumbColor={value ? (dark ? '#000000' : '#FFFFFF') : '#f4f3f4'}
-                        ios_backgroundColor="#3e3e3e"
+                        trackColor={{ false: dark ? '#334155' : '#CBD5E1', true: palette.accent }}
+                        thumbColor={value ? palette.surface : dark ? '#94A3B8' : '#FFFFFF'}
+                        ios_backgroundColor={dark ? '#334155' : '#CBD5E1'}
                     />
                 ) : (
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        {value && <Text style={[styles.valueText, { color: '#999999', marginRight: 4 }]}>{value}</Text>}
-                        <ChevronRight size={18} color="#CCCCCC" />
+                        {value && <Text style={[styles.valueText, { color: palette.textMuted, marginRight: 4 }]}>{value}</Text>}
+                        <ChevronRight size={18} color={palette.icon} />
                     </View>
                 )}
             </View>
@@ -96,27 +95,30 @@ const SettingItem = memo(({ icon: Icon, label, subtitle, onPress, value, isToggl
     );
 });
 
-const Section = memo(({ title, children, dark }: any) => (
+const Section = memo(function Section({ title, children, palette }: any) {
+    return (
     <View style={styles.section}>
         {title && (
-            <Text style={[styles.sectionTitle, { color: '#666666' }]}>
+            <Text style={[styles.sectionTitle, { color: palette.textMuted }]}>
                 {title.toUpperCase()}
             </Text>
         )}
         <View style={[
             styles.sectionContent, 
             { 
-                backgroundColor: dark ? '#0A0A0A' : '#FFFFFF',
-                borderColor: dark ? '#1A1A1A' : '#F0F0F0',
+                backgroundColor: palette.surface,
+                borderColor: palette.border,
             }
         ]}>
             {children}
         </View>
     </View>
-));
+    );
+});
 
 export default function SettingsScreen() {
     const { colors, dark } = useTheme();
+    const palette = dark ? Colors.dark : Colors.light;
     const insets = useSafeAreaInsets();
     const dispatch = useAppDispatch();
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
@@ -190,7 +192,7 @@ export default function SettingsScreen() {
                 ]}
                 showsVerticalScrollIndicator={false}
             >
-                <Section title="Appearance" dark={dark}>
+                <Section title="Appearance" palette={palette}>
                     <SettingItem
                         icon={dark ? Moon : Sun}
                         label="Dark Mode"
@@ -199,6 +201,7 @@ export default function SettingsScreen() {
                         value={dark}
                         isToggle
                         dark={dark}
+                        palette={palette}
                     />
                     <SettingItem
                         icon={Languages}
@@ -206,11 +209,12 @@ export default function SettingsScreen() {
                         subtitle={language === 'en' ? 'English' : 'Türkçe'}
                         onPress={openLanguageSheet}
                         dark={dark}
+                        palette={palette}
                         border={false}
                     />
                 </Section>
 
-                <Section title="Notifications" dark={dark}>
+                <Section title="Notifications" palette={palette}>
                     <SettingItem
                         icon={Bell}
                         label="Push Notifications"
@@ -219,6 +223,7 @@ export default function SettingsScreen() {
                         value={settings.pushNotifications}
                         isToggle
                         dark={dark}
+                        palette={palette}
                     />
                     <SettingItem
                         icon={Mail}
@@ -228,6 +233,7 @@ export default function SettingsScreen() {
                         value={settings.emailNotifications}
                         isToggle
                         dark={dark}
+                        palette={palette}
                     />
                     <SettingItem
                         icon={MessageSquare}
@@ -237,11 +243,12 @@ export default function SettingsScreen() {
                         value={settings.messageNotifications}
                         isToggle
                         dark={dark}
+                        palette={palette}
                         border={false}
                     />
                 </Section>
 
-                <Section title="Privacy" dark={dark}>
+                <Section title="Privacy" palette={palette}>
                     <SettingItem
                         icon={blurPhotos ? EyeOff : Eye}
                         label="Blur Photos in Posts"
@@ -250,6 +257,7 @@ export default function SettingsScreen() {
                         value={blurPhotos}
                         isToggle
                         dark={dark}
+                        palette={palette}
                     />
                     <SettingItem
                         icon={Heart}
@@ -257,6 +265,7 @@ export default function SettingsScreen() {
                         subtitle="Public by default"
                         value="Everyone"
                         dark={dark}
+                        palette={palette}
                     />
                     <SettingItem
                         icon={settings.showOnlineStatus ? Eye : EyeOff}
@@ -266,11 +275,12 @@ export default function SettingsScreen() {
                         value={settings.showOnlineStatus}
                         isToggle
                         dark={dark}
+                        palette={palette}
                         border={false}
                     />
                 </Section>
 
-                <Section title="Account" dark={dark}>
+                <Section title="Account" palette={palette}>
                     <SettingItem
                         icon={LogOut}
                         label="Log Out"
@@ -278,6 +288,7 @@ export default function SettingsScreen() {
                         onPress={handleLogout}
                         danger
                         dark={dark}
+                        palette={palette}
                     />
                     <SettingItem
                         icon={UserX}
@@ -286,13 +297,14 @@ export default function SettingsScreen() {
                         onPress={handleDeleteAccount}
                         danger
                         dark={dark}
+                        palette={palette}
                         border={false}
                     />
                 </Section>
             </ScrollView>
 
             <BaseBottomSheetModal ref={languageSheetRef}>
-                <BottomSheetView style={[styles.languageSheetContent, { paddingBottom: insets.bottom + 16, backgroundColor: dark ? '#050505' : '#FFFFFF' }]}>
+                <BottomSheetView style={[styles.languageSheetContent, { paddingBottom: insets.bottom + 16, backgroundColor: palette.surface }]}>
                     <Text style={[styles.sheetTitle, { color: colors.text }]}>Choose Language</Text>
                     {languageOptions.map(option => {
                         const isActive = language === option.code;
@@ -301,24 +313,24 @@ export default function SettingsScreen() {
                                 key={option.code}
                                 style={[
                                     styles.languageOption,
-                                    { borderColor: dark ? '#1F1F1F' : '#F0F0F0', backgroundColor: dark ? '#111111' : '#FDFDFD' },
-                                    isActive && { borderColor: dark ? '#FFFFFF' : '#111111' }
+                                    { borderColor: palette.border, backgroundColor: palette.surfaceElevated },
+                                    isActive && { borderColor: palette.accent, backgroundColor: palette.secondaryBackground }
                                 ]}
                                 activeOpacity={0.8}
                                 onPress={() => handleLanguageChange(option.code)}
                             >
                                 <View style={styles.languageOptionText}>
                                     <Text style={[styles.languageOptionLabel, { color: colors.text }]}>{option.label}</Text>
-                                    <Text style={[styles.languageOptionDescription, { color: dark ? '#9CA3AF' : '#6B7280' }]}>
+                                    <Text style={[styles.languageOptionDescription, { color: palette.textMuted }]}>
                                         {option.description}
                                     </Text>
                                 </View>
                                 <View style={[
                                     styles.languageIndicator,
-                                    { borderColor: dark ? '#333333' : '#D1D5DB', backgroundColor: dark ? '#0A0A0A' : '#FFFFFF' },
-                                    isActive && { backgroundColor: dark ? '#ffffff12' : '#111111' }
+                                    { borderColor: palette.border, backgroundColor: palette.surface },
+                                    isActive && { backgroundColor: palette.accent }
                                 ]}>
-                                    {isActive && <Check size={16} color={dark ? '#FFFFFF' : '#FFFFFF'} strokeWidth={3} />}
+                                    {isActive && <Check size={16} color={dark ? Colors.dark.background : Colors.light.surface} strokeWidth={3} />}
                                 </View>
                             </TouchableOpacity>
                         );

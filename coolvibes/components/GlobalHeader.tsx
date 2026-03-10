@@ -103,6 +103,23 @@ export default function GlobalHeader() {
                 </View>
             );
         }
+        if (isRoot) {
+            const currentTab = segs[segs.length - 1];
+            if (currentTab === 'chat') {
+                return (
+                    <View style={styles.brandContainer}>
+                        <Text style={brandText}>MESSAGES</Text>
+                    </View>
+                );
+            }
+            if (currentTab === 'nearby') {
+                return (
+                    <View style={styles.brandContainer}>
+                        <Text style={brandText}>NEARBY</Text>
+                    </View>
+                );
+            }
+        }
         return (
             <View style={styles.brandContainer}>
                 <Text style={brandText}>COOLVIBES</Text>

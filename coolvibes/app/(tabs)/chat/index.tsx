@@ -1,410 +1,608 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, Animated, Easing } from 'react-native';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { StyleSheet, View, Dimensions, FlatList, StatusBar, Pressable, TouchableOpacity, Text } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-const FlashListAny: any = FlashList;
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { Colors } from '@/constants/Colors';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchChats, resetChats } from '@/store/slice/chat';
-import { Constants } from '@/constants/Constants';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Image } from 'expo-image';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { RefreshCcw, Trash2, Pin, Eraser, X } from 'lucide-react-native';
+import { BottomSheetBackdrop, BottomSheetView, BottomSheetModal } from '@gorhom/bottom-sheet';
 
-const { width } = Dimensions.get('window');
+import { ThemedText } from '@/components/ThemedText';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchChats, resetChats } from '@/store/slice/chat';
+import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 
-const mockStories = [
-    { id: 'likes', label: 'Likes', badge: 24, uri: 'https://picsum.photos/seed/likes/200' },
-    { id: '1', label: 'Metin', uri: 'https://picsum.photos/seed/1/200' },
-    { id: '2', label: 'Chk', uri: 'https://picsum.photos/seed/2/200' },
-    { id: '3', label: 'Ram', uri: 'https://picsum.photos/seed/3/200' },
-    { id: '4', label: 'Ayhan', uri: 'https://picsum.photos/seed/4/200' },
-];
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Reusable stories list (compact = sticky variant)
-const Stories = ({ compact = false, showTitle }: { compact?: boolean; showTitle?: boolean }) => {
-    const { colors } = useTheme();
-    const shouldShowTitle = typeof showTitle === 'boolean' ? showTitle : !compact;
-    return (
-        <View style={styles.storiesWrapper}>
-            {shouldShowTitle && (
-                <ThemedText style={styles.sectionTitle} type="defaultSemiBold">
-                    Likes & Matches
-                </ThemedText>
-            )}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stories}>
-                {mockStories.map((s) => (
-                    <TouchableOpacity key={s.id} style={styles.storyItem} activeOpacity={0.8} onPress={() => console.log(compact ? 'sticky pressed' : 'story pressed', s.id)}>
-                        <View style={[styles.avatarWrapper, s.id === 'likes' && [styles.likesAvatar, { borderColor: colors.text }]]}>
-                            <Image source={{ uri: s.uri }} style={styles.avatar} />
-                            {s.id === 'likes' ? (
-                                <View style={[styles.likesBadge, compact && styles.likesBadgeSticky, { backgroundColor: colors.text }]}>
-                                    <ThemedText style={{ color: colors.background, fontWeight: '700', fontSize: 12 }}>{s.badge}</ThemedText>
-                                </View>
-                            ) : (
-                                <View style={[styles.redDot, { backgroundColor: colors.text }]} />
-                            )}
-                        </View>
-                        {!compact && <ThemedText style={styles.storyLabel}>{s.label}</ThemedText>}
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        </View>
-    );
+type FilterKey = 'all' | 'unread' | 'pinned';
+
+type PinnedItem = {
+  id: string;
+  name: string;
+  avatar: string;
+  online: boolean;
 };
 
-const mockMessages = [
-    { id: 'm1', name: 'Ayhan', text: 'I am good thanks, how are you?', uri: 'https://picsum.photos/seed/a/200' },
-    { id: 'm2', name: 'EFE',   text: 'I am great thanks, how about you?', uri: 'https://picsum.photos/seed/b/200' },
-    { id: 'm3', name: 'Mert',  text: 'Hey, how are you doing?', uri: 'https://picsum.photos/seed/c/200' },
-    { id: 'm4', name: 'Mert',  text: 'Hey, how are you doing?', uri: 'https://picsum.photos/seed/c/200' },
-    { id: 'm5', name: 'Mert',  text: 'Hey, how are you doing?', uri: 'https://picsum.photos/seed/c/200' },
-    { id: 'm6', name: 'Mert',  text: 'Hey, how are you doing?', uri: 'https://picsum.photos/seed/c/200' },
+type ConversationItem = {
+  id: string;
+  name: string;
+  preview: string;
+  timestamp: string;
+  unreadCount: number;
+  pinned: boolean;
+  online: boolean;
+  avatar: string;
+  status: string;
+};
 
+const PINNED_MOCK: PinnedItem[] = [
+  { id: 'pin-1', name: 'Ayla', avatar: 'https://picsum.photos/seed/match1/200', online: true },
+  { id: 'pin-2', name: 'Mert', avatar: 'https://picsum.photos/seed/match2/200', online: true },
+  { id: 'pin-3', name: 'Lina', avatar: 'https://picsum.photos/seed/match3/200', online: false },
+  { id: 'pin-4', name: 'Cem', avatar: 'https://picsum.photos/seed/match4/200', online: false },
+  { id: 'pin-5', name: 'Deniz', avatar: 'https://picsum.photos/seed/match5/200', online: true },
 ];
 
-export default function Chat() {
-    const insets = useSafeAreaInsets();
-    const headerHeightRef = useRef<number | null>(56);
-    const dispatch = useAppDispatch();
-    const router = useRouter();
+const MOCK_CONVERSATIONS: ConversationItem[] = [
+  {
+    id: 'chat-1',
+    name: 'Ayla Demir',
+    preview: 'Roof bar plan still on for tonight?',
+    timestamp: '09:24',
+    unreadCount: 3,
+    pinned: true,
+    online: true,
+    avatar: 'https://picsum.photos/seed/chat1/200',
+    status: 'Typing...',
+  },
+  {
+    id: 'chat-2',
+    name: 'Mert K.',
+    preview: 'I shared the place pin. Check the route when free.',
+    timestamp: '08:10',
+    unreadCount: 0,
+    pinned: true,
+    online: false,
+    avatar: 'https://picsum.photos/seed/chat2/200',
+    status: 'Seen 12m ago',
+  },
+  {
+    id: 'chat-3',
+    name: 'Lina',
+    preview: 'Your last photo set looks sharp.',
+    timestamp: 'Yesterday',
+    unreadCount: 1,
+    pinned: false,
+    online: true,
+    avatar: 'https://picsum.photos/seed/chat3/200',
+    status: 'Online',
+  },
+];
 
-    const { chats, loading, error, cursor } = useAppSelector(state => state.chat);
+function normalizeChat(chat: any, index: number): ConversationItem {
+  const counterpart =
+    chat?.other_user ||
+    chat?.user ||
+    chat?.participant ||
+    chat?.match ||
+    chat?.receiver ||
+    chat?.sender ||
+    {};
 
-    useEffect(() => {
-        loadChats();
-    }, [dispatch]);
+  const fallback = MOCK_CONVERSATIONS[index % MOCK_CONVERSATIONS.length];
+  const name =
+    counterpart?.displayname ||
+    counterpart?.display_name ||
+    counterpart?.username ||
+    chat?.name ||
+    fallback.name;
+  const preview =
+    chat?.last_message?.text ||
+    chat?.last_message_text ||
+    chat?.message ||
+    fallback.preview;
+  const timestampSource =
+    chat?.last_message_timestamp ||
+    chat?.updated_at ||
+    chat?.timestamp ||
+    fallback.timestamp;
 
-    const loadChats = () => {
-        dispatch(resetChats());
-        dispatch(fetchChats({ limit: 20 }));
-    }
+  return {
+    id: String(chat?.id ?? fallback.id),
+    name,
+    preview,
+    timestamp: typeof timestampSource === 'string' ? timestampSource.slice(0, 16) : fallback.timestamp,
+    unreadCount: Number(chat?.unread_count ?? chat?.unread ?? fallback.unreadCount),
+    pinned: Boolean(chat?.is_pinned ?? fallback.pinned),
+    online: Boolean(counterpart?.online ?? fallback.online),
+    avatar: counterpart?.avatar_url || counterpart?.avatarUrl || fallback.avatar,
+    status: counterpart?.online ? 'Online' : fallback.status,
+  };
+}
 
-    const loadMoreChats = () => {
-        if (!loading && cursor) {
+export default function ChatScreen() {
+  const { colors, dark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { chats, loading, cursor } = useAppSelector((state) => state.chat);
+
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [pinnedIds, setPinnedIds] = useState<Record<string, boolean>>({});
+  const [deletedIds, setDeletedIds] = useState<Record<string, boolean>>({});
+  const [selectedChat, setSelectedChat] = useState<ConversationItem | null>(null);
+
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+
+  useEffect(() => {
+    dispatch(resetChats());
+    dispatch(fetchChats({ limit: 20 }));
+  }, [dispatch]);
+
+  const conversations = useMemo(() => {
+    const base = chats.length > 0 ? chats.map(normalizeChat) : MOCK_CONVERSATIONS;
+
+    return base.filter((item) => {
+      if (deletedIds[item.id]) return false;
+      const isPinned = pinnedIds[item.id] || item.pinned;
+      const matchesFilter =
+        activeFilter === 'all' ||
+        (activeFilter === 'unread' && item.unreadCount > 0) ||
+        (activeFilter === 'pinned' && isPinned);
+
+      return matchesFilter;
+    }).map(item => ({...item, pinned: pinnedIds[item.id] || item.pinned}));
+  }, [activeFilter, chats, deletedIds, pinnedIds]);
+
+  const favorites = useMemo(() => {
+    const pinned = conversations.filter(c => c.pinned);
+    return pinned.length > 0 
+      ? pinned.map(c => ({ id: c.id, name: c.name, avatar: c.avatar, online: c.online }))
+      : PINNED_MOCK;
+  }, [conversations]);
+
+  const handleTogglePin = (id: string, isCurrentlyPinned: boolean) => {
+    setPinnedIds((prev) => ({ ...prev, [id]: !isCurrentlyPinned }));
+    bottomSheetModalRef.current?.dismiss();
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletedIds((prev) => ({ ...prev, [id]: true }));
+    bottomSheetModalRef.current?.dismiss();
+  };
+
+  const handleLongPress = (item: ConversationItem) => {
+    setSelectedChat(item);
+    bottomSheetModalRef.current?.present();
+  };
+
+  const handleRowPress = (item: ConversationItem) => {
+    router.push({
+      pathname: '/ChatDetail',
+      params: {
+        chatId: item.id,
+        name: item.name,
+        avatar: item.avatar,
+        status: item.status,
+      },
+    });
+  };
+
+  const renderBackdrop = useCallback(
+    (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
+    []
+  );
+
+  const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
+  const textColor = dark ? '#FFFFFF' : '#000000';
+  const secondaryTextColor = dark ? '#666666' : '#999999';
+  const headerHeight = 60 + insets.top;
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
+      
+      <FlashList
+        data={conversations}
+        estimatedItemSize={84}
+        keyExtractor={(item) => item.id}
+        onEndReached={() => {
+          if (!loading && cursor) {
             dispatch(fetchChats({ limit: 20, cursor }));
+          }
+        }}
+        onEndReachedThreshold={0.45}
+        contentContainerStyle={{
+          paddingTop: headerHeight,
+          paddingBottom: insets.bottom + 100,
+        }}
+        ListHeaderComponent={
+          <View>
+             {/* Favorites Section */}
+             <View style={styles.sectionTitleRow}>
+                <ThemedText style={styles.sectionTitle}>Favorites</ThemedText>
+                <Pressable onPress={() => { dispatch(resetChats()); dispatch(fetchChats({ limit: 20 })); }}>
+                    <RefreshCcw size={14} color={secondaryTextColor} />
+                </Pressable>
+             </View>
+             
+             <FlatList
+               horizontal
+               data={favorites}
+               showsHorizontalScrollIndicator={false}
+               keyExtractor={(item) => item.id}
+               contentContainerStyle={styles.favoritesList}
+               renderItem={({ item, index }) => (
+                 <Animated.View entering={FadeInDown.delay(index * 50)} style={styles.favoriteItem}>
+                   <Pressable 
+                    onPress={() => router.push({
+                        pathname: '/ChatDetail',
+                        params: { chatId: item.id, name: item.name, avatar: item.avatar, status: 'Online' },
+                      })}
+                    style={styles.favoritePress}>
+                     <View style={[styles.favoriteAvatarContainer, { borderColor: borderColor }]}>
+                        <Image source={{ uri: item.avatar }} style={styles.favoriteAvatar} contentFit="cover" />
+                        {item.online && <View style={[styles.statusDot, { backgroundColor: textColor, borderColor: colors.background }]} />}
+                     </View>
+                     <ThemedText numberOfLines={1} style={[styles.favoriteName, { color: textColor }]}>
+                       {item.name}
+                     </ThemedText>
+                   </Pressable>
+                 </Animated.View>
+               )}
+             />
+
+             {/* Filter Tabs */}
+             <View style={[styles.filterRow, { borderBottomColor: borderColor }]}>
+                {(['all', 'unread', 'pinned'] as FilterKey[]).map((tab) => {
+                    const isActive = activeFilter === tab;
+                    return (
+                        <Pressable 
+                            key={tab} 
+                            onPress={() => setActiveFilter(tab)}
+                            style={[styles.filterTab, isActive && { borderBottomColor: textColor }]}
+                        >
+                            <ThemedText style={[
+                                styles.filterTabText, 
+                                { color: isActive ? textColor : secondaryTextColor, fontFamily: isActive ? 'Inter-Bold' : 'Inter-SemiBold' }
+                            ]}>
+                                {tab.toUpperCase()}
+                            </ThemedText>
+                        </Pressable>
+                    );
+                })}
+             </View>
+          </View>
         }
-    };
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeIn.delay(50 + index * 15)}>
+            <Pressable
+              onPress={() => handleRowPress(item)}
+              onLongPress={() => handleLongPress(item)}
+              delayLongPress={200}
+              style={({ pressed }) => [
+                styles.chatRow,
+                { borderBottomColor: borderColor, opacity: pressed ? 0.5 : 1 }
+              ]}>
+              <View style={styles.avatarWrap}>
+                <Image source={{ uri: item.avatar }} style={[styles.avatar, { borderColor: borderColor }]} contentFit="cover" />
+                {item.online && <View style={[styles.rowStatusDot, { backgroundColor: textColor, borderColor: colors.background }]} />}
+              </View>
 
-
-    useEffect(() => {
-        console.log('Chats updated:', { chats, loading, error });
-    }, [chats, loading, error]);
-    return (
-        <ThemedView style={styles.container}>
-            <View style={{ flex: 1, paddingTop: 60 + insets.top }}>
-                {/* 
-                <View style={styles.headerRow} onLayout={(e) => (headerHeightRef.current = e.nativeEvent.layout.height)}>
-                    <ThemedText type="title">Sohbet</ThemedText>
-                    <View style={styles.headerIcons}>
-                        <TouchableOpacity onPress={() => {
-                            loadChats()
-                        }} style={styles.iconBtn} hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}>
-                            <MaterialIcons name="refresh" size={Constants.headerIconSize} color="#fff" />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}>
-                            <View>
-                                <MaterialIcons name="notifications-none" size={Constants.headerIconSize} color="#fff" />
-                                <View style={styles.redDotSmall} />
-                            </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}>
-                            <MaterialIcons name="search" size={Constants.headerIconSize} color="#fff" />
-                        </TouchableOpacity>
+              <View style={styles.rowBody}>
+                <View style={styles.rowTop}>
+                  <View style={styles.rowNameContainer}>
+                    {item.pinned && <MaterialCommunityIcons name="pin" size={12} color={textColor} style={{ marginRight: 4 }} />}
+                    <ThemedText numberOfLines={1} style={[styles.rowName, { color: textColor }, item.unreadCount > 0 && { fontFamily: 'Inter-Bold' }]}>
+                        {item.name}
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={[styles.rowTime, { color: secondaryTextColor }]}>
+                    {item.timestamp}
+                  </ThemedText>
+                </View>
+                <View style={styles.rowBottom}>
+                  <ThemedText
+                    numberOfLines={1}
+                    style={[
+                      styles.rowPreview,
+                      { color: item.unreadCount > 0 ? textColor : secondaryTextColor },
+                      item.unreadCount > 0 && { fontFamily: 'Inter-SemiBold' }
+                    ]}>
+                    {item.preview}
+                  </ThemedText>
+                  {item.unreadCount > 0 && (
+                    <View style={[styles.unreadMark, { backgroundColor: textColor }]}>
+                      <ThemedText style={[styles.unreadText, { color: colors.background }]}>
+                        {item.unreadCount}
+                      </ThemedText>
                     </View>
+                  )}
                 </View>
-                */}
+              </View>
+            </Pressable>
+          </Animated.View>
+        )}
+      />
 
-                <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
-                    <Stories compact={false} showTitle={true} />
+      {/* Modern B&W Bottom Sheet Modal */}
+      <BaseBottomSheetModal
+        ref={bottomSheetModalRef}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{ backgroundColor: dark ? '#000' : '#FFF' }}
+      >
+        <BottomSheetView style={styles.sheetContent}>
+            <View style={styles.sheetHeader}>
+                <View style={styles.sheetAvatarContainer}>
+                    <Image source={{ uri: selectedChat?.avatar }} style={styles.sheetAvatar} />
                 </View>
-
-                <FlashListAny
-                    style={{ flex: 1 }}
-                    data={mockMessages}
-                    onEndReached={loadMoreChats}
-                    onEndReachedThreshold={0.5}
-                    estimatedItemSize={86}
-                    keyExtractor={(i: { id: string }) => i.id}
-                    renderItem={({ item }: { item: { id: string; name: string; text: string; uri: string } }) => (
-                        <TouchableOpacity
-                            style={styles.messageRow}
-                            activeOpacity={0.8}
-                            onPress={() =>
-                                router.push({
-                                    pathname: '/ChatDetail',
-                                    params: {
-                                        chatId: item.id,
-                                        name: item.name,
-                                        avatar: item.uri,
-                                        status: 'online',
-                                    },
-                                })}>
-                            <Image source={{ uri: item.uri }} style={styles.messageAvatar} />
-                            <View style={{ flex: 1, marginLeft: 12 }}>
-                                <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
-                                <ThemedText style={{ marginTop: 6, color: '#6b6b6b' }}>{item.text}</ThemedText>
-                            </View>
-                            <View style={{ padding: 8 }}>
-                                <IconSymbol name="chevron.right" size={22} color={Colors.light.icon} />
-                            </View>
-                        </TouchableOpacity>
-                    )}
-                    showsVerticalScrollIndicator={false}
-                    ListHeaderComponent={() => (
-                        <>
-                            <View style={styles.sectionHeaderRow}>
-                                <ThemedText style={styles.sectionTitle} type="defaultSemiBold">Messages</ThemedText>
-
-                            </View>
-
-
-
-
-                        </>
-                    )}
-                    contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 120 }}
-                />
-
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <ThemedText style={styles.sheetTitle}>{selectedChat?.name}</ThemedText>
+                    <ThemedText style={[styles.sheetSub, { color: secondaryTextColor }]}>Conversation options</ThemedText>
+                </View>
+                <TouchableOpacity onPress={() => bottomSheetModalRef.current?.dismiss()} style={styles.closeBtn}>
+                   <X size={20} color={textColor} />
+                </TouchableOpacity>
             </View>
-        </ThemedView >
+
+            <View style={styles.sheetOptions}>
+                <OptionItem 
+                    icon={<Pin size={20} color={textColor} />} 
+                    label={selectedChat?.pinned ? "Unpin Chat" : "Pin"} 
+                    onPress={() => selectedChat && handleTogglePin(selectedChat.id, selectedChat.pinned)}
+                    textColor={textColor}
+                />
+                <View style={[styles.separator, { backgroundColor: borderColor }]} />
+                
+                <OptionItem 
+                    icon={<Trash2 size={20} color={textColor} />} 
+                    label="Delete For Me" 
+                    onPress={() => selectedChat && handleDelete(selectedChat.id)}
+                    textColor={textColor}
+                />
+                <OptionItem 
+                    icon={<Trash2 size={20} color="#FF453A" />} 
+                    label="Delete For All" 
+                    onPress={() => selectedChat && handleDelete(selectedChat.id)}
+                    textColor="#FF453A"
+                />
+                <View style={[styles.separator, { backgroundColor: borderColor }]} />
+                
+                <OptionItem 
+                    icon={<Eraser size={20} color={textColor} />} 
+                    label="Clear Chat History for Me" 
+                    onPress={() => bottomSheetModalRef.current?.dismiss()}
+                    textColor={textColor}
+                />
+                <OptionItem 
+                    icon={<Eraser size={20} color="#FF453A" />} 
+                    label="Clear Chat History For All" 
+                    onPress={() => bottomSheetModalRef.current?.dismiss()}
+                    textColor="#FF453A"
+                />
+            </View>
+            <View style={{ height: insets.bottom + 20 }} />
+        </BottomSheetView>
+      </BaseBottomSheetModal>
+    </View>
+  );
+}
+
+function OptionItem({ icon, label, onPress, textColor }: any) {
+    return (
+        <TouchableOpacity onPress={onPress} style={styles.optionItem}>
+            <View style={styles.optionIcon}>{icon}</View>
+            <ThemedText style={[styles.optionLabel, { color: textColor }]}>{label}</ThemedText>
+        </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        marginTop: 8,
-    },
-    headerIcons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    iconBtn: {
-        padding: 10,
-        borderRadius: 100,
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "black",
-        shadowColor: "#000",
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        shadowOffset: { width: 0, height: 1 },
-    },
-    redDotSmall: {
-        position: 'absolute',
-        right: -2,
-        top: -2,
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#ff3b30',
-        borderWidth: 1,
-        borderColor: 'white',
-    },
-    scroll: {
-        paddingHorizontal: 16,
-        marginTop: 8,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        marginBottom: 8,
-    },
-    stickySection: {
-        backgroundColor: Colors.light.background,
-        paddingVertical: 8,
-        paddingHorizontal: 0,
-        zIndex: 10,
-        // allow badges to render outside the avatar bounds
-        overflow: 'visible',
-    },
-
-
-    stories: {
-        marginBottom: 16,
-        overflow: 'visible',
-    },
-
-    storyItem: {
-        width: 72,
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    avatarWrapper: {
-        width: 64,
-        height: 96,
-        borderRadius: 12,
-        overflow: 'visible',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'transparent',
-    },
-    likesAvatar: {
-        borderColor: '#ff3b30',
-        borderWidth: 3,
-        borderRadius: 12,
-    },
-    avatar: {
-        width: 64,
-        height: 96,
-        borderRadius: 12,
-    },
-    likesBadge: {
-        position: 'absolute',
-        // slightly less negative offsets to keep the badge fully visible
-        right: -6,
-        bottom: -10,
-        backgroundColor: '#ff3b30',
-        borderRadius: 18,
-        width: 36,
-        height: 36,
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOpacity: 0.14,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 2 },
-    },
-    likesBadgeSticky: {
-        // slightly smaller offset so the badge is fully visible inside the sticky bar
-        right: -4,
-        bottom: -4,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        transform: [{ scale: 0.98 }],
-        elevation: 4,
-        shadowOpacity: 0.16,
-    },
-    redDot: {
-        position: 'absolute',
-        right: 4,
-        top: 4,
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: '#ff3b30',
-        borderWidth: 1,
-        borderColor: 'white',
-    },
-    storyLabel: {
-        marginTop: 6,
-        fontSize: 12,
-    },
-    sectionHeaderRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 8,
-    },
-    sortRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    matchCard: {
-        backgroundColor: '#f4f4f6',
-        borderRadius: 18,
-        padding: 14,
-        marginTop: 12,
-        marginBottom: 12,
-    },
-    matchRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    matchAvatar: {
-        width: 58,
-        height: 58,
-        borderRadius: 10,
-    },
-    matchButtonsRow: {
-        flexDirection: 'row',
-        marginTop: 12,
-        justifyContent: 'space-between',
-    },
-    outlineButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 20,
-        borderWidth: 2,
-        borderColor: '#000',
-        alignItems: 'center',
-        marginRight: 8,
-        backgroundColor: 'white',
-    },
-    filledButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 20,
-        alignItems: 'center',
-        backgroundColor: '#111',
-    },
-    infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 14,
-        borderRadius: 12,
-        backgroundColor: 'white',
-        paddingHorizontal: 12,
-        marginBottom: 12,
-    },
-    compositeCircle: {
-        width: 58,
-        height: 58,
-        borderRadius: 29,
-        position: 'relative',
-    },
-    smallImg: {
-        width: 28,
-        height: 28,
-        borderRadius: 6,
-        position: 'absolute',
-        left: 0,
-        top: 0,
-    },
-    smallImg2: {
-        left: 26,
-        top: 0,
-    },
-    smallImg3: {
-        left: 0,
-        top: 26,
-    },
-    smallImg4: {
-        left: 26,
-        top: 26,
-    },
-    messageRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    messageAvatar: {
-        width: 56,
-        height: 56,
-        borderRadius: 10,
-    },
-    storiesAbsolute: {
-        position: 'absolute',
-        zIndex: 100,
-    },
-    storiesWrapper: {
-        width: '100%',
-        paddingBottom: 8,
-        paddingTop: 4,
-    },
+  container: {
+    flex: 1,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontFamily: 'Inter-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    opacity: 0.7,
+  },
+  favoritesList: {
+    paddingLeft: 20,
+    paddingRight: 10,
+    marginBottom: 24,
+  },
+  favoriteItem: {
+    width: 68,
+    marginRight: 12,
+  },
+  favoritePress: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  favoriteAvatarContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1.5,
+    padding: 3,
+  },
+  favoriteAvatar: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 27,
+  },
+  statusDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 15,
+    height: 15,
+    borderRadius: 7.5,
+    borderWidth: 3,
+  },
+  favoriteName: {
+    fontSize: 11,
+    fontFamily: 'Inter-Bold',
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 24,
+    borderBottomWidth: 1,
+    marginBottom: 8,
+  },
+  filterTab: {
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  filterTabText: {
+    fontSize: 10,
+    letterSpacing: 1.5,
+  },
+  chatRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+    alignItems: 'center',
+    gap: 16,
+  },
+  avatarWrap: {
+    width: 56,
+    height: 56,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 0.5,
+  },
+  rowStatusDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 3,
+  },
+  rowBody: {
+    flex: 1,
+    gap: 4,
+  },
+  rowTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rowNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  rowName: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+  },
+  rowTime: {
+    fontSize: 11,
+    fontFamily: 'Inter-Medium',
+  },
+  rowBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rowPreview: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    opacity: 0.7,
+  },
+  unreadMark: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+    paddingTop: 1,
+  },
+  unreadText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
+    lineHeight: 12,
+    textAlign: 'center',
+  },
+  sheetContent: {
+    padding: 24,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  sheetAvatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: 'hidden',
+    backgroundColor: '#333',
+  },
+  sheetAvatar: {
+    width: '100%',
+    height: '100%',
+  },
+  sheetTitle: {
+    fontSize: 20,
+    fontFamily: 'Outfit-Bold',
+  },
+  sheetSub: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+  },
+  closeBtn: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(150,150,150,0.1)',
+  },
+  sheetOptions: {
+    gap: 4,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+  },
+  optionIcon: {
+    width: 32,
+    alignItems: 'center',
+  },
+  optionLabel: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    marginLeft: 16,
+  },
+  separator: {
+    height: 1,
+    marginVertical: 8,
+    opacity: 0.5,
+  },
 });

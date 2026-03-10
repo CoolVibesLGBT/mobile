@@ -23,8 +23,8 @@ interface ActionButtonProps {
 
 const ActionButton = ({ icon: Icon, label, onPress }: ActionButtonProps) => (
   <Pressable onPress={onPress} style={styles.actionButton} hitSlop={10}>
-    <BlurView intensity={30} tint="dark" style={styles.actionButtonBlur}>
-      <Icon size={34} color="#FFFFFF" strokeWidth={2.2} />
+    <BlurView intensity={34} tint="dark" style={styles.actionButtonBlur}>
+      <Icon size={30} color="#FFFFFF" strokeWidth={2.2} />
     </BlurView>
     <Text style={styles.actionLabel}>{label}</Text>
   </Pressable>
@@ -64,27 +64,27 @@ export function ActionBar({ avatarUrl, onLike, onMessage, onOpenProfile, onBurst
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    gap: 18,
+    gap: 14,
   },
   avatarWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 0,
   },
   avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     borderWidth: 2,
     borderColor: '#FFFFFF',
     backgroundColor: '#2A2A2A',
   },
   followBadge: {
     position: 'absolute',
-    bottom: -4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    bottom: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#F43F5E',
     alignItems: 'center',
     justifyContent: 'center',
@@ -93,22 +93,24 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
   },
   actionButtonBlur: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.32)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.16)',
   },
   actionLabel: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontFamily: 'Inter-Bold',
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
 });

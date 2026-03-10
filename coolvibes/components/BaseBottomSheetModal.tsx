@@ -5,6 +5,8 @@ import {
   BottomSheetModal as GorhomBottomSheetModal,
   BottomSheetModalProps,
 } from '@gorhom/bottom-sheet';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/Colors';
 
 type BaseBottomSheetModalProps = BottomSheetModalProps & {
   children: ReactNode;
@@ -21,9 +23,11 @@ const BaseBottomSheetModal = forwardRef<GorhomBottomSheetModal, BaseBottomSheetM
   ...rest
 }, ref) => {
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme() ?? 'light';
+  const palette = Colors[colorScheme];
   const indicatorStyle = useMemo(
-    () => StyleSheet.flatten([{ backgroundColor: '#ccc', width: 40 }, handleIndicatorStyle]),
-    [handleIndicatorStyle]
+    () => StyleSheet.flatten([{ backgroundColor: palette.icon, width: 40 }, handleIndicatorStyle]),
+    [handleIndicatorStyle, palette.icon]
   );
 
   return (

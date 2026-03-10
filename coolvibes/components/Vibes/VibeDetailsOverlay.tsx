@@ -85,16 +85,15 @@ export function VibeDetailsOverlay({ vibe, bottomInset, onBurst }: VibeDetailsOv
         locations={[0.5, 0.72, 1]}
         style={StyleSheet.absoluteFillObject}
       />
-      <View style={[styles.overlay, { paddingBottom: bottomInset + 18 }]}> 
+      <View style={[styles.overlay, { paddingBottom: bottomInset }]}>
         <View style={styles.infoColumn} pointerEvents="box-none">
+          {!!vibe.bio && <Text style={styles.bio}>{vibe.bio}</Text>}
           <Pressable onPress={handleOpenProfile} hitSlop={10}>
             <Text style={styles.username}>
               {vibe.username}
               {age ? <Text style={styles.age}> {age}</Text> : null}
             </Text>
           </Pressable>
-          {!!vibe.bio && <Text style={styles.bio}>{vibe.bio}</Text>}
-          {!vibe.bio && !!vibe.description && <Text style={styles.bio}>{vibe.description}</Text>}
         </View>
         <View style={styles.actionsWrap}>
           <ActionBar
@@ -120,32 +119,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
   },
   infoColumn: {
     flex: 1,
-    paddingRight: 16,
+    maxWidth: '70%',
+    justifyContent: 'flex-end',
+    paddingRight: 20,
+    paddingBottom: 8,
   },
   username: {
     color: '#FFFFFF',
-    fontSize: 30,
+    fontSize: 27,
     fontFamily: 'Outfit-Black',
-    lineHeight: 34,
+    lineHeight: 32,
+    letterSpacing: 0.1,
+    marginTop: 7,
   },
   age: {
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: 'Outfit-Regular',
   },
   bio: {
     color: 'rgba(255,255,255,0.85)',
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 20,
     fontFamily: 'Inter-Medium',
-    marginTop: 8,
-    maxWidth: 260,
+    marginBottom: 2,
   },
   actionsWrap: {
     alignSelf: 'flex-end',
-    paddingBottom: 4,
+    paddingBottom: 14,
   },
 });

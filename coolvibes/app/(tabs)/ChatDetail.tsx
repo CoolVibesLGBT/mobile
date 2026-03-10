@@ -1,27 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Modal, Pressable } from "react-native";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Pressable, View, Text, TouchableOpacity, ScrollView, FlatList, Image, KeyboardAvoidingView, Platform, StyleSheet, ActivityIndicator } from "react-native";
 import * as Haptics from "expo-haptics";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
 import { useNavigation, useTheme } from "@react-navigation/native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Animated } from "react-native";
 import { BlurView } from "expo-blur";
+import { BottomSheetView, BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Pin, Trash2, Eraser, X, Reply, Copy, Edit, CheckCircle } from 'lucide-react-native';
 
 import ChatInput from "@/components/ChatInput";
+import BaseBottomSheetModal from "@/components/BaseBottomSheetModal";
+import { ThemedText } from "@/components/ThemedText";
 
 // --- Types & Interfaces ---
 interface Media {
@@ -64,6 +56,7 @@ export default function ChatDetail() {
   const textColor = colors.text;
   const backgroundColor = colors.background;
   const borderColor = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+  const secondaryTextColor = dark ? '#666666' : '#999999';
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -95,12 +88,12 @@ export default function ChatDetail() {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [contextVisible, setContextVisible] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   const flatListRef = useRef<FlatList>(null);
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const pressScales = useRef<{ [key: string]: Animated.Value }>({}).current;
   const [activePressedId, setActivePressedId] = useState<string | null>(null);
 
@@ -133,10 +126,8 @@ export default function ChatDetail() {
 
   const handleSendMessage = (text: string, media: Media[], replyToId?: string, editingId?: string) => {
     if(editingId) {
-        // Handle message edit
         setMessages(prev => prev.map(m => m.id === editingId ? {...m, text: text} : m));
     } else {
-        // Handle new message
         const newMessage: Message = {
             id: Date.now().toString(),
             sender: "me",
@@ -150,7 +141,6 @@ export default function ChatDetail() {
           setMessages((prev) => [...prev, newMessage]);
           setIsTyping(true);
       
-          // Simulate bot response
           setTimeout(() => {
               const botMessage: Message = {
                   id: (Date.now() + 1).toString(),
@@ -166,7 +156,7 @@ export default function ChatDetail() {
 
   const openContextMenu = (message: Message) => {
     setSelectedMessage(message);
-    setContextVisible(true);
+    bottomSheetModalRef.current?.present();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
@@ -174,7 +164,7 @@ export default function ChatDetail() {
     if (selectedMessage) {
       setReplyingTo(selectedMessage);
       setEditingMessage(null);
-      setContextVisible(false);
+      bottomSheetModalRef.current?.dismiss();
     }
   };
 
@@ -182,7 +172,7 @@ export default function ChatDetail() {
     if (selectedMessage && selectedMessage.sender === "me") {
       setEditingMessage(selectedMessage);
       setReplyingTo(null);
-      setContextVisible(false);
+      bottomSheetModalRef.current?.dismiss();
     }
   };
 
@@ -216,6 +206,11 @@ export default function ChatDetail() {
     setActivePressedId(null);
     Animated.spring(getPressScale(id), { toValue: 1, speed: 25, bounciness: 6, useNativeDriver: true }).start();
   };
+
+  const renderBackdrop = useCallback(
+    (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
+    []
+  );
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isMe = item.sender === "me";
@@ -319,133 +314,105 @@ export default function ChatDetail() {
         />
       </KeyboardAvoidingView>
 
-      <Modal transparent animationType="fade" visible={contextVisible} onRequestClose={() => setContextVisible(false)}>
-        <Pressable style={styles.contextBackdrop} onPress={() => setContextVisible(false)}>
-          {selectedMessage && (
-            <View style={[ styles.contextContainer, selectedMessage?.sender === "me" ? styles.contextAlignRight : styles.contextAlignLeft ]}>
-              <View style={[styles.reactionBar, { backgroundColor: dark ? '#222' : '#F5F5F5' }]}>
-                <Text style={styles.reactionEmoji}>❤️</Text><Text style={styles.reactionEmoji}>👍</Text><Text style={styles.reactionEmoji}>👎</Text><Text style={styles.reactionEmoji}>🔥</Text><Text style={styles.reactionEmoji}>🥰</Text><Text style={styles.reactionEmoji}>👏</Text><Text style={styles.reactionEmoji}>😁</Text><Text style={styles.reactionEmoji}>✓</Text>
-              </View>
-              <BlurView experimentalBlurMethod="dimezisBlurView" intensity={100} tint={dark ? "dark" : "light"} style={[styles.contextMenuCard, { borderColor: borderColor }]}>
-                <Text style={[styles.contextReadText, { color: textColor + '99' }]}>✓✓ Read today at {selectedMessage.timestamp}</Text>
-                <View style={[styles.contextDivider, { backgroundColor: borderColor }]} />
-                <TouchableOpacity style={styles.menuItem} onPress={startReply}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Reply</Text>
-                  <MaterialCommunityIcons name="reply" size={24} color={textColor}/>
+      {/* Message Context Menu BottomSheet */}
+      <BaseBottomSheetModal
+        ref={bottomSheetModalRef}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{ backgroundColor: dark ? '#000' : '#FFF' }}
+      >
+        <BottomSheetView style={styles.sheetContent}>
+            <View style={styles.sheetHeader}>
+                <View style={styles.sheetAvatarContainer}>
+                    <Image source={{ uri: selectedMessage?.sender === "me" ? myUser.avatarUrl : currentUser.avatarUrl }} style={styles.sheetAvatar} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <ThemedText style={styles.sheetTitle}>{selectedMessage?.sender === "me" ? "You" : currentUser.name}</ThemedText>
+                    <ThemedText style={[styles.sheetSub, { color: secondaryTextColor }]}>Sent at {selectedMessage?.timestamp}</ThemedText>
+                </View>
+                <TouchableOpacity onPress={() => bottomSheetModalRef.current?.dismiss()} style={styles.closeBtn}>
+                   <X size={20} color={textColor} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Copy</Text>
-                  <MaterialCommunityIcons name="content-copy" size={24} color={textColor}/>
-                </TouchableOpacity>
-                {selectedMessage?.sender === "me" && (
-                  <TouchableOpacity style={styles.menuItem} onPress={startEdit}>
-                    <Text style={[styles.menuItemText, { color: textColor }]}>Edit</Text>
-                    <MaterialCommunityIcons name="comment-edit-outline" size={24} color={textColor} />
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Pin</Text>
-                  <MaterialCommunityIcons name="pin-outline" size={24} color={textColor} />
-                </TouchableOpacity>
-                <View style={[styles.contextDivider, { backgroundColor: borderColor }]} />
-                <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Delete for Me</Text>
-                  <MaterialCommunityIcons name="delete-outline" size={24} color={textColor} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Delete for All</Text>
-                  <MaterialCommunityIcons name="delete-alert-outline" size={24} color={textColor}/>
-                </TouchableOpacity>
-                <View style={[styles.contextDivider, { backgroundColor: borderColor }]} />
-                <TouchableOpacity style={styles.menuItem} onPress={() => { setContextVisible(false); toggleSelection(selectedMessage.id); setIsSelectionMode(true); }}>
-                  <Text style={[styles.menuItemText, { color: textColor }]}>Select</Text>
-                  <MaterialCommunityIcons name="comment-check-outline" size={24} color={textColor}/>
-                </TouchableOpacity>
-              </BlurView>
             </View>
-          )}
-        </Pressable>
-      </Modal>
-      </View>
+
+            <View style={styles.sheetOptions}>
+                <OptionItem 
+                    icon={<Reply size={20} color={textColor} />} 
+                    label="Reply" 
+                    onPress={startReply}
+                    textColor={textColor}
+                />
+                <OptionItem 
+                    icon={<Copy size={20} color={textColor} />} 
+                    label="Copy" 
+                    onPress={() => { bottomSheetModalRef.current?.dismiss(); }}
+                    textColor={textColor}
+                />
+                {selectedMessage?.sender === "me" && (
+                  <OptionItem 
+                    icon={<Edit size={20} color={textColor} />} 
+                    label="Edit" 
+                    onPress={startEdit}
+                    textColor={textColor}
+                  />
+                )}
+                <View style={[styles.separator, { backgroundColor: borderColor }]} />
+                
+                <OptionItem 
+                    icon={<Pin size={20} color={textColor} />} 
+                    label="Pin Message" 
+                    onPress={() => { bottomSheetModalRef.current?.dismiss(); }}
+                    textColor={textColor}
+                />
+                
+                <View style={[styles.separator, { backgroundColor: borderColor }]} />
+
+                <OptionItem 
+                    icon={<Trash2 size={20} color={textColor} />} 
+                    label="Delete For Me" 
+                    onPress={() => { bottomSheetModalRef.current?.dismiss(); }}
+                    textColor={textColor}
+                />
+                <OptionItem 
+                    icon={<Trash2 size={20} color="#FF453A" />} 
+                    label="Delete For All" 
+                    onPress={() => { bottomSheetModalRef.current?.dismiss(); }}
+                    textColor="#FF453A"
+                />
+                
+                <View style={[styles.separator, { backgroundColor: borderColor }]} />
+                
+                <OptionItem 
+                    icon={<CheckCircle size={20} color={textColor} />} 
+                    label="Select" 
+                    onPress={() => { 
+                        if(selectedMessage) {
+                            toggleSelection(selectedMessage.id); 
+                            setIsSelectionMode(true); 
+                        }
+                        bottomSheetModalRef.current?.dismiss(); 
+                    }}
+                    textColor={textColor}
+                />
+            </View>
+            <View style={{ height: insets.bottom + 20 }} />
+        </BottomSheetView>
+      </BaseBottomSheetModal>
+    </View>
   );
+}
+
+function OptionItem({ icon, label, onPress, textColor }: any) {
+    return (
+        <TouchableOpacity onPress={onPress} style={styles.optionItem}>
+            <View style={styles.optionIcon}>{icon}</View>
+            <ThemedText style={[styles.optionLabel, { color: textColor }]}>{label}</ThemedText>
+        </TouchableOpacity>
+    );
 }
 
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: "#f5f7f9" },
     container: { flex: 1 },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
-      paddingBottom: 12,
-      borderBottomWidth: 0.5,
-    },
-    backButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 4,
-    },
-    badge: {
-      backgroundColor: "#000",
-      marginLeft: 5,
-      paddingHorizontal: 6,
-      borderRadius: 10,
-      height: 18,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    badgeText: { color: "white", fontSize: 10, fontFamily: 'Inter-Bold' },
-    headerCenter: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: "rgba(255,255,255,0.7)",
-      paddingHorizontal: 15,
-      paddingVertical: 6,
-      borderRadius: 25,
-      marginHorizontal: 10,
-    },
-    headerName: { fontFamily: 'Outfit-Black', fontSize: 16, color: "#000", textTransform: 'uppercase', letterSpacing: 0.5 },
-    headerStatus: { fontSize: 10, color: "#666", fontFamily: 'Inter-SemiBold', marginTop: -2 },
-    avatarCircle: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      backgroundColor: "#000",
-      justifyContent: "center",
-      alignItems: "center",
-      borderWidth: 2,
-      borderColor: "#fff",
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-    },
-    avatarChar: { color: "white", fontFamily: 'Outfit-Black', fontSize: 18 },
-  
-    photoScroll: { maxHeight: 100, marginVertical: 8, paddingLeft: 16 },
-    photoScrollContent: { alignItems: "center", paddingRight: 20 },
-    photoWrapper: {
-      width: 65,
-      height: 85,
-      borderRadius: 15,
-      overflow: "hidden",
-      marginRight: 10,
-      backgroundColor: "#ddd",
-    },
-    photo: { width: "100%", height: "100%" },
-    photoAddButton: {
-      width: 65,
-      height: 85,
-      borderRadius: 15,
-      borderWidth: 2,
-      borderStyle: "dashed",
-      borderColor: "#ccc",
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    photoAddText: { fontSize: 30, color: "#999" },
-  
     messagesContainer: { flex: 1, paddingHorizontal: 12, position: "relative" },
     messagesContentContainer: { paddingBottom: 20 },
     messageRow: {
@@ -493,17 +460,60 @@ const styles = StyleSheet.create({
     quoteAvatar: { width: 20, height: 20, borderRadius: 4, marginRight: 6 },
     quoteUser: { fontFamily: "Inter-Bold", color: "#3b82f6", fontSize: 12 },
     quoteText: { fontSize: 12, color: "#444", fontFamily: 'Inter-Regular' },
-  
-    contextBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.15)", justifyContent: "center", alignItems: "center" },
-    contextContainer: { alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
-    contextAlignLeft: { alignItems: "flex-start", alignSelf: "flex-start", marginLeft: 0, marginRight: "auto" },
-    contextAlignRight: { alignItems: "flex-end", alignSelf: "flex-end", marginRight: 0, marginLeft: "auto" },
-    reactionBar: { flexDirection: "row", backgroundColor: "#e0f5d9", borderRadius: 30, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 10 },
-    reactionEmoji: { fontSize: 22, marginHorizontal: 4 },
-    contextMenuCard: { width: 260, borderColor: "#fff", padding: 10, borderWidth: 1, borderRadius: 18, paddingVertical: 10, overflow: "hidden" },
-    contextReadText: { textAlign: "center", fontSize: 12, color: "#555", paddingVertical: 6 },
-    contextDivider: { height: 1, backgroundColor: "#e4e4e4", marginVertical: 8 },
-    menuItem: { flexDirection: "row", justifyContent: "space-between", padding: 16 },
-    menuItemText: { fontSize: 16, fontFamily: "Inter-SemiBold" },
-    contextDelete: { color: "#d00", fontFamily: 'Inter-Bold' },
-  });
+
+    sheetContent: {
+      padding: 24,
+    },
+    sheetHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 32,
+    },
+    sheetAvatarContainer: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      overflow: "hidden",
+      backgroundColor: "#333",
+    },
+    sheetAvatar: {
+      width: "100%",
+      height: "100%",
+    },
+    sheetTitle: {
+      fontSize: 20,
+      fontFamily: "Outfit-Bold",
+    },
+    sheetSub: {
+      fontSize: 13,
+      fontFamily: "Inter-Medium",
+    },
+    closeBtn: {
+      padding: 8,
+      borderRadius: 20,
+      backgroundColor: "rgba(150,150,150,0.1)",
+    },
+    sheetOptions: {
+      gap: 4,
+    },
+    optionItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 14,
+      paddingHorizontal: 12,
+    },
+    optionIcon: {
+      width: 32,
+      alignItems: "center",
+    },
+    optionLabel: {
+      fontSize: 16,
+      fontFamily: "Inter-SemiBold",
+      marginLeft: 16,
+    },
+    separator: {
+      height: 1,
+      marginVertical: 6,
+      opacity: 0.5,
+    },
+});

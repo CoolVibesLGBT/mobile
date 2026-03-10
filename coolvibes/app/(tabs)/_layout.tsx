@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
-import { useTheme } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, withTiming, useSharedValue } from 'react-native-reanimated';
-import { Flame, Radar, MessageSquare, MapPin, Plus, Bell } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Flame, Radar, MessageSquare, MapPin, Plus } from 'lucide-react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/Colors';
 
 // --- Tab Configuration ---
 const TAB_ICONS: Record<string, React.ElementType> = {
@@ -24,15 +26,22 @@ const TAB_LABELS: Record<string, string> = {
 
 // --- TabBar Components ---
 
-function TabItem({ route, isFocused, navigation, colors }: any) {
-  const scale = useSharedValue(isFocused ? 1.2 : 1);
+function TabItem({ route, isFocused, navigation, palette }: any) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
-    scale.value = withTiming(isFocused ? 1.2 : 1, { duration: 250 });
+    // Only animate scale on focus change if needed, but we'll use it for tap feedback too
+    scale.value = withTiming(isFocused ? 1.15 : 1, { duration: 200 });
   }, [isFocused]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
+  }));
+
+  const bgStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: withTiming(opacity.value > 0 ? 1 : 0.8) }],
   }));
 
   const onPress = () => {
@@ -42,30 +51,44 @@ function TabItem({ route, isFocused, navigation, colors }: any) {
       canPreventDefault: true,
     });
 
-    if (!isFocused && !event.defaultPrevented) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      navigation.navigate(route.name, route.params);
+    if (!event.defaultPrevented) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Tap feedback animation
+      scale.value = withTiming(1.3, { duration: 100 }, () => {
+        scale.value = withTiming(isFocused ? 1.15 : 1, { duration: 150 });
+      });
+      
+      opacity.value = withTiming(1, { duration: 100 }, () => {
+        opacity.value = withTiming(0, { duration: 300 });
+      });
+
+      if (!isFocused) {
+        navigation.navigate(route.name, route.params);
+      }
     }
   };
 
   const Icon = TAB_ICONS[route.name];
   const label = TAB_LABELS[route.name];
-  const activeColor = colors.text;
-  const inactiveColor = colors.text + '50'; // 30% opacity
+  const activeColor = palette.tabIconSelected;
+  const inactiveColor = palette.tabIconDefault;
 
   return (
     <TouchableOpacity
       accessibilityRole="button"
       onPress={onPress}
       style={styles.tabItem}
-      activeOpacity={0.8}
+      activeOpacity={1}
     >
+      <Animated.View style={[styles.activeIndicatorBg, { backgroundColor: palette.tabIconSelected + '15' }, bgStyle]} />
       <Animated.View style={[styles.iconWrapper, animatedStyle]}>
-        <Icon size={25} color={isFocused ? activeColor : inactiveColor} strokeWidth={isFocused ? 2.5 : 2} />
+        <Icon size={24} color={isFocused ? activeColor : inactiveColor} strokeWidth={isFocused ? 2.5 : 2} />
       </Animated.View>
       <Text style={[
         styles.tabLabel, 
-        { color: isFocused ? activeColor : inactiveColor },
+        { color: isFocused ? activeColor : inactiveColor, opacity: isFocused ? 1 : 0.7 },
+        isFocused && { fontFamily: 'Inter-Bold' }
       ]}>
         {label}
       </Text>
@@ -73,9 +96,8 @@ function TabItem({ route, isFocused, navigation, colors }: any) {
   );
 }
 
-function CheckInButton() {
+function CheckInButton({ palette, isDark }: any) {
   const router = useRouter();
-  const { colors, dark } = useTheme();
 
   const onPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -87,23 +109,29 @@ function CheckInButton() {
       <TouchableOpacity 
         onPress={onPress} 
         style={[
-          styles.checkInButton, 
-          { 
-            backgroundColor: colors.text,
-            borderColor: dark ? '#111' : '#FFF',
-          }
-        ]} 
+          styles.checkInButton,
+          {
+            backgroundColor: palette.accent,
+            borderColor: palette.surface,
+            shadowColor: isDark ? '#000000' : '#0F172A',
+            shadowOpacity: isDark ? 0.4 : 0.16,
+          },
+        ]}
         activeOpacity={0.9}
       >
-        <Plus size={28} color={dark ? '#000' : '#FFF'} strokeWidth={3.5} />
+        <Plus size={24} color={isDark ? Colors.dark.background : Colors.light.surface} strokeWidth={3.25} />
       </TouchableOpacity>
     </View>
   );
 }
 
-function CustomTabBar({ state, descriptors, navigation }: any) {
-  const { colors, dark } = useTheme();
+function CustomTabBar({ state, navigation }: any) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const palette = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   const orderedRoutes = ['index', 'nearby', 'Match', 'chat'];
+  const tabBarHeight = (Platform.OS === 'ios' ? 62 : 66) + Math.max(insets.bottom, 8);
 
   const visibleRoutes = state.routes
     .filter((route: any) => orderedRoutes.includes(route.name))
@@ -113,30 +141,42 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const secondHalf = visibleRoutes.slice(2);
 
   const renderTab = (route: any) => {
-    const { options } = descriptors[route.key];
     const isFocused = state.index === state.routes.findIndex((r: any) => r.key === route.key);
     return (
       <TabItem
         key={route.key}
         route={route}
         isFocused={isFocused}
-        options={options}
         navigation={navigation}
-        colors={colors}
+        palette={palette}
       />
     );
   };
 
   return (
-    <View style={[styles.tabBarContainer, { backgroundColor: dark ? 'rgba(0,0,0,0.92)' : 'rgba(255,255,255,0.92)' }]}>
+    <View style={[styles.tabBarContainer, { height: tabBarHeight }]}>
       <BlurView
-        intensity={dark ? 40 : 100}
+        intensity={isDark ? 58 : 86}
         style={StyleSheet.absoluteFill}
-        tint={dark ? 'dark' : 'light'}
+        tint={isDark ? 'dark' : 'light'}
       />
-      <View style={[styles.tabBarContent, { borderTopColor: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: isDark ? 'rgba(11,18,32,0.9)' : 'rgba(255,255,255,0.92)' },
+        ]}
+      />
+      <View
+        style={[
+          styles.tabBarContent,
+          {
+            borderTopColor: palette.borderSubtle,
+            paddingBottom: Math.max(insets.bottom, 8),
+          },
+        ]}
+      >
         {firstHalf.map(renderTab)}
-        <CheckInButton />
+        <CheckInButton palette={palette} isDark={isDark} />
         {secondHalf.map(renderTab)}
       </View>
     </View>
@@ -173,7 +213,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: Platform.OS === 'ios' ? 88 : 68,
     backgroundColor: 'transparent',
     borderTopWidth: 0,
     elevation: 0,
@@ -182,48 +221,53 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    borderTopWidth: 0.5,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 0,
+    paddingHorizontal: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    paddingTop: 8,
+    paddingTop: 6,
   },
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   tabLabel: {
-    fontSize: 9,
-    fontFamily: 'Inter-Bold',
-    letterSpacing: 0.8,
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  activeIndicatorBg: {
+    position: 'absolute',
+    top: '10%',
+    left: '20%',
+    right: '20%',
+    bottom: '25%',
+    borderRadius: 16,
   },
   checkInButtonWrapper: {
-    width: 68,
+    width: 72,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
     height: '100%',
-    paddingTop: Platform.OS === 'ios' ? -10 : 0,
   },
   checkInButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Platform.OS === 'ios' ? -35 : -30, 
-    borderWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    marginTop: Platform.OS === 'ios' ? -32 : -28,
+    borderWidth: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 10,
     elevation: 10,
   },
 });

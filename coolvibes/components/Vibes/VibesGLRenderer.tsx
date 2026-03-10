@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Image as RNImage, StyleSheet } from 'react-native';
 import { Asset } from 'expo-asset';
 import { GLView, ExpoWebGLRenderingContext } from 'expo-gl';
@@ -74,7 +74,7 @@ type PositionState = {
 };
 
 interface LoadedTexture {
-  texture: WebGLTexture;
+  texture: WebGLTexture | null;
   resolution: [number, number];
   isReady: boolean;
 }
@@ -131,7 +131,13 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
   const programRef = useRef<WebGLProgram | null>(null);
   const animationFrameRef = useRef<number>(0);
   const texturesRef = useRef<LoadedTexture[]>([]);
+  const vibesRef = useRef<VibeItemData[]>(vibes);
   const readyRef = useRef(false);
+  const [contextReady, setContextReady] = useState(false);
+
+  useEffect(() => {
+    vibesRef.current = vibes;
+  }, [contextReady, vibes]);
 
   useEffect(() => {
     return () => {
@@ -150,10 +156,21 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
     let cancelled = false;
 
     const loadTextures = async () => {
+      texturesRef.current.forEach((item) => {
+        if (item.texture) {
+          gl.deleteTexture(item.texture);
+        }
+      });
+
       const nextTextures: LoadedTexture[] = vibes.map(() => {
         const texture = gl.createTexture();
         if (!texture) {
-          throw new Error('Texture creation failed');
+          console.warn('VibesGL texture creation failed; falling back to native media for this frame');
+          return {
+            texture: null,
+            resolution: [1, 1],
+            isReady: false,
+          };
         }
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -193,6 +210,10 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
             const uri = asset.localUri || asset.uri;
             const size = await getImageSize(uri);
             if (cancelled) {
+              return;
+            }
+
+            if (!nextTextures[index].texture) {
               return;
             }
 
@@ -248,6 +269,7 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
     gl.vertexAttribPointer(texcoordAttributeLocation, 2, gl.FLOAT, false, 0, 0);
 
     readyRef.current = true;
+    setContextReady(true);
 
     const texFromLocation = gl.getUniformLocation(program, 'u_tex_from');
     const texToLocation = gl.getUniformLocation(program, 'u_tex_to');
@@ -257,28 +279,29 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
     const progressLocation = gl.getUniformLocation(program, 'u_progress');
     const velocityLocation = gl.getUniformLocation(program, 'u_velocity');
 
-    const render = () => {
+      const render = () => {
       animationFrameRef.current = requestAnimationFrame(render);
+      const currentVibes = vibesRef.current;
 
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(program);
 
-      if (texturesRef.current.length === 0 || vibes.length === 0) {
+      if (texturesRef.current.length === 0 || currentVibes.length === 0) {
         gl.endFrameEXP();
         return;
       }
 
       const p = positionRef.current.current;
-      const fromIndex = Math.max(0, Math.min(vibes.length - 1, Math.floor(p)));
-      const toIndex = Math.max(0, Math.min(vibes.length - 1, Math.ceil(p)));
+      const fromIndex = Math.max(0, Math.min(currentVibes.length - 1, Math.floor(p)));
+      const toIndex = Math.max(0, Math.min(currentVibes.length - 1, Math.ceil(p)));
       const progress = p - fromIndex;
 
       const fromItem = texturesRef.current[fromIndex];
       const toItem = texturesRef.current[toIndex];
 
-      if (!fromItem || !toItem) {
+      if (!fromItem || !toItem || !fromItem.texture || !toItem.texture || !fromItem.isReady || !toItem.isReady) {
         gl.endFrameEXP();
         return;
       }

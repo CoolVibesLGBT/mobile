@@ -1,37 +1,43 @@
-/**
- * Premium Monochrome + Subtle Pride Accent Colors
- */
-
-const tintColorLight = '#000000';
-const tintColorDark = '#FFFFFF';
+const tintColorLight = '#111827';
+const tintColorDark = '#F9FAFB';
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#FFFFFF',
+    text: '#111827',
+    textMuted: '#6B7280',
+    background: '#F8FAFC',
+    surface: '#FFFFFF',
+    surfaceElevated: '#FFFFFF',
     tint: tintColorLight,
-    icon: '#666666',
-    tabIconDefault: '#999999',
+    icon: '#64748B',
+    tabIconDefault: '#94A3B8',
     tabIconSelected: tintColorLight,
-    border: '#E8E8E8',
-    secondaryBackground: '#F8F9FA',
-    accent: '#000000', // Pure black accent for light mode
-    accentGradient: ['#000000', '#333333'],
+    border: '#E2E8F0',
+    borderSubtle: '#EEF2F7',
+    secondaryBackground: '#F1F5F9',
+    accent: '#111827',
+    accentSoft: 'rgba(17,24,39,0.08)',
+    accentGradient: ['#111827', '#334155'],
     card: '#FFFFFF',
-    notification: '#000000',
+    notification: '#111827',
   },
   dark: {
-    text: '#FFFFFF',
-    background: '#000000',
+    text: '#F9FAFB',
+    textMuted: '#9CA3AF',
+    background: '#030712',
+    surface: '#0B1220',
+    surfaceElevated: '#111827',
     tint: tintColorDark,
-    icon: '#8E8E93',
-    tabIconDefault: '#48484A',
+    icon: '#94A3B8',
+    tabIconDefault: '#64748B',
     tabIconSelected: tintColorDark,
-    border: '#2C2C2E',
-    secondaryBackground: '#121212',
-    accent: '#FFFFFF', // Pure white accent for dark mode
-    accentGradient: ['#FFFFFF', '#CCCCCC'],
-    card: '#1C1C1E',
-    notification: '#FFFFFF',
+    border: '#1E293B',
+    borderSubtle: '#172132',
+    secondaryBackground: '#0F172A',
+    accent: '#F9FAFB',
+    accentSoft: 'rgba(248,250,252,0.14)',
+    accentGradient: ['#F9FAFB', '#CBD5E1'],
+    card: '#111827',
+    notification: '#F9FAFB',
   },
 };

@@ -1,28 +1,42 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
-  ListRenderItemInfo,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
+  LayoutChangeEvent,
+  PanResponder,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sparkles, Volume2, VolumeX } from 'lucide-react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { api } from '@/services/apiService';
 import { defaultServiceServerId, serviceURL } from '@/config';
 import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
 
-import { BurstOverlay, VibeItem } from './VibeItem';
+import { BurstOverlay } from './VibeItem';
+import { VibeDetailsOverlay } from './VibeDetailsOverlay';
 import type { BurstType, VibeItemData } from './types';
 
 const dummyVibes = require('@/mock/dummy_vibes.json') as {
   data?: { posts?: unknown[] };
+};
+
+type PositionState = {
+  current: number;
+  target: number;
+  velocity: number;
+};
+
+type TransitionState = {
+  fromIndex: number;
+  toIndex: number;
+  progress: number;
+  direction: -1 | 0 | 1;
 };
 
 function normalizeVibesResponse(response: any): { posts: any[]; cursor: string | null } {
@@ -89,22 +103,127 @@ function mapPostsToVibes(posts: any[]): VibeItemData[] {
     .filter((item) => Boolean(item.id && item.mediaUrl));
 }
 
+function MediaPoster({ vibe, opacity = 1, translateY = 0 }: { vibe: VibeItemData; opacity?: number; translateY?: number }) {
+  const sourceUri = vibe.mediaType === 'video' ? vibe.posterUrl || vibe.mediaUrl : vibe.mediaUrl;
+  return (
+    <Image
+      source={{ uri: sourceUri }}
+      style={[StyleSheet.absoluteFillObject, { opacity, transform: [{ translateY }] }]}
+      contentFit="cover"
+      cachePolicy="memory-disk"
+    />
+  );
+}
+
+function ActiveVideoMedia({ vibe, isMuted, onReady }: { vibe: VibeItemData; isMuted: boolean; onReady: () => void }) {
+  const [videoReady, setVideoReady] = useState(false);
+  const player = useVideoPlayer(vibe.mediaUrl, (instance) => {
+    instance.loop = true;
+    instance.muted = isMuted;
+  });
+
+  useEffect(() => {
+    setVideoReady(false);
+  }, [vibe.id]);
+
+  useEffect(() => {
+    player.muted = isMuted;
+  }, [isMuted, player]);
+
+  useEffect(() => {
+    try {
+      player.play();
+    } catch (error) {
+      console.warn('Vibes video play failed', error);
+    }
+
+    return () => {};
+  }, [player, vibe.id]);
+
+  useEffect(() => {
+    if (videoReady) {
+      onReady();
+    }
+  }, [onReady, videoReady]);
+
+  return (
+    <View style={StyleSheet.absoluteFillObject}>
+      {!videoReady && vibe.posterUrl ? <MediaPoster vibe={vibe} /> : null}
+      <VideoView
+        player={player}
+        style={StyleSheet.absoluteFillObject}
+        contentFit="cover"
+        nativeControls={false}
+        fullscreenOptions={{ enable: false }}
+        onFirstFrameRender={() => {
+          setVideoReady(true);
+          onReady();
+        }}
+      />
+    </View>
+  );
+}
+
+function ActiveImageMedia({ vibe, onReady }: { vibe: VibeItemData; onReady: () => void }) {
+  return (
+    <Image
+      source={{ uri: vibe.mediaUrl }}
+      style={StyleSheet.absoluteFillObject}
+      contentFit="cover"
+      cachePolicy="memory-disk"
+      onLoadEnd={onReady}
+    />
+  );
+}
+
+function ActiveMedia({ vibe, isMuted, onReady }: { vibe: VibeItemData; isMuted: boolean; onReady: () => void }) {
+  if (vibe.mediaType === 'video') {
+    return <ActiveVideoMedia vibe={vibe} isMuted={isMuted} onReady={onReady} />;
+  }
+  return <ActiveImageMedia vibe={vibe} onReady={onReady} />;
+}
+
 export default function VibesScreen() {
   const insets = useSafeAreaInsets();
-  const flatListRef = useRef<FlatList<VibeItemData>>(null);
   const cursorRef = useRef<string | null>(null);
   const hasMoreRef = useRef(true);
   const isFetchingRef = useRef(false);
+  const animationFrameRef = useRef<number>(0);
+  const loadedMediaIdsRef = useRef<Set<string>>(new Set());
+  const positionRef = useRef<PositionState>({ current: 0, target: 0, velocity: 0 });
+  const lastPosRef = useRef(0);
+  const interactionRef = useRef({
+    isDragging: false,
+    lastY: 0,
+    dragStartPos: 0,
+    dragHistory: [] as { time: number; y: number }[],
+  });
+  const transitionStateRef = useRef<TransitionState>({
+    fromIndex: 0,
+    toIndex: 0,
+    progress: 0,
+    direction: 0,
+  });
 
-  const [viewportHeight, setViewportHeight] = useState(0);
   const [vibes, setVibes] = useState<VibeItemData[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isMediaLoading, setIsMediaLoading] = useState(false);
   const [burstType, setBurstType] = useState<BurstType | null>(null);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [transitionState, setTransitionState] = useState<TransitionState>({
+    fromIndex: 0,
+    toIndex: 0,
+    progress: 0,
+    direction: 0,
+  });
 
   const hasVibes = vibes.length > 0;
+  const currentVibe = useMemo(() => vibes[activeIndex], [activeIndex, vibes]);
+  const transitionFromVibe = vibes[transitionState.fromIndex];
+  const transitionToVibe = vibes[transitionState.toIndex];
+  const isTransitioning = transitionState.direction !== 0 && transitionState.fromIndex !== transitionState.toIndex;
 
   const fetchVibesFromApi = useCallback(async (loadMore = false) => {
     if (isFetchingRef.current) {
@@ -134,6 +253,9 @@ export default function VibesScreen() {
 
       setVibes((prev) => {
         if (!loadMore) {
+          if (mapped.length === 0) {
+            setIsMediaLoading(false);
+          }
           return mapped;
         }
         const existingIds = new Set(prev.map((item) => item.id));
@@ -144,6 +266,7 @@ export default function VibesScreen() {
       if (!loadMore) {
         const fallback = mapPostsToVibes(dummyVibes.data?.posts || []);
         setVibes(fallback);
+        setIsMediaLoading(false);
         hasMoreRef.current = false;
         cursorRef.current = null;
       }
@@ -160,10 +283,13 @@ export default function VibesScreen() {
   }, [fetchVibesFromApi]);
 
   useEffect(() => {
-    if (hasVibes) {
-      setIsMediaLoading(true);
+    if (!hasVibes) {
+      setIsMediaLoading(false);
+      return;
     }
-  }, [activeIndex, hasVibes]);
+    const currentId = vibes[activeIndex]?.id;
+    setIsMediaLoading(currentId ? !loadedMediaIdsRef.current.has(currentId) : false);
+  }, [activeIndex, hasVibes, vibes]);
 
   useEffect(() => {
     if (hasVibes && activeIndex >= vibes.length - 5) {
@@ -179,83 +305,171 @@ export default function VibesScreen() {
     return () => clearTimeout(timeout);
   }, [burstType]);
 
-  const keyExtractor = useCallback((item: VibeItemData) => item.id, []);
+  useEffect(() => {
+    if (!hasVibes) {
+      return undefined;
+    }
 
-  const getItemLayout = useCallback(
-    (_: ArrayLike<VibeItemData> | null | undefined, index: number) => ({
-      length: viewportHeight,
-      offset: viewportHeight * index,
-      index,
-    }),
-    [viewportHeight]
-  );
+    let mounted = true;
+    let lastActiveIndex = -1;
 
-  const handleMomentumEnd = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (!viewportHeight) {
+    const tick = () => {
+      if (!mounted) {
         return;
       }
-      const nextIndex = Math.round(event.nativeEvent.contentOffset.y / viewportHeight);
-      if (nextIndex !== activeIndex) {
-        setActiveIndex(nextIndex);
+
+      const pos = positionRef.current;
+
+      if (!interactionRef.current.isDragging) {
+        const deltaTime = 1 / 60;
+        const stiffness = 150;
+        const damping = 26;
+        const force = (pos.target - pos.current) * stiffness;
+        const dampingForce = -pos.velocity * damping;
+        const acceleration = force + dampingForce;
+        pos.velocity += acceleration * deltaTime;
+        pos.current += pos.velocity * deltaTime;
+
+        if (Math.abs(pos.target - pos.current) < 0.0005 && Math.abs(pos.velocity) < 0.0005) {
+          pos.current = pos.target;
+          pos.velocity = 0;
+        }
       }
-    },
-    [activeIndex, viewportHeight]
+
+      pos.current = Math.max(0, Math.min(vibes.length - 1, pos.current));
+
+      const deltaPos = pos.current - lastPosRef.current;
+      lastPosRef.current = pos.current;
+      const frac = pos.current - Math.floor(pos.current);
+      const movingDown = deltaPos < -0.0001 || (deltaPos <= 0.0001 && pos.target < pos.current);
+
+      let nextTransition: TransitionState;
+      if (Math.abs(pos.current - Math.round(pos.current)) < 0.001) {
+        const idx = Math.round(pos.current);
+        nextTransition = { fromIndex: idx, toIndex: idx, progress: 0, direction: 0 };
+      } else if (movingDown) {
+        nextTransition = {
+          fromIndex: Math.ceil(pos.current),
+          toIndex: Math.floor(pos.current),
+          progress: 1 - frac,
+          direction: -1,
+        };
+      } else {
+        nextTransition = {
+          fromIndex: Math.floor(pos.current),
+          toIndex: Math.ceil(pos.current),
+          progress: frac,
+          direction: 1,
+        };
+      }
+      const prevTransition = transitionStateRef.current;
+      const shouldUpdateTransition =
+        prevTransition.fromIndex !== nextTransition.fromIndex ||
+        prevTransition.toIndex !== nextTransition.toIndex ||
+        prevTransition.direction !== nextTransition.direction ||
+        Math.abs(prevTransition.progress - nextTransition.progress) > 0.002;
+
+      if (shouldUpdateTransition) {
+        transitionStateRef.current = nextTransition;
+        setTransitionState(nextTransition);
+      }
+
+      const nextActiveIndex = Math.max(0, Math.min(vibes.length - 1, Math.round(pos.current)));
+      if (nextActiveIndex !== lastActiveIndex) {
+        lastActiveIndex = nextActiveIndex;
+        setActiveIndex(nextActiveIndex);
+      }
+
+      animationFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(tick);
+    return () => {
+      mounted = false;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [hasVibes, vibes]);
+
+  const snapToNearest = useCallback(() => {
+    const history = interactionRef.current.dragHistory;
+    const first = history[0];
+    const last = history[history.length - 1];
+
+    if (first && last) {
+      const duration = last.time - first.time;
+      const distance = last.y - first.y;
+      if (duration > 20 && Math.abs(distance) > 10) {
+        positionRef.current.velocity = (distance / duration) * -0.8;
+      }
+    }
+
+    const projectedTarget = positionRef.current.current + positionRef.current.velocity * 0.2;
+    let newTarget = Math.round(projectedTarget);
+    newTarget = Math.max(0, Math.min(vibes.length - 1, newTarget));
+    positionRef.current.target = newTarget;
+  }, [vibes.length]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 4,
+        onPanResponderGrant: (_, gestureState) => {
+          interactionRef.current.isDragging = true;
+          interactionRef.current.lastY = gestureState.y0;
+          interactionRef.current.dragStartPos = positionRef.current.current;
+          interactionRef.current.dragHistory = [{ time: Date.now(), y: gestureState.y0 }];
+          positionRef.current.velocity = 0;
+        },
+        onPanResponderMove: (_, gestureState) => {
+          const now = Date.now();
+          interactionRef.current.lastY = gestureState.moveY;
+          positionRef.current.current = interactionRef.current.dragStartPos - gestureState.dy * 0.0045;
+          positionRef.current.current = Math.max(0, Math.min(vibes.length - 1, positionRef.current.current));
+          positionRef.current.target = positionRef.current.current;
+          interactionRef.current.dragHistory.push({ time: now, y: gestureState.moveY });
+          if (interactionRef.current.dragHistory.length > 5) {
+            interactionRef.current.dragHistory.shift();
+          }
+        },
+        onPanResponderRelease: () => {
+          interactionRef.current.isDragging = false;
+          snapToNearest();
+        },
+        onPanResponderTerminate: () => {
+          interactionRef.current.isDragging = false;
+          snapToNearest();
+        },
+      }),
+    [snapToNearest, vibes.length]
   );
 
-  const renderItem = useCallback(
-    ({ item, index }: ListRenderItemInfo<VibeItemData>) => (
-      <VibeItem
-        vibe={item}
-        isActive={index === activeIndex}
-        isMuted={isMuted}
-        viewportHeight={viewportHeight}
-        bottomInset={insets.bottom + 84}
-        onMediaReady={() => setIsMediaLoading(false)}
-        onBurst={setBurstType}
-      />
-    ),
-    [activeIndex, insets.bottom, isMuted, viewportHeight]
-  );
+  const showInitialLoader = isLoading && !hasVibes;
+  const showMediaLoader = isMediaLoading && hasVibes;
+  const fromTranslateY = transitionState.direction === 1 ? -transitionState.progress * viewportHeight : transitionState.progress * viewportHeight;
+  const toTranslateY = transitionState.direction === 1 ? (1 - transitionState.progress) * viewportHeight : -(1 - transitionState.progress) * viewportHeight;
 
-  const loaderVisible = isLoading || isMediaLoading;
-  const currentVibe = useMemo(() => vibes[activeIndex], [activeIndex, vibes]);
+  const handleLayout = (event: LayoutChangeEvent) => {
+    setViewportHeight(event.nativeEvent.layout.height);
+  };
 
   return (
-    <View
-      style={styles.container}
-      onLayout={(event) => {
-        const nextHeight = Math.round(event.nativeEvent.layout.height);
-        if (nextHeight && nextHeight !== viewportHeight) {
-          setViewportHeight(nextHeight);
-          requestAnimationFrame(() => {
-            if (flatListRef.current && activeIndex > 0) {
-              flatListRef.current.scrollToOffset({ offset: nextHeight * activeIndex, animated: false });
-            }
-          });
-        }
-      }}
-    >
-      {viewportHeight > 0 ? (
-        <FlatList
-          ref={flatListRef}
-          data={vibes}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          pagingEnabled
-          snapToInterval={viewportHeight}
-          decelerationRate="fast"
-          showsVerticalScrollIndicator={false}
-          onMomentumScrollEnd={handleMomentumEnd}
-          getItemLayout={getItemLayout}
-          windowSize={3}
-          initialNumToRender={2}
-          maxToRenderPerBatch={3}
-          removeClippedSubviews
+    <View style={styles.container} onLayout={handleLayout} {...panResponder.panHandlers}>
+      {currentVibe && !isTransitioning ? (
+        <ActiveMedia
+          vibe={currentVibe}
+          isMuted={isMuted}
+          onReady={() => {
+            loadedMediaIdsRef.current.add(currentVibe.id);
+            setIsMediaLoading(false);
+          }}
         />
       ) : null}
+      {viewportHeight > 0 && isTransitioning && transitionFromVibe ? <MediaPoster vibe={transitionFromVibe} translateY={fromTranslateY} opacity={1 - transitionState.progress * 0.15} /> : null}
+      {viewportHeight > 0 && isTransitioning && transitionToVibe ? <MediaPoster vibe={transitionToVibe} translateY={toTranslateY} opacity={0.55 + transitionState.progress * 0.45} /> : null}
 
-      <View style={[styles.topControls, { top: insets.top + 14 }]} pointerEvents="box-none">
+      <View style={[styles.topControls, { top: insets.top + 10 }]} pointerEvents="box-none">
         <Pressable style={styles.muteButton} onPress={() => setIsMuted((value) => !value)}>
           <BlurView intensity={35} tint="dark" style={styles.muteButtonBlur}>
             {isMuted ? <VolumeX size={22} color="#FFFFFF" /> : <Volume2 size={22} color="#FFFFFF" />}
@@ -263,14 +477,21 @@ export default function VibesScreen() {
         </Pressable>
       </View>
 
-      {loaderVisible ? (
-        <View style={styles.loaderOverlay} pointerEvents="none">
-          <BlurView intensity={35} tint="dark" style={styles.loaderCard}>
-            <View style={styles.loaderIconWrap}>
-              <ActivityIndicator size="large" color="rgba(255,255,255,0.75)" />
-              <Sparkles size={18} color="#FFFFFF" style={styles.sparkles} />
-            </View>
-            <Text style={styles.loaderText}>Loading Vibes</Text>
+      {currentVibe ? <VibeDetailsOverlay vibe={currentVibe} bottomInset={insets.bottom + 74} onBurst={setBurstType} /> : null}
+
+      {showInitialLoader ? (
+        <View style={[styles.loaderTopWrap, { top: insets.top + 10 }]} pointerEvents="none">
+          <BlurView intensity={35} tint="dark" style={styles.loaderPill}>
+            <ActivityIndicator size="small" color="#FFFFFF" />
+            <Text style={styles.loaderPillText}>Loading vibes</Text>
+          </BlurView>
+        </View>
+      ) : null}
+
+      {showMediaLoader ? (
+        <View style={[styles.loaderTopWrap, { top: insets.top + 10 }]} pointerEvents="none">
+          <BlurView intensity={30} tint="dark" style={styles.loaderDot}>
+            <ActivityIndicator size="small" color="#FFFFFF" />
           </BlurView>
         </View>
       ) : null}
@@ -286,8 +507,6 @@ export default function VibesScreen() {
       ) : null}
 
       <BurstOverlay type={burstType} />
-
-      {currentVibe == null && !isLoading ? <View style={styles.blackFill} /> : null}
     </View>
   );
 }
@@ -300,7 +519,7 @@ const styles = StyleSheet.create({
   topControls: {
     position: 'absolute',
     right: 18,
-    zIndex: 20,
+    zIndex: 44,
   },
   muteButton: {
     borderRadius: 28,
@@ -316,37 +535,42 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.14)',
   },
-  loaderOverlay: {
-    ...StyleSheet.absoluteFillObject,
+  loaderTopWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    zIndex: 40,
+    zIndex: 42,
   },
-  loaderCard: {
-    width: 190,
-    paddingHorizontal: 24,
-    paddingVertical: 26,
-    borderRadius: 28,
+  loaderPill: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(12,12,12,0.5)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.14)',
     overflow: 'hidden',
   },
-  loaderIconWrap: {
-    width: 52,
-    height: 52,
+  loaderPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: 0.25,
+    textTransform: 'uppercase',
+  },
+  loaderDot: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  sparkles: {
-    position: 'absolute',
-  },
-  loaderText: {
-    marginTop: 18,
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: 'Inter-Bold',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
+    backgroundColor: 'rgba(12,12,12,0.44)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
   },
   emptyState: {
     ...StyleSheet.absoluteFillObject,
@@ -375,9 +599,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Medium',
     marginTop: 8,
-  },
-  blackFill: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000000',
   },
 });
