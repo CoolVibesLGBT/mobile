@@ -142,6 +142,20 @@ export default function GlobalHeader() {
                     </View>
                 );
             }
+            if (currentTab === 'CheckIn') {
+                return (
+                    <View style={styles.brandContainer}>
+                        <Text style={brandText}>CHECK-IN</Text>
+                    </View>
+                );
+            }
+        }
+        if (isCheckIn) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>CHECK-IN</Text>
+                </View>
+            );
         }
         return (
             <View style={styles.brandContainer}>

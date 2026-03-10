@@ -101,7 +101,7 @@ function CheckInButton({ palette, isDark }: any) {
 
   const onPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/CheckIn');
+    palette.navigation?.navigate('CheckIn');
   };
 
   return (
@@ -176,7 +176,7 @@ function CustomTabBar({ state, navigation }: any) {
         ]}
       >
         {firstHalf.map(renderTab)}
-        <CheckInButton palette={palette} isDark={isDark} />
+        <CheckInButton palette={{ ...palette, navigation }} isDark={isDark} />
         {secondHalf.map(renderTab)}
       </View>
     </View>
@@ -197,6 +197,7 @@ export default function TabLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="nearby" />
       <Tabs.Screen name="Match" />
+      <Tabs.Screen name="CheckIn" options={{ href: null }} />
       <Tabs.Screen name="Activity" options={{ href: null }} />
       <Tabs.Screen name="chat" />
       <Tabs.Screen name="Profile" options={{ href: null }} />

@@ -75,43 +75,7 @@ export default function CheckInScreen() {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background, paddingTop: 60 + insets.top }]}>
-            {/* Internal Header - REMOVED to favor GlobalHeader */}
-            {/* 
-            <View style={[styles.header, { paddingTop: insets.top + 10, borderBottomColor: borderColor }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-                    <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-                </TouchableOpacity>
-
-                <View style={[styles.modeSwitcher, { backgroundColor: dark ? '#1A1A1A' : '#F5F5F5' }]}>
-                    <TouchableOpacity 
-                        onPress={() => setMode('create')}
-                        style={[styles.modeBtn, mode === 'create' && { backgroundColor: activeBg }]}
-                    >
-                        <Text style={[styles.modeText, { color: mode === 'create' ? activeText : colors.text, opacity: mode === 'create' ? 1 : 0.5 }]}>
-                            MY VIBE
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                        onPress={() => setMode('nearby')}
-                        style={[styles.modeBtn, mode === 'nearby' && { backgroundColor: activeBg }]}
-                    >
-                        <Text style={[styles.modeText, { color: mode === 'nearby' ? activeText : colors.text, opacity: mode === 'nearby' ? 1 : 0.5 }]}>
-                            NEARBY
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={styles.iconBtn}>
-                    <MaterialCommunityIcons name="history" size={24} color={colors.text} />
-                </TouchableOpacity>
-            </View>
-            */}
-
             {/* Screen Content */}
-            <View style={styles.titleArea}>
-                <Text style={[styles.screenTitle, { color: colors.text }]}>CHECK-IN</Text>
-                <Text style={[styles.screenSubtitle, { color: colors.text }]}>What's your vibe today?</Text>
-            </View>
 
             {/* Sub-Header: Mode Switcher */}
             <View style={styles.subHeader}>
@@ -192,24 +156,6 @@ export default function CheckInScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    titleArea: {
-        paddingHorizontal: 20,
-        paddingTop: 10,
-        paddingBottom: 5,
-        alignItems: 'center',
-    },
-    screenTitle: {
-        fontSize: 32,
-        fontFamily: 'Outfit-Black',
-        letterSpacing: -1,
-        textTransform: 'uppercase',
-    },
-    screenSubtitle: {
-        fontSize: 14,
-        fontFamily: 'Inter-SemiBold',
-        opacity: 0.5,
-        marginTop: 2,
     },
     subHeader: {
         alignItems: 'center',
