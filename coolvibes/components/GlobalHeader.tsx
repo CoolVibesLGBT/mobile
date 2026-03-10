@@ -3,20 +3,47 @@ import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter, useSegments, useLocalSearchParams } from 'expo-router';
+import { useRouter, useSegments, useGlobalSearchParams as useSearchParams } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useAppSelector } from '@/store/hooks';
+import { BottomSheetModal, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { useCallback, useRef, useState } from 'react';
+import { Dimensions } from 'react-native';
+import { MessageSquare, MapPin, Calendar, Users, Star, ScrollText } from 'lucide-react-native';
+import ProfileAboutView from './ProfileAboutView';
+import FullProfileView from './FullProfileView';
+import { ScrollView } from 'react-native-gesture-handler';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const secondaryText = '#888';
 
 export default function GlobalHeader() {
     const insets = useSafeAreaInsets();
     const { colors, dark } = useTheme();
     const router = useRouter();
     const segments = useSegments();
-    const params = useLocalSearchParams();
+    const params = useSearchParams();
 
     // Read logged-in user from Redux store
     const authUser = useAppSelector(state => state.auth.user);
+    const profileSheetRef = useRef<BottomSheetModal>(null);
+
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+    const handleOpenProfile = useCallback(() => {
+        setIsSheetOpen(true);
+        profileSheetRef.current?.present();
+    }, []);
+
+    const onSheetChange = useCallback((index: number) => {
+        if (index === -1) setIsSheetOpen(false);
+    }, []);
+
+    const renderBackdrop = useCallback(
+        (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
+        []
+    );
 
     const isAuth = (segments as any[])[0] === '(auth)';
     const isChatDetail = (segments as any[]).includes('ChatDetail');
@@ -35,8 +62,9 @@ export default function GlobalHeader() {
         (segs.length === 2 && segs[0] === '(tabs)' && rootSubSegments.includes(segs[1]))
     );
 
-    // Resolve chat user from route params (populated by ChatDetail on navigate)
-    const chatUserName: string   = (params?.name  as string) || (params?.chatId as string) || 'Chat';
+    // Resolve chat user from route params
+    const chatUserNameRaw = (params?.name as string) || (params?.chatId as string) || 'Chat';
+    const chatUserName = chatUserNameRaw === 'Chat' ? 'Chat' : chatUserNameRaw;
     const chatUserStatus: string = (params?.status as string) || 'online';
     const chatUserAvatar: string = (params?.avatar as string) || `https://i.pravatar.cc/150?u=${chatUserName}`;
 
@@ -45,7 +73,7 @@ export default function GlobalHeader() {
         height: 60 + insets.top,
         paddingTop: insets.top,
         width: '100%',
-        zIndex: isOverlayHeader ? 1000 : 1,
+        zIndex: isSheetOpen ? 1 : (isOverlayHeader ? 100 : 1),
         backgroundColor: 'transparent',
         ...(isOverlayHeader
             ? { position: 'absolute', top: 0 }
@@ -64,7 +92,7 @@ export default function GlobalHeader() {
 
     const brandText: TextStyle = {
         fontSize: 18,
-        fontFamily: 'Outfit-Black',
+        fontFamily: 'Outfit-Bold',
         letterSpacing: 2,
         color: colors.text,
         textTransform: 'uppercase',
@@ -73,20 +101,15 @@ export default function GlobalHeader() {
     const renderCenter = () => {
         if (isChatDetail) {
             return (
-                <View style={styles.chatHeaderCenter}>
-                    <Text style={[styles.chatName, { color: colors.text }]} numberOfLines={1}>
+                <TouchableOpacity 
+                    style={[styles.chatHeaderCenter, { paddingHorizontal: 0 }]}
+                    activeOpacity={0.7}
+                    onPress={handleOpenProfile}
+                >
+                    <Text style={[brandText, { textAlign: 'center' }]} numberOfLines={1}>
                         {chatUserName}
                     </Text>
-                    <View style={styles.statusRow}>
-                        <View style={[
-                            styles.statusDot,
-                            { backgroundColor: chatUserStatus === 'online' ? '#34C759' : (dark ? '#555' : '#BBB') }
-                        ]} />
-                        <Text style={[styles.chatStatus, { color: dark ? '#888' : '#AAA' }]}>
-                            {chatUserStatus}
-                        </Text>
-                    </View>
-                </View>
+                </TouchableOpacity>
             );
         }
         if (isSettings) {
@@ -130,9 +153,15 @@ export default function GlobalHeader() {
     const renderRight = () => {
         if (isChatDetail) {
             return (
-                <TouchableOpacity style={styles.avatarBtn} activeOpacity={0.7}>
-                    <Image source={{ uri: chatUserAvatar }} style={styles.headerAvatar} contentFit="cover" />
-                </TouchableOpacity>
+                <View style={styles.rightButtons}>
+                    <TouchableOpacity 
+                        style={styles.avatarBtn} 
+                        activeOpacity={0.7} 
+                        onPress={handleOpenProfile}
+                    >
+                        <Image source={{ uri: chatUserAvatar }} style={styles.headerAvatar} contentFit="cover" />
+                    </TouchableOpacity>
+                </View>
             );
         }
         if (isSettings) {
@@ -200,6 +229,34 @@ export default function GlobalHeader() {
                 {/* Right */}
                 {renderRight()}
             </View>
+
+            {/* Profile Preview Sheet */}
+            <BottomSheetModal
+                ref={profileSheetRef}
+                index={0}
+                snapPoints={['92%']}
+                onChange={onSheetChange}
+                backdropComponent={renderBackdrop}
+                backgroundStyle={{ backgroundColor: dark ? '#000' : '#FFF' }}
+                handleIndicatorStyle={{ backgroundColor: dark ? '#333' : '#E0E0E0' }}
+            >
+                <BottomSheetView style={{ flex: 1 }}>
+                    <FullProfileView 
+                        user={{
+                            id: chatUserName,
+                            displayname: chatUserName,
+                            avatar_url: chatUserAvatar,
+                            banner_url: `https://picsum.photos/seed/${chatUserName}/1500/500`,
+                            bio: "The best app in the world. Building the future of social media, one line of code at a time.",
+                            location: "San Francisco, CA",
+                            followers_count: 12,
+                            following_count: 2,
+                        }} 
+                        isMe={false} 
+                        onMessage={() => profileSheetRef.current?.dismiss()}
+                    />
+                </BottomSheetView>
+            </BottomSheetModal>
         </View>
     );
 }
@@ -217,7 +274,7 @@ const styles = StyleSheet.create({
     },
     chatName: {
         fontSize: 15,
-        fontFamily: 'Outfit-Black',
+        fontFamily: 'Outfit-Bold',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
@@ -264,5 +321,91 @@ const styles = StyleSheet.create({
         height: 40,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    sheetBannerContainer: {
+        height: 180,
+    },
+    sheetBanner: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#222',
+    },
+    sheetProfileSection: {
+        marginTop: -40,
+        paddingHorizontal: 20,
+    },
+    sheetAvatarContainer: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        borderWidth: 4,
+        overflow: 'hidden',
+        backgroundColor: '#111',
+    },
+    sheetLargeAvatar: {
+        width: '100%',
+        height: '100%',
+    },
+    sheetHeaderDetails: {
+        marginTop: 12,
+        paddingBottom: 24,
+    },
+    sheetNameMain: {
+        fontSize: 32,
+        fontFamily: 'Outfit-Black',
+        letterSpacing: -1,
+        textTransform: 'uppercase',
+    },
+    sheetUsernameMain: {
+        fontSize: 15,
+        fontFamily: 'Inter-SemiBold',
+        opacity: 0.5,
+        marginTop: -2,
+    },
+    sheetBioMain: {
+        marginTop: 16,
+        fontSize: 15,
+        lineHeight: 22,
+        fontFamily: 'Inter-Regular',
+        opacity: 0.8,
+    },
+    sheetMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 16,
+    },
+    sheetMetaItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    sheetMetaInfo: {
+        fontSize: 13,
+        fontFamily: 'Inter-SemiBold',
+        opacity: 0.5,
+    },
+    sheetStatsContainer: {
+        flexDirection: 'row',
+        marginTop: 20,
+    },
+    sheetStatUnit: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    sheetStatNum: {
+        fontFamily: 'Inter-Bold',
+        fontSize: 16,
+    },
+    sheetStatLab: {
+        fontSize: 14,
+        fontFamily: 'Inter-SemiBold',
+        opacity: 0.5,
+        textTransform: 'lowercase',
+    },
+    sheetDivider: {
+        height: 1,
+        backgroundColor: 'rgba(128,128,128,0.1)',
+        marginVertical: 10,
     },
 });

@@ -214,6 +214,7 @@ export default function ChatScreen() {
       
       <FlashList
         data={conversations}
+        // @ts-ignore
         estimatedItemSize={84}
         keyExtractor={(item) => item.id}
         onEndReached={() => {

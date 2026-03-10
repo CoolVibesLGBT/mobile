@@ -514,7 +514,7 @@ export default function ChatInput({
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
-          <View style={styles.footerContainer}>
+          <View style={[styles.footerContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
             <View style={styles.inputRow}>
               <TouchableOpacity
                 onPress={isRecording ? cancelRecording : handlePresentModalPress}
@@ -792,7 +792,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   footerContainer: {
     paddingHorizontal: 8,
-    paddingBottom: Platform.OS === "ios" ? 20 : 10,
     paddingTop: 8,
     backgroundColor: "transparent",
   },
