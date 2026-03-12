@@ -4,70 +4,62 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
   Dimensions,
-  Platform,
-  UIManager,
   Animated,
+  RefreshControlProps,
 } from 'react-native';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
+import { Image } from 'expo-image';
 import { useTheme } from '@react-navigation/native';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MapPin, Calendar, Users, Star, MessageSquare } from 'lucide-react-native';
+import { MapPin, Calendar, MessageSquare, Plus, Edit2, Wallet } from 'lucide-react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import ProfileAboutView from './ProfileAboutView';
 
 const { width } = Dimensions.get('window');
-const POST_ITEM_SIZE = (width - 4) / 3;
-const BANNER_HEIGHT = 220;
+const POST_ITEM_SIZE = (width - 2) / 3;
+const BANNER_HEIGHT = 200;
 
 type FullProfileViewProps = {
     user: any;
     isMe?: boolean;
     onMessage?: () => void;
     onFollow?: () => void;
+    onEdit?: () => void;
+    onWallet?: () => void;
+    refreshControl?: React.ReactElement<RefreshControlProps>;
 };
 
 const TABS = [
-  { key: 'about', title: 'About', icon: 'account-details-outline' },
-  { key: 'posts', title: 'Posts', icon: 'grid' },
-  { key: 'media', title: 'Media', icon: 'image-multiple-outline' },
-  { key: 'likes', title: 'Likes', icon: 'heart-outline' },
+  { key: 'about', title: 'About' },
+  { key: 'posts', title: 'Posts' },
+  { key: 'media', title: 'Media' },
+  { key: 'likes', title: 'Likes' },
 ];
 
-export default function FullProfileView({ user, isMe, onMessage, onFollow }: FullProfileViewProps) {
-  const { colors, dark } = useTheme();
+export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdit, onWallet, refreshControl }: FullProfileViewProps) {
+  const { dark } = useTheme();
   const [activeTab, setActiveTab] = useState(TABS[0].key);
-  const scrollY = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   // Monochrome colors
   const textColor = dark ? '#FFFFFF' : '#000000';
   const backgroundColor = dark ? '#000000' : '#FFFFFF';
-  const secondaryText = dark ? '#666666' : '#999999';
+  const secondaryText = dark ? '#888888' : '#666666';
   const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
+  const cardColor = dark ? '#0F0F0F' : '#F9F9F9';
 
-  const ProfileTabs = () => (
-    <View style={[styles.tabsContainer, { borderBottomColor: borderColor, backgroundColor: backgroundColor }]}>
-      {TABS.map(tab => (
-        <TouchableOpacity key={tab.key} onPress={() => setActiveTab(tab.key)} style={styles.tab}>
-            <View style={{alignItems: 'center'}}>
-                <Text style={{
-                    fontFamily: activeTab === tab.key ? 'Inter-Bold' : 'Inter-Medium',
-                    color: activeTab === tab.key ? textColor : secondaryText,
-                    fontSize: 14,
-                    textTransform: 'uppercase',
-                    letterSpacing: 1
-                }}>{tab.title}</Text>
-            </View>
-            {activeTab === tab.key && <View style={[styles.tabIndicator, {backgroundColor: textColor}]} />}
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
+  const getJoinedDate = () => {
+    if (!user.created_at) return 'Recently';
+    try {
+      const date = new Date(user.created_at);
+      return `Joined ${date.toLocaleString('en-US', { month: 'short', year: 'numeric' })}`;
+    } catch {
+      return 'Recently';
+    }
+  };
 
-  const renderContent = () => {
+  const renderTabContent = () => {
     switch (activeTab) {
       case 'about':
         return <ProfileAboutView user={user} />;
@@ -92,9 +84,14 @@ export default function FullProfileView({ user, isMe, onMessage, onFollow }: Ful
       case 'media':
         return (
           <View style={styles.postsGrid}>
-            {Array.from({ length: 9 }).map((_, index) => (
+            {Array.from({ length: 12 }).map((_, index) => (
               <TouchableOpacity key={index} style={styles.postItem}>
-                <Image source={{ uri: `https://picsum.photos/seed/${index + user.id}/300/300` }} style={styles.postImage} />
+                <Image 
+                    source={{ uri: `https://picsum.photos/seed/${index + user.id}/300/300` }} 
+                    style={styles.postImage}
+                    contentFit="cover"
+                    transition={200}
+                />
               </TouchableOpacity>
             ))}
           </View>
@@ -105,107 +102,199 @@ export default function FullProfileView({ user, isMe, onMessage, onFollow }: Ful
   };
 
   return (
-    <View style={[styles.viewContainer, { backgroundColor: backgroundColor }]}>
-        <Animated.ScrollView
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            onScroll={Animated.event(
-                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                { useNativeDriver: true }
+    <View style={[styles.container, { backgroundColor }]}>
+      <Animated.ScrollView
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[2]} // Sticky Tabs
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        scrollEventThrottle={16}
+        refreshControl={refreshControl}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+      >
+        {/* Banner */}
+        <Animated.View style={styles.bannerContainer}>
+          <Image
+            source={{ uri: user.banner_url || `https://picsum.photos/seed/${user.id}banner/1500/500` }}
+            style={styles.banner}
+            contentFit="cover"
+          />
+          <View style={[styles.bannerOverlay, { backgroundColor: 'rgba(0,0,0,0.1)' }]} />
+        </Animated.View>
+
+        {/* Profile Info Header */}
+        <View style={styles.headerInfo}>
+          <View style={styles.avatarRow}>
+            <View style={[styles.avatarContainer, { borderColor: backgroundColor, backgroundColor }]}>
+              <Image source={{ uri: user.avatar_url }} style={styles.avatar} contentFit="cover" />
+            </View>
+            
+            <View style={styles.actionButtons}>
+              {isMe ? (
+                <View style={styles.btnRow}>
+                  <TouchableOpacity onPress={onWallet} style={[styles.circleBtn, { borderColor, backgroundColor: cardColor }]}>
+                    <Wallet size={18} color={textColor} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={onEdit} style={[styles.actionBtn, { borderColor, backgroundColor: cardColor }]}>
+                    <Edit2 size={16} color={textColor} />
+                    <Text style={[styles.btnText, { color: textColor }]}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.btnRow}>
+                  <TouchableOpacity onPress={onMessage} style={[styles.circleBtn, { borderColor, backgroundColor: cardColor }]}>
+                    <MessageSquare size={18} color={textColor} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={onFollow} style={[styles.actionBtn, { backgroundColor: textColor }]}>
+                    <Plus size={16} color={backgroundColor} />
+                    <Text style={[styles.btnText, { color: backgroundColor }]}>Follow</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.userInfo}>
+            <View style={styles.nameRow}>
+                <Text style={[styles.displayName, { color: textColor }]}>{user.displayname}</Text>
+                {user.is_verified && (
+                    <MaterialCommunityIcons name="check-decagram" size={20} color="#00BAFF" style={{ marginLeft: 8, marginTop: 4 }} />
+                )}
+            </View>
+            <Text style={[styles.username, { color: secondaryText }]}>@{user.username || user.displayname?.toLowerCase().replace(/\s+/g, '')}</Text>
+            
+            {user.bio && (
+              <Text style={[styles.bio, { color: textColor }]}>{user.bio}</Text>
             )}
-        >
-          <View style={styles.bannerContainer}>
-              <Image source={{ uri: user.banner_url || `https://picsum.photos/seed/${user.id}banner/1500/500` }} style={styles.headerImage}/>
-          </View>
-          
-          <View style={styles.contentContainer}>
-              <View style={styles.headerSection}>
-                  <View style={[styles.avatarContainer, {borderColor: backgroundColor}]}>
-                      <Image 
-                          source={{ uri: user.avatar_url }}
-                          style={styles.avatar}
-                      />
-                  </View>
-                  <View style={styles.headerActions}>
-                      {!isMe ? (
-                          <>
-                            <TouchableOpacity onPress={onMessage} style={[styles.actionBtn, {backgroundColor: textColor}]}>
-                                <MessageSquare size={18} color={backgroundColor} />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={onFollow} style={[styles.actionBtn, {borderColor: textColor, borderWidth: 1}]}>
-                                <Text style={[styles.actionBtnText, {color: textColor}]}>Follow</Text>
-                            </TouchableOpacity>
-                          </>
-                      ) : (
-                          <TouchableOpacity style={[styles.actionBtn, {borderColor: textColor, borderWidth: 1, paddingHorizontal: 20}]}>
-                              <Text style={[styles.actionBtnText, {color: textColor}]}>Edit Profile</Text>
-                          </TouchableOpacity>
-                      )}
-                  </View>
-              </View>
 
-              <View style={styles.userInfoSection}>
-                  <Text style={[styles.name, { color: textColor }]}>{user.displayname}</Text>
-                  <Text style={[styles.username, { color: secondaryText }]}>@{user.username || user.displayname.toLowerCase().replace(/\s/g, '')}</Text>
-                  <Text style={[styles.bio, { color: textColor }]}>{user.bio || "No bio yet."}</Text>
-                  
-                  <View style={styles.metadataSection}>
-                      <View style={styles.metaItem}>
-                        <MapPin size={14} color={secondaryText} />
-                        <Text style={[styles.metadataText, { color: secondaryText }]}>{user.location || "San Francisco, CA"}</Text>
-                      </View>
-                      <View style={[styles.metaItem, { marginLeft: 16 }]}>
-                        <Calendar size={14} color={secondaryText} />
-                        <Text style={[styles.metadataText, { color: secondaryText }]}>Joined Feb 2026</Text>
-                      </View>
-                  </View>
-
-                  <View style={styles.statsSection}>
-                      <View style={styles.statItem}>
-                        <Text style={[styles.statNumber, { color: textColor }]}>{user.followers_count || 0}</Text>
-                        <Text style={[styles.statLabel, { color: secondaryText }]}>Followers</Text>
-                      </View>
-                      <View style={[styles.statItem, { marginLeft: 24 }]}>
-                        <Text style={[styles.statNumber, { color: textColor }]}>{user.following_count || 0}</Text>
-                        <Text style={[styles.statLabel, { color: secondaryText }]}>Following</Text>
-                      </View>
-                  </View>
+            <View style={styles.metaRow}>
+              <View style={styles.metaItem}>
+                <MapPin size={14} color={secondaryText} />
+                <Text style={[styles.metaText, { color: secondaryText }]}>{user.location || "Earth"}</Text>
               </View>
+              <View style={[styles.metaItem, { marginLeft: 16 }]}>
+                <Calendar size={14} color={secondaryText} />
+                <Text style={[styles.metaText, { color: secondaryText }]}>{getJoinedDate()}</Text>
+              </View>
+            </View>
+
+            <View style={styles.statsRow}>
+              <TouchableOpacity style={styles.statItem}>
+                <Text style={[styles.statValue, { color: textColor }]}>{user.followers_count || 0}</Text>
+                <Text style={[styles.statLabel, { color: secondaryText }]}>Followers</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.statItem, { marginLeft: 24 }]}>
+                <Text style={[styles.statValue, { color: textColor }]}>{user.following_count || 0}</Text>
+                <Text style={[styles.statLabel, { color: secondaryText }]}>Following</Text>
+              </TouchableOpacity>
+              {user.posts_count > 0 && (
+                <TouchableOpacity style={[styles.statItem, { marginLeft: 24 }]}>
+                    <Text style={[styles.statValue, { color: textColor }]}>{user.posts_count}</Text>
+                    <Text style={[styles.statLabel, { color: secondaryText }]}>Posts</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-          <ProfileTabs />
-          {renderContent()}
-        </Animated.ScrollView>
+        </View>
+
+        {/* Tabs */}
+        <View style={[styles.tabsWrapper, { backgroundColor, borderBottomColor: borderColor }]}>
+          <View style={styles.tabsInner}>
+            {TABS.map((tab) => (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={styles.tabItem}
+              >
+                <Text style={[
+                  styles.tabText,
+                  { color: activeTab === tab.key ? textColor : secondaryText },
+                  activeTab === tab.key && styles.tabTextActive
+                ]}>
+                  {tab.title}
+                </Text>
+                {activeTab === tab.key && (
+                  <View style={[styles.tabIndicator, { backgroundColor: textColor }]} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Tab Content */}
+        <View style={styles.contentArea}>
+          {renderTabContent()}
+        </View>
+      </Animated.ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  viewContainer: { flex: 1 },
-  bannerContainer: { height: BANNER_HEIGHT, overflow: 'hidden' },
-  headerImage: { width: '100%', height: '100%', backgroundColor: '#111' },
-  contentContainer: { marginTop: -50, paddingHorizontal: 16 },
-  headerSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  avatarContainer: { width: 100, height: 100, borderRadius: 50, borderWidth: 4, overflow: 'hidden', backgroundColor: '#000' },
-  avatar: { width: '100%', height: '100%', borderRadius: 46 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 4 },
-  actionBtn: { height: 40, paddingHorizontal: 12, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  actionBtnText: { fontFamily: 'Inter-Bold', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 },
-  userInfoSection: { paddingVertical: 16 },
-  name: { fontSize: 32, fontFamily: 'Outfit-Black', letterSpacing: -1, textTransform: 'uppercase' },
-  username: { fontSize: 15, fontFamily: 'Inter-SemiBold', marginTop: -2 },
-  bio: { marginTop: 12, fontSize: 15, lineHeight: 22, fontFamily: 'Inter-Regular', opacity: 0.9 },
-  metadataSection: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  container: { flex: 1 },
+  bannerContainer: { height: BANNER_HEIGHT, width: '100%', overflow: 'hidden' },
+  banner: { width: '100%', height: '100%' },
+  bannerOverlay: { ...StyleSheet.absoluteFillObject },
+  headerInfo: { paddingHorizontal: 16, marginTop: -50 },
+  avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 },
+  avatarContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 4,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  avatar: { width: '100%', height: '100%' },
+  actionButtons: { paddingBottom: 6 },
+  btnRow: { flexDirection: 'row', gap: 8 },
+  circleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionBtn: {
+    height: 40,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  btnText: { fontFamily: 'Inter-Bold', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 },
+  userInfo: { marginTop: 4 },
+  nameRow: { flexDirection: 'row', alignItems: 'center' },
+  displayName: { fontSize: 28, fontFamily: 'Outfit-Black', letterSpacing: -0.5, textTransform: 'uppercase' },
+  username: { fontSize: 15, fontFamily: 'Inter-Medium', marginTop: -2 },
+  bio: { fontSize: 15, fontFamily: 'Inter-Regular', marginTop: 12, lineHeight: 22, opacity: 0.9 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metadataText: { fontSize: 13, fontFamily: 'Inter-SemiBold' },
-  statsSection: { flexDirection: 'row', marginTop: 20 },
+  metaText: { fontSize: 13, fontFamily: 'Inter-SemiBold' },
+  statsRow: { flexDirection: 'row', marginTop: 20, marginBottom: 10 },
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statNumber: { fontFamily: 'Inter-Bold', fontSize: 16 },
-  statLabel: { fontSize: 14, fontFamily: 'Inter-SemiBold', textTransform: 'lowercase' },
-  tabsContainer: { flexDirection: 'row', borderBottomWidth: 1, paddingHorizontal: 4 },
-  tab: { alignItems: 'center', paddingVertical: 16, flex: 1 },
+  statValue: { fontSize: 16, fontFamily: 'Inter-Bold' },
+  statLabel: { fontSize: 14, fontFamily: 'Inter-Medium', textTransform: 'lowercase' },
+  
+  tabsWrapper: { borderBottomWidth: 1 },
+  tabsInner: { flexDirection: 'row', paddingHorizontal: 4 },
+  tabItem: { flex: 1, paddingVertical: 18, alignItems: 'center' },
+  tabText: { fontSize: 12, fontFamily: 'Inter-Bold', textTransform: 'uppercase', letterSpacing: 1 },
+  tabTextActive: { opacity: 1 },
   tabIndicator: { position: 'absolute', bottom: 0, height: 2, width: '40%', borderRadius: 1 },
-  postsGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 1 },
-  postItem: { width: POST_ITEM_SIZE, height: POST_ITEM_SIZE, padding: 1 },
+  
+  contentArea: { flex: 1 },
+  postsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  postItem: { width: POST_ITEM_SIZE, height: POST_ITEM_SIZE, margin: 0.3 },
   postImage: { width: '100%', height: '100%' },
   postPlaceholder: { width: '100%', padding: 16, borderBottomWidth: 1 },
   postHeader: { flexDirection: 'row', marginBottom: 12 },

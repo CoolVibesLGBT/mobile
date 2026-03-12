@@ -14,6 +14,7 @@ import { MessageSquare, MapPin, Calendar, Users, Star, ScrollText } from 'lucide
 import ProfileAboutView from './ProfileAboutView';
 import FullProfileView from './FullProfileView';
 import { ScrollView } from 'react-native-gesture-handler';
+import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const secondaryText = '#888';
@@ -59,7 +60,7 @@ export default function GlobalHeader() {
     const isRoot = !isChatDetail && !isCheckIn && !isSettings && (
         segs.length === 0 ||
         (segs.length === 1 && segs[0] === '(tabs)') ||
-        (segs.length === 2 && segs[0] === '(tabs)' && rootSubSegments.includes(segs[1]))
+        (segs.length === 2 && segs[0] === '(tabs)' && rootSubSegments.some(s => s.toLowerCase() === segs[1].toLowerCase()))
     );
 
     // Resolve chat user from route params
@@ -149,6 +150,13 @@ export default function GlobalHeader() {
                     </View>
                 );
             }
+            if (currentTab.toLowerCase() === 'profile') {
+                return (
+                    <View style={styles.brandContainer}>
+                        <Text style={brandText}>PROFILE</Text>
+                    </View>
+                );
+            }
         }
         if (isCheckIn) {
             return (
@@ -181,7 +189,7 @@ export default function GlobalHeader() {
         if (isSettings) {
             return <View style={styles.avatarBtn} />;
         }
-        const avatarUri = authUser?.avatar_url || authUser?.avatarUrl || `https://i.pravatar.cc/150?u=me`;
+        const avatarUri = getSafeImageURLEx(authUser?.id, authUser?.avatar, 'medium') || getSafeImageURLEx(authUser?.id, authUser?.avatar_url || authUser?.avatarUrl, 'medium');
         return (
             <View style={styles.rightButtons}>
                 {!isActivity && (
@@ -195,7 +203,7 @@ export default function GlobalHeader() {
                 )}
 
                 <TouchableOpacity
-                    onPress={() => router.push('/(tabs)/Profile')}
+                    onPress={() => router.navigate('/(tabs)/Profile')}
                     style={styles.avatarBtn}
                     activeOpacity={0.7}
                 >

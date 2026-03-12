@@ -106,13 +106,17 @@ export const Actions = {
 
 
   //places
-  CMD_PLACE_CREATE         : "place.create",
-	CMD_PLACE_FETCH          : "place.fetch",
-	CMD_PLACE_VOTE           : "place.vote",
-	CMD_PLACE_DELETE         : "place.delete",
-	CMD_PLACE_UPDATE         : "place.update",
-	CMD_PLACE_COMMENT        : "place.comment",
-	CMD_PLACE_FETCH_COMMENTS : "place.fetch.comments"
+  CMD_PLACE_CREATE: "place.create",
+  CMD_PLACE_FETCH: "place.fetch",
+  CMD_PLACE_VOTE: "place.vote",
+  CMD_PLACE_DELETE: "place.delete",
+  CMD_PLACE_UPDATE: "place.update",
+  CMD_PLACE_COMMENT: "place.comment",
+  CMD_PLACE_FETCH_COMMENTS: "place.fetch.comments",
+
+
+  CMD_USER_CHECK_IN: "user.check_in",
+  CMD_USER_CHECK_IN_FETCH: "user.check_in_fetch",
 
 } as const;
 

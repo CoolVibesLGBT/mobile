@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
+import * as Localization from 'expo-localization';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sparkles, Volume2, VolumeX } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -17,9 +18,11 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { api } from '@/services/apiService';
 import { defaultServiceServerId, serviceURL } from '@/config';
 import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
+import { toSafeBioHtml } from '@/helpers/lexicalPlainText';
 
 import { BurstOverlay } from './VibeItem';
 import { VibeDetailsOverlay } from './VibeDetailsOverlay';
+import { VibesGLRenderer } from './VibesGLRenderer';
 import type { BurstType, VibeItemData } from './types';
 
 const dummyVibes = require('@/mock/dummy_vibes.json') as {
@@ -38,6 +41,47 @@ type TransitionState = {
   progress: number;
   direction: -1 | 0 | 1;
 };
+
+function coerceLocalizedText(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (!value || typeof value !== 'object') {
+    return '';
+  }
+
+  const record = value as Record<string, unknown>;
+  const languageCode = Localization.getLocales?.()?.[0]?.languageCode;
+
+  const candidates = [
+    languageCode,
+    languageCode ? `${languageCode}-${Localization.getLocales?.()?.[0]?.regionCode ?? ''}` : null,
+    'en',
+  ].filter(Boolean) as string[];
+
+  for (const key of candidates) {
+    const v = record[key];
+    if (typeof v === 'string' && v.trim()) {
+      return v;
+    }
+  }
+
+  for (const v of Object.values(record)) {
+    if (typeof v === 'string' && v.trim()) {
+      return v;
+    }
+  }
+
+  return '';
+}
+
+function coerceBioText(value: unknown): string {
+  const localized = coerceLocalizedText(value);
+  if (!localized) {
+    return '';
+  }
+  return localized;
+}
 
 function normalizeVibesResponse(response: any): { posts: any[]; cursor: string | null } {
   const payload = response?.data ?? response ?? {};
@@ -96,7 +140,8 @@ function mapPostsToVibes(posts: any[]): VibeItemData[] {
         dateOfBirth: author.date_of_birth,
         avatar: getSafeImageURLEx(author.public_id, author.avatar, 'small') || '',
         description: file?.name || 'Vibe',
-        bio: author.bio || '',
+        bio: coerceBioText(author.bio) || '',
+        bioHtml: toSafeBioHtml(coerceLocalizedText(author.bio)) || '',
         author,
       };
     })
@@ -191,7 +236,6 @@ export default function VibesScreen() {
   const animationFrameRef = useRef<number>(0);
   const loadedMediaIdsRef = useRef<Set<string>>(new Set());
   const positionRef = useRef<PositionState>({ current: 0, target: 0, velocity: 0 });
-  const lastPosRef = useRef(0);
   const interactionRef = useRef({
     isDragging: false,
     lastY: 0,
@@ -224,6 +268,7 @@ export default function VibesScreen() {
   const transitionFromVibe = vibes[transitionState.fromIndex];
   const transitionToVibe = vibes[transitionState.toIndex];
   const isTransitioning = transitionState.direction !== 0 && transitionState.fromIndex !== transitionState.toIndex;
+  const isSettled = transitionState.direction === 0 || transitionState.fromIndex === transitionState.toIndex;
 
   const fetchVibesFromApi = useCallback(async (loadMore = false) => {
     if (isFetchingRef.current) {
@@ -312,8 +357,9 @@ export default function VibesScreen() {
 
     let mounted = true;
     let lastActiveIndex = -1;
+    let lastTime = 0;
 
-    const tick = () => {
+    const tick = (time: number) => {
       if (!mounted) {
         return;
       }
@@ -321,7 +367,11 @@ export default function VibesScreen() {
       const pos = positionRef.current;
 
       if (!interactionRef.current.isDragging) {
-        const deltaTime = 1 / 60;
+        if (lastTime === 0) {
+          lastTime = time;
+        }
+        const deltaTime = Math.min(0.05, (time - lastTime) * 0.001);
+        lastTime = time;
         const stiffness = 150;
         const damping = 26;
         const force = (pos.target - pos.current) * stiffness;
@@ -338,30 +388,13 @@ export default function VibesScreen() {
 
       pos.current = Math.max(0, Math.min(vibes.length - 1, pos.current));
 
-      const deltaPos = pos.current - lastPosRef.current;
-      lastPosRef.current = pos.current;
-      const frac = pos.current - Math.floor(pos.current);
-      const movingDown = deltaPos < -0.0001 || (deltaPos <= 0.0001 && pos.target < pos.current);
-
       let nextTransition: TransitionState;
-      if (Math.abs(pos.current - Math.round(pos.current)) < 0.001) {
-        const idx = Math.round(pos.current);
-        nextTransition = { fromIndex: idx, toIndex: idx, progress: 0, direction: 0 };
-      } else if (movingDown) {
-        nextTransition = {
-          fromIndex: Math.ceil(pos.current),
-          toIndex: Math.floor(pos.current),
-          progress: 1 - frac,
-          direction: -1,
-        };
-      } else {
-        nextTransition = {
-          fromIndex: Math.floor(pos.current),
-          toIndex: Math.ceil(pos.current),
-          progress: frac,
-          direction: 1,
-        };
-      }
+      const p = pos.current;
+      const fromIndex = Math.max(0, Math.min(vibes.length - 1, Math.floor(p)));
+      const toIndex = Math.max(0, Math.min(vibes.length - 1, Math.ceil(p)));
+      const progress = p - fromIndex;
+      const direction: -1 | 0 | 1 = fromIndex === toIndex ? 0 : pos.velocity >= 0 ? 1 : -1;
+      nextTransition = { fromIndex, toIndex, progress, direction };
       const prevTransition = transitionStateRef.current;
       const shouldUpdateTransition =
         prevTransition.fromIndex !== nextTransition.fromIndex ||
@@ -456,7 +489,9 @@ export default function VibesScreen() {
 
   return (
     <View style={styles.container} onLayout={handleLayout} {...panResponder.panHandlers}>
-      {currentVibe && !isTransitioning ? (
+      {hasVibes ? <VibesGLRenderer vibes={vibes} positionRef={positionRef} opacity={1} /> : null}
+
+      {currentVibe && isSettled ? (
         <ActiveMedia
           vibe={currentVibe}
           isMuted={isMuted}
@@ -466,8 +501,13 @@ export default function VibesScreen() {
           }}
         />
       ) : null}
-      {viewportHeight > 0 && isTransitioning && transitionFromVibe ? <MediaPoster vibe={transitionFromVibe} translateY={fromTranslateY} opacity={1 - transitionState.progress * 0.15} /> : null}
-      {viewportHeight > 0 && isTransitioning && transitionToVibe ? <MediaPoster vibe={transitionToVibe} translateY={toTranslateY} opacity={0.55 + transitionState.progress * 0.45} /> : null}
+
+      {viewportHeight > 0 && isTransitioning && transitionFromVibe ? (
+        <MediaPoster vibe={transitionFromVibe} translateY={fromTranslateY} opacity={0} />
+      ) : null}
+      {viewportHeight > 0 && isTransitioning && transitionToVibe ? (
+        <MediaPoster vibe={transitionToVibe} translateY={toTranslateY} opacity={0} />
+      ) : null}
 
       <View style={[styles.topControls, { top: insets.top + 10 }]} pointerEvents="box-none">
         <Pressable style={styles.muteButton} onPress={() => setIsMuted((value) => !value)}>

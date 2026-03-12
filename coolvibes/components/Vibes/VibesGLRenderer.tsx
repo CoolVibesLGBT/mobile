@@ -134,6 +134,8 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
   const vibesRef = useRef<VibeItemData[]>(vibes);
   const readyRef = useRef(false);
   const [contextReady, setContextReady] = useState(false);
+  const prevVibesLengthRef = useRef(0);
+  const prevFirstIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     vibesRef.current = vibes;
@@ -156,19 +158,24 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
     let cancelled = false;
 
     const loadTextures = async () => {
-      texturesRef.current.forEach((item) => {
-        if (item.texture) {
-          gl.deleteTexture(item.texture);
-        }
-      });
+      const prevLen = prevVibesLengthRef.current;
+      const prevFirstId = prevFirstIdRef.current;
+      const nextFirstId = vibes[0]?.id ?? null;
 
-      const nextTextures: LoadedTexture[] = vibes.map(() => {
+      const isAppend =
+        prevLen > 0 &&
+        vibes.length > prevLen &&
+        texturesRef.current.length === prevLen &&
+        prevFirstId != null &&
+        nextFirstId === prevFirstId;
+
+      const createPlaceholderTexture = () => {
         const texture = gl.createTexture();
         if (!texture) {
           console.warn('VibesGL texture creation failed; falling back to native media for this frame');
           return {
             texture: null,
-            resolution: [1, 1],
+            resolution: [1, 1] as [number, number],
             isReady: false,
           };
         }
@@ -177,28 +184,40 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texImage2D(
-          gl.TEXTURE_2D,
-          0,
-          gl.RGBA,
-          1,
-          1,
-          0,
-          gl.RGBA,
-          gl.UNSIGNED_BYTE,
-          new Uint8Array([0, 0, 0, 255])
-        );
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
         return {
           texture,
-          resolution: [1, 1],
+          resolution: [1, 1] as [number, number],
           isReady: false,
         };
-      });
+      };
 
-      texturesRef.current = nextTextures;
+      let nextTextures: LoadedTexture[];
+      let loadTargets: { vibe: VibeItemData; index: number }[];
+
+      if (isAppend) {
+        const existing = texturesRef.current;
+        const toAddCount = vibes.length - existing.length;
+        const additions = Array.from({ length: toAddCount }, () => createPlaceholderTexture());
+        nextTextures = [...existing, ...additions];
+        texturesRef.current = nextTextures;
+        loadTargets = vibes.slice(existing.length).map((vibe, idx) => ({ vibe, index: existing.length + idx }));
+      } else {
+        texturesRef.current.forEach((item) => {
+          if (item.texture) {
+            gl.deleteTexture(item.texture);
+          }
+        });
+        nextTextures = vibes.map(() => createPlaceholderTexture());
+        texturesRef.current = nextTextures;
+        loadTargets = vibes.map((vibe, index) => ({ vibe, index }));
+      }
+
+      prevVibesLengthRef.current = vibes.length;
+      prevFirstIdRef.current = nextFirstId;
 
       await Promise.all(
-        vibes.map(async (vibe, index) => {
+        loadTargets.map(async ({ vibe, index }) => {
           const sourceUri = vibe.mediaType === 'video' ? vibe.posterUrl || vibe.mediaUrl : vibe.mediaUrl;
           if (!sourceUri) {
             return;
@@ -213,7 +232,7 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
               return;
             }
 
-            if (!nextTextures[index].texture) {
+            if (!nextTextures[index] || !nextTextures[index].texture) {
               return;
             }
 
@@ -284,7 +303,7 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
       const currentVibes = vibesRef.current;
 
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-      gl.clearColor(0, 0, 0, 0);
+      gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(program);
 

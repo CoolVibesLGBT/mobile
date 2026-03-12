@@ -97,7 +97,7 @@ export const getAuthUserThunk = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const res = await api.getAuthUserInfo();
-      return res.user;
+      return res.data?.user || res.user;
     } catch (err) {
       return thunkAPI.rejectWithValue('Auth failed');
     }

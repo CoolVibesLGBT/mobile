@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import RenderHTML from 'react-native-render-html';
 
 import { api } from '@/services/apiService';
 import { calculateAge } from '@/helpers/safeUrl';
@@ -18,6 +19,7 @@ interface VibeDetailsOverlayProps {
 
 export function VibeDetailsOverlay({ vibe, bottomInset, onBurst }: VibeDetailsOverlayProps) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
 
   const age = useMemo(() => {
     if (!vibe.dateOfBirth) {
@@ -87,7 +89,14 @@ export function VibeDetailsOverlay({ vibe, bottomInset, onBurst }: VibeDetailsOv
       />
       <View style={[styles.overlay, { paddingBottom: bottomInset }]}>
         <View style={styles.infoColumn} pointerEvents="box-none">
-          {!!vibe.bio && <Text style={styles.bio}>{vibe.bio}</Text>}
+          {!!vibe.bioHtml ? (
+            <RenderHTML
+              contentWidth={Math.max(0, width * 0.7 - 20)}
+              source={{ html: vibe.bioHtml }}
+              baseStyle={styles.bio}
+              defaultTextProps={{ selectable: false }}
+            />
+          ) : null}
           <Pressable onPress={handleOpenProfile} hitSlop={10}>
             <Text style={styles.username}>
               {vibe.username}

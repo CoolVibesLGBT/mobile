@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import RenderHTML from 'react-native-render-html';
 
 import { api } from '@/services/apiService';
 import { calculateAge } from '@/helpers/safeUrl';
@@ -92,6 +93,7 @@ export function VibeItem({
   onBurst,
 }: VibeItemProps) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
@@ -203,7 +205,14 @@ export function VibeItem({
               {age ? <Text style={styles.age}> {age}</Text> : null}
             </Text>
           </Pressable>
-          {!!vibe.bio && <Text style={styles.bio}>{vibe.bio}</Text>}
+          {!!vibe.bioHtml ? (
+            <RenderHTML
+              contentWidth={Math.max(0, width * 0.7 - 20)}
+              source={{ html: vibe.bioHtml }}
+              baseStyle={styles.bio}
+              defaultTextProps={{ selectable: false }}
+            />
+          ) : null}
           {!vibe.bio && !!vibe.description && <Text style={styles.bio}>{vibe.description}</Text>}
         </View>
 

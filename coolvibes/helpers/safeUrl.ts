@@ -3,24 +3,50 @@ import { defaultServiceServerId, serviceURL } from '@/config';
 export function getSafeImageURL(attachment: any, variant = 'small'): string | null {
   const serviceUri = serviceURL[defaultServiceServerId];
 
+  if (!attachment) return null;
+
+  // If attachment is already a full URL string, return it clean
+  if (typeof attachment === 'string') {
+    if (attachment.startsWith('http')) return attachment;
+    const cleanPath = attachment.startsWith('./') ? attachment.substring(2) : attachment;
+    try {
+        return new URL(cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`, serviceUri).href;
+    } catch { return null; }
+  }
+
   try {
-    const path =
-      attachment?.file?.variants?.image?.[variant]?.url ||
-      attachment?.variants?.image?.[variant]?.url ||
-      attachment?.file?.variants?.video?.[variant]?.url ||
-      attachment?.variants?.video?.[variant]?.url;
+    // Basic variant normalization
+    let target = variant;
+    if (variant === 'thumb') target = 'thumbnail';
 
-    if (!path) {
-      return null;
+    const variants = attachment?.file?.variants?.image || attachment?.variants?.image ||
+                     attachment?.file?.variants?.video || attachment?.variants?.video;
+
+    // If no variants but it has a url at top level
+    const topLevelUrl = attachment?.file?.url || attachment?.url;
+    
+    if (!variants && topLevelUrl) {
+        return getSafeImageURL(topLevelUrl, variant);
     }
 
-    const url = path.startsWith('http') ? new URL(path) : new URL(path, serviceUri);
-    if (!['https:', 'http:'].includes(url.protocol)) {
-      return null;
-    }
+    if (!variants) return null;
 
-    return url.href.toString();
-  } catch {
+    // Try requested variant, then common fallbacks
+    const path = variants[target]?.url || 
+                 variants['small']?.url || 
+                 variants['thumbnail']?.url || 
+                 variants['medium']?.url ||
+                 variants['original']?.url;
+
+    if (!path) return topLevelUrl ? getSafeImageURL(topLevelUrl, variant) : null;
+
+    // Clean path and ensure it's a valid URL
+    const cleanPath = path.startsWith('./') ? path.substring(2) : path;
+    const url = cleanPath.startsWith('http') ? new URL(cleanPath) : new URL(cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`, serviceUri);
+
+    return url.href;
+  } catch (error) {
+    console.warn('getSafeImageURL error:', error);
     return null;
   }
 }

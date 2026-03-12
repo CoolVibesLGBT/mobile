@@ -7,7 +7,7 @@ export interface VibeAuthor {
   displayname?: string;
   date_of_birth?: string;
   avatar?: unknown;
-  bio?: string;
+  bio?: unknown;
 }
 
 export interface VibeItemData {
@@ -20,6 +20,7 @@ export interface VibeItemData {
   avatar: string;
   description: string;
   bio?: string;
+  bioHtml?: string;
   author: VibeAuthor;
 }
 
