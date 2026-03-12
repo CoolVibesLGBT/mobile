@@ -1,5 +1,5 @@
 import React, { useMemo, useState, memo, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions, Image, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions, Image, ActivityIndicator, TouchableOpacity, Platform, LayoutChangeEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -7,7 +7,6 @@ import Animated, {
   interpolate,
   Extrapolation,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 import { runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -15,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import UserCard from '@/components/UserCard';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // --- DUMMY DATA ---
 const ZODIACS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
@@ -46,8 +46,6 @@ const createUsers = (count: number, offset = 0) => Array.from({ length: count })
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HEX_SIZE = 100;
 const RADAR_HEIGHT = SCREEN_HEIGHT;
-const CENTER_X = SCREEN_WIDTH / 2;
-const CENTER_Y = RADAR_HEIGHT / 2;
 const ITEM_DIM = 140;
 const OFFSET = ITEM_DIM / 2;
 
@@ -61,15 +59,17 @@ const axialToPixel = (q: number, r: number) => {
 };
 
 
-const HexItem = memo(({ item, panX, panY, onSelect }: any) => {
+const HexItem = memo(({ item, panX, panY, centerX, centerY, onSelect }: any) => {
   const { colors } = useTheme();
   const { user, q, r } = item;
   const { x, y } = axialToPixel(q, r);
 
   const style = useAnimatedStyle(() => {
     'worklet';
-    const itemX = x + panX.value + CENTER_X;
-    const itemY = y + panY.value + CENTER_Y;
+    const cx = centerX.value;
+    const cy = centerY.value;
+    const itemX = x + panX.value + cx;
+    const itemY = y + panY.value + cy;
 
     // Culling logic: check if the item is within the screen bounds + a buffer
     const isVisible = 
@@ -92,8 +92,8 @@ const HexItem = memo(({ item, panX, panY, onSelect }: any) => {
     return {
       display: 'flex',
       transform: [
-        { translateX: px + CENTER_X - OFFSET },
-        { translateY: py + CENTER_Y - OFFSET },
+        { translateX: px + cx - OFFSET },
+        { translateY: py + cy - OFFSET },
         { scale: withSpring(scale, { damping: 20, stiffness: 100 }) }
       ] as any,
       opacity,
@@ -118,6 +118,30 @@ const HexItem = memo(({ item, panX, panY, onSelect }: any) => {
     </Animated.View>
   );
 });
+HexItem.displayName = 'HexItem';
+
+function RadarBackdrop({ accent, centerX, centerY }: { accent: string; centerX: number; centerY: number }) {
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      <LinearGradient
+        colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.78)']}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.05 }]} />
+      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.05, transform: [{ rotate: '90deg' }] }]} />
+      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.025, transform: [{ rotate: '45deg' }] }]} />
+      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.025, transform: [{ rotate: '-45deg' }] }]} />
+
+      <View style={[styles.ring, { width: 220, height: 220, left: centerX - 110, top: centerY - 110, borderColor: 'rgba(255,255,255,0.085)' }]} />
+      <View style={[styles.ring, { width: 420, height: 420, left: centerX - 210, top: centerY - 210, borderColor: 'rgba(255,255,255,0.06)' }]} />
+      <View style={[styles.ring, { width: 640, height: 640, left: centerX - 320, top: centerY - 320, borderColor: 'rgba(255,255,255,0.04)' }]} />
+
+      <View style={[styles.centerGlow, { left: centerX - 60, top: centerY - 60, backgroundColor: accent, opacity: 0.06 }]} />
+    </View>
+  );
+}
 
 const spiralDirections = [
     { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
@@ -145,24 +169,16 @@ export default function MatchScreen() {
     const { colors, dark } = useTheme();
     const insets = useSafeAreaInsets();
     const [selectedUser, setSelectedUser] = useState<any>(null);
-    
-    // Pulse animation for radar
-    const pulse = useSharedValue(1);
-    useEffect(() => {
-        const runPulse = () => {
-            pulse.value = withTiming(1.6, { duration: 2500 }, () => {
-                pulse.value = 1;
-            });
-        };
-        runPulse();
-        const interval = setInterval(runPulse, 3000);
-        return () => clearInterval(interval);
-    }, []);
+    const [viewportSize, setViewportSize] = useState({ width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
+    const centerXJs = viewportSize.width / 2;
+    const centerYJs = viewportSize.height / 2;
+    const centerX = useSharedValue(centerXJs);
+    const centerY = useSharedValue(centerYJs);
 
-    const pulseStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: pulse.value }],
-        opacity: interpolate(pulse.value, [1, 1.6], [0.4, 0]),
-    }));
+    useEffect(() => {
+        centerX.value = centerXJs;
+        centerY.value = centerYJs;
+    }, [centerX, centerXJs, centerY, centerYJs]);
 
     const coordGenerator = useRef(spiralCoordGenerator());
     const [honeycomb, setHoneycomb] = useState(() => {
@@ -316,13 +332,16 @@ export default function MatchScreen() {
                     </View>
 
                     <GestureDetector gesture={composedGesture}>
-                        <Animated.View style={[styles.radarViewport, animatedCanvasStyle]}>
-                            {/* Radar Grid Circles */}
-                            <Animated.View style={[styles.pulseRing, { width: 400, height: 400, left: CENTER_X - 200, top: CENTER_Y - 200, borderColor: colors.text }, pulseStyle]} pointerEvents="none" />
-                            
-                            <View style={[styles.radarRing, { width: 240, height: 240, left: CENTER_X - 120, top: CENTER_Y - 120 }]} pointerEvents="none" />
-                            <View style={[styles.radarRing, { width: 480, height: 480, left: CENTER_X - 240, top: CENTER_Y - 240 }]} pointerEvents="none" />
-                            <View style={[styles.radarRing, { width: 720, height: 720, left: CENTER_X - 360, top: CENTER_Y - 360, opacity: 0.05 }]} pointerEvents="none" />
+                        <Animated.View
+                            style={[styles.radarViewport, animatedCanvasStyle]}
+                            onLayout={(e: LayoutChangeEvent) => {
+                                const { width, height } = e.nativeEvent.layout;
+                                if (width > 0 && height > 0) {
+                                    setViewportSize({ width, height });
+                                }
+                            }}
+                        >
+                            <RadarBackdrop accent={colors.primary || colors.text} centerX={centerXJs} centerY={centerYJs} />
 
                             {honeycomb.map((item) => (
                                 <HexItem
@@ -330,12 +349,14 @@ export default function MatchScreen() {
                                     item={item}
                                     panX={panX}
                                     panY={panY}
+                                    centerX={centerX}
+                                    centerY={centerY}
                                     onSelect={handleItemPress}
                                 />
                             ))}
 
                             {/* Fixed Crosshair (Magnet Point) */}
-                            <View style={[styles.crosshairContainer, { left: CENTER_X - 170, top: CENTER_Y - 170 }]} pointerEvents="none">
+                            <View style={[styles.crosshairContainer, { left: centerXJs - 170, top: centerYJs - 170 }]} pointerEvents="none">
                                 <View style={[styles.crossLineV, { backgroundColor: colors.text, opacity: 0.1 }]} />
                                 <View style={[styles.crossLineH, { backgroundColor: colors.text, opacity: 0.1 }]} />
                                 <View style={[styles.centerPulse, { borderColor: colors.text, opacity: 0.03 }]} />
@@ -394,4 +415,18 @@ const styles = StyleSheet.create({
   centerPulse: { width: 320, height: 320, borderRadius: 160, borderWidth: 1 },
   radarRing: { position: 'absolute', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(127,127,127,0.1)' },
   pulseRing: { position: 'absolute', borderRadius: 999, borderWidth: 2 },
+
+  // Pro radar background
+  ring: { position: 'absolute', borderRadius: 999, borderWidth: 1 },
+  gridCross: {
+    position: 'absolute',
+    width: 1040,
+    height: 1,
+  },
+  centerGlow: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
 });
