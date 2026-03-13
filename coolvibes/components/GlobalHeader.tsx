@@ -131,7 +131,7 @@ export default function GlobalHeader() {
             );
         }
         if (isRoot) {
-            const currentTab = segs[segs.length - 1];
+            const currentTab = segs[segs.length - 1] ?? '';
             if (currentTab === 'chat') {
                 return (
                     <View style={styles.brandContainer}>
@@ -153,7 +153,7 @@ export default function GlobalHeader() {
                     </View>
                 );
             }
-            if (currentTab.toLowerCase() === 'profile') {
+            if (currentTab && currentTab.toLowerCase() === 'profile') {
                 return (
                     <View style={styles.brandContainer}>
                         <Text style={brandText}>PROFILE</Text>

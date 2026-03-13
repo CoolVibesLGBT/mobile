@@ -30,7 +30,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slice/auth';
-import { setTheme, toggleBlur, setLanguage } from '@/store/slice/system';
+import { setTheme, toggleBlur, setLanguage, setFontSize } from '@/store/slice/system';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 
 // --- Sub-components (Adapted for Mobile) ---
@@ -123,10 +123,17 @@ export default function SettingsScreen() {
     const dispatch = useAppDispatch();
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const language = useAppSelector(state => state.system.language);
+    const fontSize = useAppSelector(state => state.system.fontSize);
     const languageSheetRef = useRef<GorhomBottomSheetModal>(null);
+    const fontSizeSheetRef = useRef<GorhomBottomSheetModal>(null);
     const languageOptions = useMemo(() => ([
         { code: 'en', label: 'English', description: 'Default CoolVibes experience' },
         { code: 'tr', label: 'Türkçe', description: 'Arayüzü Türkçe kullan' },
+    ]), []);
+    const fontSizeOptions = useMemo(() => ([
+        { code: 'small', label: 'Small', description: 'More content on screen' },
+        { code: 'medium', label: 'Medium', description: 'Default size' },
+        { code: 'large', label: 'Large', description: 'Easier to read' },
     ]), []);
     
     // Mock local settings
@@ -155,10 +162,17 @@ export default function SettingsScreen() {
     const openLanguageSheet = useCallback(() => {
         languageSheetRef.current?.present();
     }, []);
+    const openFontSizeSheet = useCallback(() => {
+        fontSizeSheetRef.current?.present();
+    }, []);
 
     const handleLanguageChange = useCallback((value: string) => {
         dispatch(setLanguage(value));
         languageSheetRef.current?.dismiss();
+    }, [dispatch]);
+    const handleFontSizeChange = useCallback((value: 'small' | 'medium' | 'large') => {
+        dispatch(setFontSize(value));
+        fontSizeSheetRef.current?.dismiss();
     }, [dispatch]);
 
     const handleDeleteAccount = () => {
@@ -208,6 +222,15 @@ export default function SettingsScreen() {
                         label="Language"
                         subtitle={language === 'en' ? 'English' : 'Türkçe'}
                         onPress={openLanguageSheet}
+                        dark={dark}
+                        palette={palette}
+                        border
+                    />
+                    <SettingItem
+                        icon={MessageSquare}
+                        label="Text Size"
+                        subtitle={fontSize === 'small' ? 'Small' : fontSize === 'large' ? 'Large' : 'Medium'}
+                        onPress={openFontSizeSheet}
                         dark={dark}
                         palette={palette}
                         border={false}
@@ -318,6 +341,41 @@ export default function SettingsScreen() {
                                 ]}
                                 activeOpacity={0.8}
                                 onPress={() => handleLanguageChange(option.code)}
+                            >
+                                <View style={styles.languageOptionText}>
+                                    <Text style={[styles.languageOptionLabel, { color: colors.text }]}>{option.label}</Text>
+                                    <Text style={[styles.languageOptionDescription, { color: palette.textMuted }]}>
+                                        {option.description}
+                                    </Text>
+                                </View>
+                                <View style={[
+                                    styles.languageIndicator,
+                                    { borderColor: palette.border, backgroundColor: palette.surface },
+                                    isActive && { backgroundColor: palette.accent }
+                                ]}>
+                                    {isActive && <Check size={16} color={dark ? Colors.dark.background : Colors.light.surface} strokeWidth={3} />}
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </BottomSheetView>
+            </BaseBottomSheetModal>
+
+            <BaseBottomSheetModal ref={fontSizeSheetRef}>
+                <BottomSheetView style={[styles.languageSheetContent, { paddingBottom: insets.bottom + 16, backgroundColor: palette.surface }]}>
+                    <Text style={[styles.sheetTitle, { color: colors.text }]}>Text Size</Text>
+                    {fontSizeOptions.map(option => {
+                        const isActive = fontSize === option.code;
+                        return (
+                            <TouchableOpacity
+                                key={option.code}
+                                style={[
+                                    styles.languageOption,
+                                    { borderColor: palette.border, backgroundColor: palette.surfaceElevated },
+                                    isActive && { borderColor: palette.accent, backgroundColor: palette.secondaryBackground }
+                                ]}
+                                activeOpacity={0.8}
+                                onPress={() => handleFontSizeChange(option.code as 'small' | 'medium' | 'large')}
                             >
                                 <View style={styles.languageOptionText}>
                                     <Text style={[styles.languageOptionLabel, { color: colors.text }]}>{option.label}</Text>

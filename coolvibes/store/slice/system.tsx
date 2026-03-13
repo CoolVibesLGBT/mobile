@@ -20,6 +20,7 @@ interface SystemState {
   theme: 'system' | 'light' | 'dark';
   blurPhotos: boolean;
   language: string;
+  fontSize: 'small' | 'medium' | 'large';
 }
 
 const initialState: SystemState = {
@@ -29,6 +30,7 @@ const initialState: SystemState = {
   theme: 'system',
   blurPhotos: false,
   language: 'en',
+  fontSize: 'medium',
 };
 
 export const fetchInitialSync = createAsyncThunk<
@@ -63,6 +65,9 @@ const systemSlice = createSlice({
     setLanguage(state, action: PayloadAction<string>) {
       state.language = action.payload;
     },
+    setFontSize(state, action: PayloadAction<'small' | 'medium' | 'large'>) {
+      state.fontSize = action.payload;
+    },
     clearSystemState(state) {
       state.data = null;
       state.error = null;
@@ -86,5 +91,5 @@ const systemSlice = createSlice({
   },
 });
 
-export const { clearSystemState, setTheme, toggleBlur, setBlur, setLanguage } = systemSlice.actions;
+export const { clearSystemState, setTheme, toggleBlur, setBlur, setLanguage, setFontSize } = systemSlice.actions;
 export default systemSlice.reducer;

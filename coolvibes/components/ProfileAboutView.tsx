@@ -26,12 +26,22 @@ const ProfileAboutView = ({ user }: ProfileAboutViewProps) => {
     const systemData = useAppSelector(state => state.system.data);
     const flags = parsePreferencesFlags(user?.preferences_flags);
     const language = useAppSelector(state => state.system.language) || 'en';
+    const fontSize = useAppSelector(state => state.system.fontSize);
 
     // Monochrome Colors
     const textColor = dark ? '#FFFFFF' : '#000000';
     const secondaryText = dark ? '#888888' : '#666666';
     const borderColor = dark ? (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)') : '#F0F0F0';
     const surfaceColor = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)';
+    const fontScale = fontSize === 'small' ? 0.9 : fontSize === 'large' ? 1.15 : 1;
+    const baseSizes = {
+        attrHint: 11,
+        attrHintLine: 14,
+        valueChip: 12,
+        valuePill: 12,
+        attrValue: 12,
+        tagText: 13,
+    };
 
     const getLocalizedText = (value: any, fallback = '') => {
         if (!value) return fallback;
@@ -359,7 +369,7 @@ const ProfileAboutView = ({ user }: ProfileAboutViewProps) => {
                                     <View style={styles.attrLabelStack}>
                                         <Text style={[styles.attrLabel, { color: textColor }]} numberOfLines={2}>{item.label}</Text>
                                         {!!item.description && (
-                                            <Text style={[styles.attrHint, { color: secondaryText }]} numberOfLines={3}>{item.description}</Text>
+                                            <Text style={[styles.attrHint, { color: secondaryText, fontSize: baseSizes.attrHint * fontScale, lineHeight: baseSizes.attrHintLine * fontScale }]} numberOfLines={3}>{item.description}</Text>
                                         )}
                                     </View>
                                 </View>
@@ -368,7 +378,7 @@ const ProfileAboutView = ({ user }: ProfileAboutViewProps) => {
                                         <View style={styles.attrValueWrap}>
                                             {item.selectedOptions.map((opt: string, optIndex: number) => (
                                                 <View key={`${item.field}-opt-${optIndex}`} style={[styles.valueChip, { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderColor }]}>
-                                                    <Text style={[styles.valueChipText, { color: secondaryText }]} numberOfLines={2}>{opt}</Text>
+                                                    <Text style={[styles.valueChipText, { color: secondaryText, fontSize: baseSizes.valueChip * fontScale }]} numberOfLines={2}>{opt}</Text>
                                                 </View>
                                             ))}
                                         </View>
@@ -377,12 +387,12 @@ const ProfileAboutView = ({ user }: ProfileAboutViewProps) => {
                                             {!item.value && <View style={styles.dot} />}
                                             {item.value ? (
                                                 <View style={[styles.valuePill, { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderColor }]}>
-                                                    <Text style={[styles.valuePillText, { color: secondaryText }]} numberOfLines={2}>
+                                                    <Text style={[styles.valuePillText, { color: secondaryText, fontSize: baseSizes.valuePill * fontScale }]} numberOfLines={2}>
                                                         {item.value}
                                                     </Text>
                                                 </View>
                                             ) : (
-                                                <Text style={[styles.attrValue, { color: dark ? '#FFD700' : '#B8860B' }]} numberOfLines={2}>
+                                                <Text style={[styles.attrValue, { color: dark ? '#FFD700' : '#B8860B', fontSize: baseSizes.attrValue * fontScale }]} numberOfLines={2}>
                                                     Select option
                                                 </Text>
                                             )}
@@ -412,7 +422,7 @@ const ProfileAboutView = ({ user }: ProfileAboutViewProps) => {
                             <View style={styles.tagGrid}>
                                 {cat.items.map((item, idx) => (
                                     <View key={idx} style={[styles.tag, { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderColor }]}>  
-                                        <Text style={[styles.tagText, { color: textColor }]}>{item.name}</Text>
+                                        <Text style={[styles.tagText, { color: textColor, fontSize: baseSizes.tagText * fontScale }]}>{item.name}</Text>
                                     </View>
                                 ))}
                             </View>

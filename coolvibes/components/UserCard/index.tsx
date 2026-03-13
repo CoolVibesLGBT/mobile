@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image, Pressable, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, Dimensions, Image, Pressable, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
@@ -9,6 +9,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -20,8 +21,6 @@ const CARD_DIAMETER = SCREEN_WIDTH * 0.8;
 const ACTION_BUTTON_SIZE = 70;
 const EXPANDED_AVATAR_SIZE = 110;
 const NAME_AGE_HEIGHT_ESTIMATE = 70; 
-
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 const TABS = [
     { key: 'about', title: 'About' },
@@ -62,9 +61,18 @@ const UserCard = ({ user, onDismiss }: any) => {
         onDismiss(user);
     };
 
-    const animatedBlurStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(animationProgress.value, [0, 0.5, 1], [0.8, 0.9, 1]),
-    }));
+    const glassStyle = useMemo(() => ({
+        style: 'regular',
+        animate: true,
+        animationDuration: 0.35,
+    }), []);
+    const glassAvailable = useMemo(() => {
+        try {
+            return typeof isGlassEffectAPIAvailable === 'function' ? isGlassEffectAPIAvailable() : false;
+        } catch {
+            return false;
+        }
+    }, []);
 
     const animatedImageContainerStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: interpolate(animationProgress.value, [0, 1], [SCREEN_HEIGHT / 2 - (CARD_DIAMETER / 2) - 60, insets.top + 20]) }],
@@ -162,12 +170,20 @@ const UserCard = ({ user, onDismiss }: any) => {
 
     return (
         <View style={styles.wrapper} pointerEvents="auto">
-            <AnimatedBlurView 
-              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.28)' }, animatedBlurStyle]} 
-              tint="light" 
-              intensity={Platform.OS === 'ios' ? 35 : 70}
-            />
-            <View style={styles.glassOverlay} pointerEvents="none" />
+            {glassAvailable ? (
+                <GlassView
+                  style={StyleSheet.absoluteFill}
+                  glassEffectStyle={glassStyle}
+                  tintColor="rgba(255,255,255,1)"
+                />
+            ) : (
+                <BlurView
+                  style={StyleSheet.absoluteFill}
+                  tint="light"
+                  intensity={Platform.OS === 'ios' ? 90 : 140}
+                />
+            )}
+            <View style={[styles.glassOverlay, { backgroundColor: 'rgba(255,255,255,0.6)', borderColor: 'rgba(255,255,255,0.9)' }]} pointerEvents="none" />
             
             <Animated.View style={[styles.detailsContainer, animatedDetailsStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
                 <ScrollView 
@@ -337,7 +353,7 @@ const styles = StyleSheet.create({
     tabIndicator: { position: 'absolute', bottom: 0, height: 2, width: '40%', borderRadius: 1 },
     contentArea: { paddingTop: 12 },
     postsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-    postItem: { width: 110, height: 110, margin: 0.5 },
+    postItem: { width: '33.3333%', aspectRatio: 1 },
     postImage: { width: '100%', height: '100%' },
     postPlaceholder: { width: '100%', padding: 16, borderBottomWidth: 1 },
     postHeader: { flexDirection: 'row', marginBottom: 12 },

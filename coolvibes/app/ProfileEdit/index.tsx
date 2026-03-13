@@ -65,6 +65,7 @@ export default function ProfileEditScreen() {
   const authUser = useAppSelector(state => state.auth.user);
   const systemData = useAppSelector(state => state.system.data);
   const language = useAppSelector(state => state.system.language) || 'en';
+  const fontSize = useAppSelector(state => state.system.fontSize);
 
   const [localUser, setLocalUser] = useState<any>(authUser);
   const [editTab, setEditTab] = useState<EditTabKey>('profile');
@@ -129,6 +130,13 @@ export default function ProfileEditScreen() {
   const secondaryText = dark ? '#888888' : '#666666';
   const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
   const surfaceColor = dark ? '#0F0F0F' : '#F9F9F9';
+  const fontScale = fontSize === 'small' ? 0.9 : fontSize === 'large' ? 1.15 : 1;
+  const baseSizes = {
+    chipText: 12,
+    optionText: 13,
+    cardHint: 12,
+    cardValue: 12,
+  };
 
   const privacyLevels = useMemo(() => ([
     PrivacyLevel.Public,
@@ -819,7 +827,7 @@ export default function ProfileEditScreen() {
                 }]}
                 onPress={() => setEditForm(prev => ({ ...prev, privacy_level: level }))}
               >
-                <Text style={[styles.chipText, { color: isActive ? colors.background : secondaryText }]}>
+                <Text style={[styles.chipText, { color: isActive ? colors.background : secondaryText, fontSize: baseSizes.chipText * fontScale }]}>
                   {privacyLabels[level]}
                 </Text>
               </TouchableOpacity>
@@ -899,12 +907,12 @@ export default function ProfileEditScreen() {
                 <View style={styles.cardHeaderText}>
                   <Text style={[styles.cardHeaderTitle, { color: textColor }]}>{displayLabel}</Text>
                   {!!displayHint && (
-                    <Text style={[styles.cardHeaderHint, { color: secondaryText }]} numberOfLines={2}>{displayHint}</Text>
+                    <Text style={[styles.cardHeaderHint, { color: secondaryText, fontSize: baseSizes.cardHint * fontScale }]} numberOfLines={2}>{displayHint}</Text>
                   )}
                 </View>
               </View>
               <View style={styles.cardHeaderRight}>
-                <Text style={[styles.cardHeaderValue, { color: secondaryText }]} numberOfLines={1}>{displayValue}</Text>
+                <Text style={[styles.cardHeaderValue, { color: secondaryText, fontSize: baseSizes.cardValue * fontScale }]} numberOfLines={1}>{displayValue}</Text>
                 <MaterialCommunityIcons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={secondaryText} />
               </View>
             </TouchableOpacity>
@@ -922,7 +930,7 @@ export default function ProfileEditScreen() {
                         style={[styles.optionRow, { borderColor }, isSelected && { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}
                         onPress={() => handleAttributeSelect(attr.field, option)}
                       >
-                        <Text style={[styles.optionText, { color: textColor }]}>{option.name}</Text>
+                        <Text style={[styles.optionText, { color: textColor, fontSize: baseSizes.optionText * fontScale }]}>{option.name}</Text>
                         {isSelected && (
                           <MaterialCommunityIcons name={allowMultiple ? 'check-circle-outline' : 'check'} size={18} color={textColor} />
                         )}
@@ -959,7 +967,7 @@ export default function ProfileEditScreen() {
                   <Text style={[styles.cardHeaderTitle, { color: textColor }]}>{category.name}</Text>
                 </View>
                 <View style={styles.cardHeaderRight}>
-                  <Text style={[styles.cardHeaderValue, { color: secondaryText }]}>{selectedItems.length} selected</Text>
+                  <Text style={[styles.cardHeaderValue, { color: secondaryText, fontSize: baseSizes.cardValue * fontScale }]}>{selectedItems.length} selected</Text>
                   <MaterialCommunityIcons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={secondaryText} />
                 </View>
               </TouchableOpacity>
@@ -976,7 +984,7 @@ export default function ProfileEditScreen() {
                           style={[styles.optionRow, { borderColor }, isSelected && { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}
                           onPress={() => handleInterestToggle(item, category.id, allowMultiple)}
                         >
-                          <Text style={[styles.optionText, { color: textColor }]}>  
+                          <Text style={[styles.optionText, { color: textColor, fontSize: baseSizes.optionText * fontScale }]}>  
                             {item.emoji ? `${item.emoji} ` : ''}{item.name}
                           </Text>
                           {isSelected && (
@@ -1016,7 +1024,7 @@ export default function ProfileEditScreen() {
                   <Text style={[styles.cardHeaderTitle, { color: textColor }]}>{category.name}</Text>
                 </View>
                 <View style={styles.cardHeaderRight}>
-                  <Text style={[styles.cardHeaderValue, { color: secondaryText }]}>{selectedItems.length} selected</Text>
+                  <Text style={[styles.cardHeaderValue, { color: secondaryText, fontSize: baseSizes.cardValue * fontScale }]}>{selectedItems.length} selected</Text>
                   <MaterialCommunityIcons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={secondaryText} />
                 </View>
               </TouchableOpacity>
@@ -1033,7 +1041,7 @@ export default function ProfileEditScreen() {
                           style={[styles.optionRow, { borderColor }, isSelected && { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}
                           onPress={() => handleFantasyToggle(item, category.id, allowMultiple)}
                         >
-                          <Text style={[styles.optionText, { color: textColor }]}>{item.name}</Text>
+                          <Text style={[styles.optionText, { color: textColor, fontSize: baseSizes.optionText * fontScale }]}>{item.name}</Text>
                           {isSelected && (
                             <MaterialCommunityIcons name={allowMultiple ? 'check-circle-outline' : 'check'} size={18} color={textColor} />
                           )}
