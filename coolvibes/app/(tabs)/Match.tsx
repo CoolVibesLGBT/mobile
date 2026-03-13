@@ -102,21 +102,21 @@ function RadarBackdrop({ accent, centerX, centerY }: { accent: string; centerX: 
   return (
     <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
       <LinearGradient
-        colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.78)']}
+        colors={['rgba(255,255,255,0.65)', 'rgba(245,245,245,0.92)', 'rgba(235,235,235,1)']}
         locations={[0, 0.55, 1]}
         style={StyleSheet.absoluteFillObject}
       />
 
-      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.05 }]} />
-      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.05, transform: [{ rotate: '90deg' }] }]} />
-      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.025, transform: [{ rotate: '45deg' }] }]} />
-      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.025, transform: [{ rotate: '-45deg' }] }]} />
+      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.06 }]} />
+      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.06, transform: [{ rotate: '90deg' }] }]} />
+      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.03, transform: [{ rotate: '45deg' }] }]} />
+      <View style={[styles.gridCross, { left: centerX - 520, top: centerY - 0.5, backgroundColor: accent, opacity: 0.03, transform: [{ rotate: '-45deg' }] }]} />
 
-      <View style={[styles.ring, { width: 220, height: 220, left: centerX - 110, top: centerY - 110, borderColor: 'rgba(255,255,255,0.085)' }]} />
-      <View style={[styles.ring, { width: 420, height: 420, left: centerX - 210, top: centerY - 210, borderColor: 'rgba(255,255,255,0.06)' }]} />
-      <View style={[styles.ring, { width: 640, height: 640, left: centerX - 320, top: centerY - 320, borderColor: 'rgba(255,255,255,0.04)' }]} />
+      <View style={[styles.ring, { width: 220, height: 220, left: centerX - 110, top: centerY - 110, borderColor: 'rgba(0,0,0,0.08)' }]} />
+      <View style={[styles.ring, { width: 420, height: 420, left: centerX - 210, top: centerY - 210, borderColor: 'rgba(0,0,0,0.06)' }]} />
+      <View style={[styles.ring, { width: 640, height: 640, left: centerX - 320, top: centerY - 320, borderColor: 'rgba(0,0,0,0.045)' }]} />
 
-      <View style={[styles.centerGlow, { left: centerX - 60, top: centerY - 60, backgroundColor: accent, opacity: 0.06 }]} />
+      <View style={[styles.centerGlow, { left: centerX - 60, top: centerY - 60, backgroundColor: accent, opacity: 0.04 }]} />
     </View>
   );
 }
@@ -369,9 +369,34 @@ export default function MatchScreen() {
         transform: [{ scale: canvasScale.value }]
     }));
 
+    const focusNearest = useCallback((items: any[]) => {
+        if (!items.length) return;
+        let minDist = Infinity;
+        let targetX = 0;
+        let targetY = 0;
+        for (let i = 0; i < items.length; i += 1) {
+            const h = items[i] as any;
+            const p = axialToPixel(h.q, h.r);
+            const px = p.x + panX.value;
+            const py = p.y + panY.value;
+            const d = px * px + py * py;
+            if (d < minDist) {
+                minDist = d;
+                targetX = p.x;
+                targetY = p.y;
+            }
+        }
+        panX.value = withSpring(-targetX, { damping: 18, stiffness: 90 });
+        panY.value = withSpring(-targetY, { damping: 18, stiffness: 90 });
+    }, [panX, panY]);
+
     const handleDismissCard = (userToRemove: any) => {
         setSelectedUser(null);
-        setHoneycomb(prev => prev.filter(item => item.user.id !== userToRemove.id));
+        setHoneycomb(prev => {
+            const next = prev.filter(item => item.user.id !== userToRemove.id);
+            requestAnimationFrame(() => focusNearest(next));
+            return next;
+        });
     };
 
     const bottomBarHeight = Platform.OS === 'ios' ? 88 : 68;

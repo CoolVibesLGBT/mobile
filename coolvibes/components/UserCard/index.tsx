@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, Image, Pressable, ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import Animated, {
@@ -23,11 +23,19 @@ const NAME_AGE_HEIGHT_ESTIMATE = 70;
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
+const TABS = [
+    { key: 'about', title: 'About' },
+    { key: 'posts', title: 'Posts' },
+    { key: 'media', title: 'Media' },
+    { key: 'likes', title: 'Likes' },
+];
+
 const UserCard = ({ user, onDismiss }: any) => {
     const { colors, dark } = useTheme();
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const insets = useSafeAreaInsets();
     const [isExpanded, setIsExpanded] = useState(false);
+    const [activeTab, setActiveTab] = useState(TABS[0].key);
     const animationProgress = useSharedValue(0);
 
     const handleToggleExpand = useCallback(() => {
@@ -36,6 +44,12 @@ const UserCard = ({ user, onDismiss }: any) => {
         setIsExpanded(!isExpanded);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }, [isExpanded, animationProgress]);
+
+    useEffect(() => {
+        if (!isExpanded) {
+            setActiveTab(TABS[0].key);
+        }
+    }, [isExpanded]);
 
     const handleAction = (action: 'like' | 'dislike' | 'chat') => {
         Haptics.notificationAsync(
@@ -110,13 +124,50 @@ const UserCard = ({ user, onDismiss }: any) => {
     const iconColor = dark ? '#FFFFFF' : '#000000';
     const premiumAccent = '#7C4DFF';
 
+    const tabContent = () => {
+        if (activeTab === 'about') {
+            return <ProfileAboutView user={user} />;
+        }
+        if (activeTab === 'media') {
+            return (
+                <View style={styles.postsGrid}>
+                    {Array.from({ length: 12 }).map((_, index) => (
+                        <View key={`media-${index}`} style={styles.postItem}>
+                            <Image
+                                source={{ uri: `https://picsum.photos/seed/${user.id}-media-${index}/300/300` }}
+                                style={styles.postImage}
+                            />
+                        </View>
+                    ))}
+                </View>
+            );
+        }
+        return (
+            <View style={styles.postsGrid}>
+                {Array.from({ length: 6 }).map((_, index) => (
+                    <View key={`post-${index}`} style={[styles.postPlaceholder, { borderBottomColor: dark ? '#1A1A1A' : '#EEE' }]}>
+                        <View style={styles.postHeader}>
+                            <View style={[styles.postAvatar, { backgroundColor: dark ? '#1A1A1A' : '#EEE' }]} />
+                            <View style={styles.postHeaderInfo}>
+                                <View style={[styles.postLineHeader, { backgroundColor: dark ? '#1A1A1A' : '#EEE' }]} />
+                                <View style={[styles.postLineSub, { backgroundColor: dark ? '#1A1A1A' : '#EEE', width: '40%' }]} />
+                            </View>
+                        </View>
+                        <View style={[styles.postLine, { backgroundColor: dark ? '#1A1A1A' : '#EEE' }]} />
+                    </View>
+                ))}
+            </View>
+        );
+    };
+
     return (
         <View style={styles.wrapper} pointerEvents="auto">
             <AnimatedBlurView 
-              style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)' }, animatedBlurStyle]} 
-              tint={dark ? 'dark' : 'light'} 
-              intensity={Platform.OS === 'ios' ? 40 : 100}
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.28)' }, animatedBlurStyle]} 
+              tint="light" 
+              intensity={Platform.OS === 'ios' ? 35 : 70}
             />
+            <View style={styles.glassOverlay} pointerEvents="none" />
             
             <Animated.View style={[styles.detailsContainer, animatedDetailsStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
                 <ScrollView 
@@ -126,7 +177,33 @@ const UserCard = ({ user, onDismiss }: any) => {
                         paddingTop: insets.top + 40 + EXPANDED_AVATAR_SIZE + NAME_AGE_HEIGHT_ESTIMATE + ACTION_BUTTON_SIZE + 40
                     }}
                 >
-                    <ProfileAboutView user={user} />
+                    <View style={[styles.tabsWrapper, { borderBottomColor: dark ? '#1A1A1A' : '#EEE' }]}>
+                        <View style={styles.tabsInner}>
+                            {TABS.map((tab) => (
+                                <TouchableOpacity
+                                    key={tab.key}
+                                    onPress={() => setActiveTab(tab.key)}
+                                    style={styles.tabItem}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.tabText,
+                                            { color: activeTab === tab.key ? colors.text : (dark ? '#777' : '#999') },
+                                            activeTab === tab.key && styles.tabTextActive
+                                        ]}
+                                    >
+                                        {tab.title}
+                                    </Text>
+                                    {activeTab === tab.key && (
+                                        <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                    <View style={styles.contentArea}>
+                        {tabContent()}
+                    </View>
                 </ScrollView>
             </Animated.View>
 
@@ -193,6 +270,12 @@ const UserCard = ({ user, onDismiss }: any) => {
 
 const styles = StyleSheet.create({
     wrapper: { ...StyleSheet.absoluteFillObject, zIndex: 1000 },
+    glassOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(255,255,255,0.35)',
+        borderWidth: 1,
+    },
     imageContainer: { position: 'absolute', width: '100%', alignItems: 'center' },
     cardImage: { backgroundColor: '#333' },
     cardOverlay: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.05)' },
@@ -246,6 +329,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(127,127,127,0.15)',
     },
+    tabsWrapper: { borderBottomWidth: 1, marginTop: 10 },
+    tabsInner: { flexDirection: 'row', paddingHorizontal: 4 },
+    tabItem: { flex: 1, paddingVertical: 14, alignItems: 'center' },
+    tabText: { fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
+    tabTextActive: { opacity: 1 },
+    tabIndicator: { position: 'absolute', bottom: 0, height: 2, width: '40%', borderRadius: 1 },
+    contentArea: { paddingTop: 12 },
+    postsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+    postItem: { width: 110, height: 110, margin: 0.5 },
+    postImage: { width: '100%', height: '100%' },
+    postPlaceholder: { width: '100%', padding: 16, borderBottomWidth: 1 },
+    postHeader: { flexDirection: 'row', marginBottom: 12 },
+    postAvatar: { width: 34, height: 34, borderRadius: 17, marginRight: 12 },
+    postHeaderInfo: { flex: 1, justifyContent: 'center' },
+    postLineHeader: { height: 10, borderRadius: 5, marginBottom: 6, width: '50%' },
+    postLineSub: { height: 8, borderRadius: 4 },
+    postLine: { height: 10, borderRadius: 5, width: '100%' },
 });
 
 export default UserCard;
