@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -19,9 +19,10 @@ import { useTheme } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, SlideInRight, SlideInLeft } from "react-native-reanimated";
 import { BottomSheetView, BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { VideoView, useVideoPlayer } from 'expo-video';
+import * as SecureStore from 'expo-secure-store';
 
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -43,6 +44,11 @@ import {
 import ChatInput from "@/components/ChatInput";
 import BaseBottomSheetModal from "@/components/BaseBottomSheetModal";
 import { ThemedText } from "@/components/ThemedText";
+import { useAppSelector } from "@/store/hooks";
+import { api } from "@/services/apiService";
+import { getSafeImageURL, getSafeImageURLEx } from "@/helpers/safeUrl";
+import { useSocket } from "@/contexts/SocketContext";
+import { Actions } from "@/services/actions";
 
 // --- Types ---
 interface Message {
@@ -70,9 +76,12 @@ interface User {
 
 export default function ChatDetail() {
   const { colors, dark } = useTheme();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
+  const language = useAppSelector((state) => state.system.language) || 'en';
+  const authUser = useAppSelector((state) => state.auth.user);
+  const authUserId = useAppSelector((state) => state.auth.user?.id ?? null);
+  const socket = useSocket();
 
   // Colors
   const textColor = dark ? '#FFFFFF' : '#000000';
@@ -84,61 +93,9 @@ export default function ChatDetail() {
   const bubbleMeText = dark ? '#000000' : '#FFFFFF';
 
   // State
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      sender: "them",
-      text: "Hey! Did you check out the new design system? It looks incredibly clean and professional.",
-      timestamp: "10:30 AM",
-    },
-    {
-      id: "2",
-      sender: "me",
-      text: "Yes, I just took a look. The monochrome approach really sets a high-end vibe for the app.",
-      timestamp: "10:32 AM",
-      status: "read",
-      replyTo: {
-        user: "User",
-        text: "Did you check out the new design system?",
-        type: "text",
-      }
-    },
-    {
-      id: "3",
-      sender: "them",
-      text: "Exactly. It feels like a premium experience now. What do you think about the Chat Detail screen?",
-      timestamp: "10:35 AM",
-    },
-    {
-      id: "5",
-      sender: "them",
-      text: "Look at this preview!",
-      timestamp: "10:37 AM",
-      image: "https://picsum.photos/seed/design/400/300",
-    },
-    {
-      id: "6",
-      sender: "me",
-      text: "That looks stunning! Let me share my draft too.",
-      timestamp: "10:38 AM",
-      status: "read",
-    },
-    {
-      id: "7",
-      sender: "me",
-      text: "Here is the new concept art.",
-      timestamp: "10:39 AM",
-      image: "https://picsum.photos/seed/concept/400/300",
-    },
-    {
-      id: "8",
-      sender: "them",
-      text: "And check this out! The smooth video transitions are just as impressive.",
-      timestamp: "10:41 AM",
-      video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      videoThumbnail: "https://picsum.photos/seed/video/400/300",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
 
   const [revealedMediaIds, setRevealedMediaIds] = useState<string[]>([]);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
@@ -167,19 +124,206 @@ export default function ChatDetail() {
   const flashListRef = useRef<any>(null);
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
+  const chatId = (params.chatId as string) || "";
+  const currentChatRoomRef = useRef<string | null>(null);
+
+  const getLocalizedText = (value: any) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'object') {
+      return value[language] || value.en || Object.values(value)[0] || '';
+    }
+    return '';
+  };
+
+  const formatTime = (timestamp?: string) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const resolveAttachmentUrl = (attachment: any, variant = 'original') => {
+    const raw =
+      attachment?.file?.variants?.video?.[variant]?.url ||
+      attachment?.variants?.video?.[variant]?.url ||
+      attachment?.file?.variants?.image?.[variant]?.url ||
+      attachment?.variants?.image?.[variant]?.url ||
+      attachment?.file?.url ||
+      attachment?.url;
+    return getSafeImageURL(raw || attachment, variant);
+  };
+
+  const toMessage = useCallback((msg: any): Message | null => {
+    if (!msg) return null;
+    const attachments = Array.isArray(msg?.attachments) ? msg.attachments : [];
+    let image: string | undefined;
+    let video: string | undefined;
+    let videoThumbnail: string | undefined;
+
+    attachments.forEach((att: any) => {
+      const mime = String(att?.file?.mime_type || att?.mime_type || '').toLowerCase();
+      if (!image && mime.startsWith('image/')) {
+        image = resolveAttachmentUrl(att, 'medium') || resolveAttachmentUrl(att, 'large') || undefined;
+      }
+      if (!video && mime.startsWith('video/')) {
+        video = resolveAttachmentUrl(att, 'original') || resolveAttachmentUrl(att, 'large') || undefined;
+        videoThumbnail = resolveAttachmentUrl(att, 'thumbnail') || resolveAttachmentUrl(att, 'small') || undefined;
+      }
+    });
+
+    const id = String(msg?.id ?? msg?.public_id ?? msg?.uuid ?? msg?.slug ?? Math.random());
+    const sender: "me" | "them" = msg?.author_id && authUserId && String(msg.author_id) === String(authUserId) ? "me" : "them";
+    const text = getLocalizedText(msg?.content) || '';
+    const timestamp = formatTime(msg?.created_at || msg?.updated_at || msg?.timestamp);
+
+    return {
+      id,
+      sender,
+      text,
+      timestamp,
+      status: msg?.status || undefined,
+      image,
+      video,
+      videoThumbnail,
+    };
+  }, [authUserId, language]);
+
+  const mapMessages = useCallback((rawMessages: any[]): Message[] => {
+    if (!Array.isArray(rawMessages)) return [];
+    const sorted = [...rawMessages].sort((a, b) => {
+      const ta = new Date(a?.created_at || a?.updated_at || 0).getTime();
+      const tb = new Date(b?.created_at || b?.updated_at || 0).getTime();
+      return ta - tb;
+    });
+    return sorted.map((msg: any) => toMessage(msg)).filter(Boolean) as Message[];
+  }, [toMessage]);
+
+  useEffect(() => {
+    let isActive = true;
+    if (!chatId) return;
+    const fetchMessages = async () => {
+      setMessagesLoading(true);
+      setMessagesError(null);
+      try {
+        const response = await api.fetchMessages({ chat_id: chatId, limit: 50 });
+        const payload = response?.data ?? response;
+        const rawMessages =
+          payload?.messages ??
+          payload?.data?.messages ??
+          response?.messages ??
+          response?.data?.messages ??
+          [];
+        if (isActive) {
+          setMessages(mapMessages(rawMessages));
+        }
+      } catch (error: any) {
+        if (isActive) setMessagesError(error?.message || 'Failed to load messages');
+      } finally {
+        if (isActive) setMessagesLoading(false);
+      }
+    };
+    fetchMessages();
+    return () => {
+      isActive = false;
+    };
+  }, [chatId, mapMessages]);
+
+  useEffect(() => {
+    if (!socket || !chatId) return;
+
+    const parseSocketPayload = (msg: any) => {
+      if (Array.isArray(msg)) {
+        if (msg.length > 1 && typeof msg[1] === 'string') {
+          try {
+            return JSON.parse(msg[1]);
+          } catch {
+            return msg;
+          }
+        }
+        return msg;
+      }
+      if (typeof msg === 'string') {
+        try {
+          return JSON.parse(msg);
+        } catch {
+          return msg;
+        }
+      }
+      return msg;
+    };
+
+    const handleSocketMessage = (msg: any) => {
+      const messageData = parseSocketPayload(msg);
+      const action = messageData?.action;
+      const message = messageData?.message || messageData?.data;
+
+      if (action === Actions.CMD_SEND_MESSAGE && message) {
+        const messageChatId = message.contentable_id || message.chat_id;
+        if (messageChatId && chatId && String(messageChatId) !== String(chatId)) {
+          return;
+        }
+        const mapped = toMessage(message);
+        if (!mapped) return;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === mapped.id)) return prev;
+          return [...prev, mapped];
+        });
+      }
+    };
+
+    const onConnect = async () => {
+      try {
+        const savedToken = await SecureStore.getItemAsync('authToken');
+        if (savedToken) {
+          socket.emit('auth', savedToken);
+        }
+      } catch {
+        // ignore
+      }
+
+      if (currentChatRoomRef.current !== chatId) {
+        socket.emit('join', JSON.stringify({ chat_id: chatId }));
+        currentChatRoomRef.current = chatId;
+      }
+    };
+
+    onConnect();
+    socket.on('connect', onConnect);
+    socket.on('message', handleSocketMessage);
+    socket.on('chat', handleSocketMessage);
+
+    return () => {
+      socket.off('message', handleSocketMessage);
+      socket.off('chat', handleSocketMessage);
+      socket.off('connect', onConnect);
+
+      if (currentChatRoomRef.current) {
+        socket.emit('leave', JSON.stringify({ chat_id: currentChatRoomRef.current }));
+        currentChatRoomRef.current = null;
+      }
+    };
+  }, [socket, chatId, toMessage]);
+
   // Chat Partner Data
   const chatPartner: User = {
-    id: (params.chatId as string) || "user_1",
+    id: chatId || "user_1",
     name: (params.name as string) || "Alex Rivera",
     status: (params.status as string) || "online",
     avatarUrl: (params.avatar as string) || `https://i.pravatar.cc/150?u=${params.name || "Alex"}`,
   };
 
-  const myUser = {
-    id: "me",
-    name: "Ersan",
-    avatarUrl: "https://i.pravatar.cc/150?u=me",
-  };
+  const myUser = useMemo(() => {
+    const avatar = getSafeImageURLEx(authUser?.id ?? authUser?.public_id, authUser?.avatar, 'small') ||
+      getSafeImageURLEx(authUser?.id ?? authUser?.public_id, authUser?.avatar_url || authUser?.avatarUrl, 'small') ||
+      "https://i.pravatar.cc/150?u=me";
+    return {
+      id: authUser?.id || "me",
+      name: authUser?.displayname || authUser?.username || "Me",
+      avatarUrl: avatar,
+    };
+  }, [authUser]);
 
   const handleSendMessage = (text: string, media: any[], replyToId?: string, editingId?: string) => {
     if (editingId) {
@@ -386,6 +530,19 @@ export default function ChatDetail() {
           ]}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() => flashListRef.current?.scrollToEnd?.({ animated: true })}
+          ListEmptyComponent={
+            messagesLoading ? (
+              <View style={{ paddingTop: 120, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={secondaryText} />
+              </View>
+            ) : (
+              <View style={{ paddingTop: 120, alignItems: 'center' }}>
+                <ThemedText style={{ color: secondaryText }}>
+                  {messagesError ? messagesError : 'No messages yet.'}
+                </ThemedText>
+              </View>
+            )
+          }
           ListFooterComponent={
             isTyping ? (
               <Animated.View entering={FadeIn} style={styles.typingContainer}>

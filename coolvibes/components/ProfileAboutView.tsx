@@ -392,8 +392,8 @@ const ProfileAboutView = ({ user }: ProfileAboutViewProps) => {
                                                     </Text>
                                                 </View>
                                             ) : (
-                                                <Text style={[styles.attrValue, { color: dark ? '#FFD700' : '#B8860B', fontSize: baseSizes.attrValue * fontScale }]} numberOfLines={2}>
-                                                    Select option
+                                                <Text style={[styles.attrValue, { color: secondaryText, fontSize: baseSizes.attrValue * fontScale }]} numberOfLines={2}>
+                                                    -
                                                 </Text>
                                             )}
                                         </View>

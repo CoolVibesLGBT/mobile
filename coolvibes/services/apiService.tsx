@@ -82,6 +82,10 @@ export class ApiService {
     return this.call(Actions.CMD_FETCH_CHATS, { method: 'POST', body: params });
   }
 
+  async fetchMessages(params: { chat_id: string; limit?: number; cursor?: string }) {
+    return this.call(Actions.CMD_FETCH_MESSAGES, { method: 'POST', body: params });
+  }
+
   async fetchVibes(params: { limit?: number; cursor?: string }) {
     return this.call(Actions.POST_VIBES, { method: 'POST', body: params });
   }

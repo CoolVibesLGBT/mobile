@@ -15,6 +15,7 @@ import { useTheme } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import UserCard from '@/components/UserCard';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { api } from '@/services/apiService';
 import { calculateAge, getSafeImageURLEx } from '@/helpers/safeUrl';
@@ -146,6 +147,7 @@ function* spiralCoordGenerator() {
 export default function MatchScreen() {
     const { colors, dark } = useTheme();
     const insets = useSafeAreaInsets();
+    const router = useRouter();
     const [selectedUser, setSelectedUser] = useState<any>(null);
     const [viewportSize, setViewportSize] = useState({ width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
     const centerXJs = viewportSize.width / 2;
@@ -166,6 +168,7 @@ export default function MatchScreen() {
     const seenIdsRef = useRef(new Set<string>());
     const [honeycomb, setHoneycomb] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [chatLoadingId, setChatLoadingId] = useState<string | null>(null);
     const [cursor, setCursor] = useState<string | null>(null);
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -399,6 +402,38 @@ export default function MatchScreen() {
         });
     };
 
+    const handleChat = useCallback(async (user: any) => {
+        const userId = user?.id;
+        if (!userId) return;
+        setChatLoadingId(userId);
+        try {
+            const response = await api.createChat([userId]);
+            const chatId = (response as { chat?: { id?: string } })?.chat?.id ?? userId;
+            router.push({
+                pathname: '/ChatDetail',
+                params: {
+                    chatId,
+                    name: user.displayname || user.name || user.username,
+                    avatar: user.imageUrl,
+                    status: 'online',
+                },
+            });
+        } catch (error) {
+            console.error('Radar create chat failed', error);
+            router.push({
+                pathname: '/ChatDetail',
+                params: {
+                    chatId: userId,
+                    name: user.displayname || user.name || user.username,
+                    avatar: user.imageUrl,
+                    status: 'online',
+                },
+            });
+        } finally {
+            setChatLoadingId(null);
+        }
+    }, [router]);
+
     const bottomBarHeight = Platform.OS === 'ios' ? 88 : 68;
     const headerHeight = 60 + insets.top;
 
@@ -453,7 +488,14 @@ export default function MatchScreen() {
                     </GestureDetector>
                 </View>
 
-                {selectedUser && <UserCard user={selectedUser} onDismiss={handleDismissCard} />}
+                {selectedUser && (
+                    <UserCard
+                        user={selectedUser}
+                        onDismiss={handleDismissCard}
+                        onChat={handleChat}
+                        chatLoadingId={chatLoadingId}
+                    />
+                )}
             </View>
         </GestureHandlerRootView>
     );

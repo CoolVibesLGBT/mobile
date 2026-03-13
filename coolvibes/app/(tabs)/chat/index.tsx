@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { StyleSheet, View, Dimensions, FlatList, StatusBar, Pressable, TouchableOpacity, ScrollView } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
@@ -14,6 +13,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchChats, resetChats } from '@/store/slice/chat';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
+import { getSafeImageURLEx } from '@/helpers/safeUrl';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -38,52 +38,22 @@ type ConversationItem = {
   status: string;
 };
 
-const PINNED_MOCK: PinnedItem[] = [
-  { id: 'pin-1', name: 'Ayla', avatar: 'https://picsum.photos/seed/match1/200', online: true },
-  { id: 'pin-2', name: 'Mert', avatar: 'https://picsum.photos/seed/match2/200', online: true },
-  { id: 'pin-3', name: 'Lina', avatar: 'https://picsum.photos/seed/match3/200', online: false },
-  { id: 'pin-4', name: 'Cem', avatar: 'https://picsum.photos/seed/match4/200', online: false },
-  { id: 'pin-5', name: 'Deniz', avatar: 'https://picsum.photos/seed/match5/200', online: true },
-];
+function getLocalizedText(value: any, language: string) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object') {
+    return value[language] || value.en || Object.values(value)[0] || '';
+  }
+  return '';
+}
 
-const MOCK_CONVERSATIONS: ConversationItem[] = [
-  {
-    id: 'chat-1',
-    name: 'Ayla Demir',
-    preview: 'Roof bar plan still on for tonight?',
-    timestamp: '09:24',
-    unreadCount: 3,
-    pinned: true,
-    online: true,
-    avatar: 'https://picsum.photos/seed/chat1/200',
-    status: 'Typing...',
-  },
-  {
-    id: 'chat-2',
-    name: 'Mert K.',
-    preview: 'I shared the place pin. Check the route when free.',
-    timestamp: '08:10',
-    unreadCount: 0,
-    pinned: true,
-    online: false,
-    avatar: 'https://picsum.photos/seed/chat2/200',
-    status: 'Seen 12m ago',
-  },
-  {
-    id: 'chat-3',
-    name: 'Lina',
-    preview: 'Your last photo set looks sharp.',
-    timestamp: 'Yesterday',
-    unreadCount: 1,
-    pinned: false,
-    online: true,
-    avatar: 'https://picsum.photos/seed/chat3/200',
-    status: 'Online',
-  },
-];
-
-function normalizeChat(chat: any, index: number): ConversationItem {
+function normalizeChat(chat: any, index: number, authUserId: string | null, language: string): ConversationItem {
+  const participants = Array.isArray(chat?.participants) ? chat.participants : [];
+  const selfParticipant = participants.find((p: any) => p?.user_id === authUserId || p?.user?.id === authUserId);
+  const otherParticipant = participants.find((p: any) => p?.user_id !== authUserId && p?.user?.id !== authUserId) || participants[0];
   const counterpart =
+    otherParticipant?.user ||
     chat?.other_user ||
     chat?.user ||
     chat?.participant ||
@@ -92,34 +62,44 @@ function normalizeChat(chat: any, index: number): ConversationItem {
     chat?.sender ||
     {};
 
-  const fallback = MOCK_CONVERSATIONS[index % MOCK_CONVERSATIONS.length];
   const name =
     counterpart?.displayname ||
     counterpart?.display_name ||
     counterpart?.username ||
+    getLocalizedText(chat?.title, language) ||
     chat?.name ||
-    fallback.name;
+    'Unknown';
+
   const preview =
+    getLocalizedText(chat?.last_message?.content, language) ||
     chat?.last_message?.text ||
     chat?.last_message_text ||
     chat?.message ||
-    fallback.preview;
+    '';
+
   const timestampSource =
     chat?.last_message_timestamp ||
+    chat?.last_message?.created_at ||
     chat?.updated_at ||
     chat?.timestamp ||
-    fallback.timestamp;
+    '';
+
+  const avatar = getSafeImageURLEx(
+    counterpart?.public_id ?? counterpart?.id ?? chat?.id,
+    counterpart?.avatar || counterpart?.avatar_url || counterpart?.avatarUrl,
+    'small'
+  );
 
   return {
-    id: String(chat?.id ?? fallback.id),
+    id: String(chat?.id ?? chat?.chat_id ?? chat?.public_id ?? counterpart?.id ?? `chat-${index}`),
     name,
     preview,
-    timestamp: typeof timestampSource === 'string' ? timestampSource.slice(0, 16) : fallback.timestamp,
-    unreadCount: Number(chat?.unread_count ?? chat?.unread ?? fallback.unreadCount),
-    pinned: Boolean(chat?.is_pinned ?? fallback.pinned),
-    online: Boolean(counterpart?.online ?? fallback.online),
-    avatar: counterpart?.avatar_url || counterpart?.avatarUrl || fallback.avatar,
-    status: counterpart?.online ? 'Online' : fallback.status,
+    timestamp: typeof timestampSource === 'string' && timestampSource ? timestampSource.slice(0, 16) : '',
+    unreadCount: Number(selfParticipant?.unread_count ?? chat?.unread_count ?? chat?.unread ?? 0),
+    pinned: Boolean(chat?.is_pinned ?? false),
+    online: Boolean(counterpart?.is_online ?? counterpart?.online ?? false),
+    avatar: avatar || counterpart?.avatar_url || counterpart?.avatarUrl || '',
+    status: counterpart?.is_online || counterpart?.online ? 'Online' : '',
   };
 }
 
@@ -129,6 +109,13 @@ export default function ChatScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { chats, loading, cursor } = useAppSelector((state) => state.chat);
+  const authUserId = useAppSelector((state) => state.auth.user?.id ?? null);
+  const authUser = useAppSelector((state) => state.auth.user);
+  const language = useAppSelector((state) => state.system.language) || 'en';
+  const lastChatsRef = useRef<any[]>([]);
+  const lastConversationsRef = useRef<ConversationItem[]>([]);
+  const initialLoadRef = useRef(false);
+  const lastLoadMoreCursorRef = useRef<string | null>(null);
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [pinnedIds, setPinnedIds] = useState<Record<string, boolean>>({});
@@ -138,12 +125,20 @@ export default function ChatScreen() {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
   useEffect(() => {
-    dispatch(resetChats());
+    if (initialLoadRef.current) return;
+    initialLoadRef.current = true;
     dispatch(fetchChats({ limit: 20 }));
   }, [dispatch]);
 
+  useEffect(() => {
+    if (chats.length > 0) {
+      lastChatsRef.current = chats;
+    }
+  }, [chats]);
+
   const conversations = useMemo(() => {
-    const base = chats.length > 0 ? chats.map(normalizeChat) : MOCK_CONVERSATIONS;
+    const sourceChats = chats.length > 0 ? chats : lastChatsRef.current;
+    const base = sourceChats.length > 0 ? sourceChats.map((chat, index) => normalizeChat(chat, index, authUserId, language)) : [];
 
     return base.filter((item) => {
       if (deletedIds[item.id]) return false;
@@ -155,14 +150,74 @@ export default function ChatScreen() {
 
       return matchesFilter;
     }).map(item => ({...item, pinned: pinnedIds[item.id] || item.pinned}));
-  }, [activeFilter, chats, deletedIds, pinnedIds]);
+  }, [activeFilter, chats, deletedIds, pinnedIds, authUserId, language]);
+
+  useEffect(() => {
+    if (conversations.length > 0) {
+      lastConversationsRef.current = conversations;
+    }
+  }, [conversations]);
+
+  useEffect(() => {
+    console.log('[ChatScreen] chats:', chats.length, 'conversations:', conversations.length, 'loading:', loading);
+  }, [chats.length, conversations.length, loading]);
+
+  const listData =
+    conversations.length > 0
+      ? conversations
+      : loading
+        ? lastConversationsRef.current
+        : activeFilter === 'all'
+          ? lastConversationsRef.current
+          : [];
 
   const favorites = useMemo(() => {
-    const pinned = conversations.filter(c => c.pinned);
-    return pinned.length > 0 
-      ? pinned.map(c => ({ id: c.id, name: c.name, avatar: c.avatar, online: c.online }))
-      : PINNED_MOCK;
-  }, [conversations]);
+    const details = authUser?.engagements?.engagement_details || [];
+    const authPublicId = authUser?.public_id ?? null;
+    const isBlocking = (detail: any) => {
+      const kind = detail?.kind || detail?.engagement_kind || detail?.type;
+      const normalized = String(kind || '').toLowerCase();
+      return normalized === 'blocking' || normalized === 'blocked' || normalized.includes('block');
+    };
+    const getUserId = (user: any) => user?.id || user?.public_id;
+    const isSelf = (user: any) => {
+      const id = user?.id;
+      const publicId = user?.public_id;
+      if (authUserId && id && String(id) === String(authUserId)) return true;
+      if (authPublicId && publicId && String(publicId) === String(authPublicId)) return true;
+      return false;
+    };
+    const getOtherUser = (detail: any) => {
+      const engager = detail?.engager || detail?.user;
+      const engagee = detail?.engagee;
+      if (engager && !isSelf(engager)) return engager;
+      if (engagee && !isSelf(engagee)) return engagee;
+      return engager || engagee || null;
+    };
+
+    const blockedIds = new Set(
+      details
+        .filter(isBlocking)
+        .map((detail: any) => getUserId(getOtherUser(detail)))
+        .filter(Boolean)
+    );
+
+    const unique = new Map<string, { id: string; name: string; avatar: string; online: boolean }>();
+    details.forEach((detail: any) => {
+      if (isBlocking(detail)) return;
+      const user = getOtherUser(detail);
+      if (!user || isSelf(user)) return;
+      const id = getUserId(user);
+      if (!id || blockedIds.has(id)) return;
+      const avatar = getSafeImageURLEx(user?.public_id ?? id, user?.avatar, 'small') || '';
+      const name = user?.displayname || user?.display_name || user?.username || 'User';
+      if (!unique.has(String(id))) {
+        unique.set(String(id), { id: String(id), name, avatar, online: Boolean(user?.is_online ?? user?.online) });
+      }
+    });
+
+    return Array.from(unique.values());
+  }, [authUser, authUserId]);
 
   const handleTogglePin = (id: string, isCurrentlyPinned: boolean) => {
     setPinnedIds((prev) => ({ ...prev, [id]: !isCurrentlyPinned }));
@@ -212,13 +267,13 @@ export default function ChatScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
       
-      <FlashList
-        data={conversations}
-        // @ts-ignore
-        estimatedItemSize={84}
+      <FlatList
+        style={{ flex: 1 }}
+        data={listData}
         keyExtractor={(item) => item.id}
         onEndReached={() => {
-          if (!loading && cursor) {
+          if (!loading && cursor && cursor !== lastLoadMoreCursorRef.current) {
+            lastLoadMoreCursorRef.current = cursor;
             dispatch(fetchChats({ limit: 20, cursor }));
           }
         }}
@@ -226,13 +281,14 @@ export default function ChatScreen() {
         contentContainerStyle={{
           paddingTop: headerHeight,
           paddingBottom: insets.bottom + 100,
+          flexGrow: 1,
         }}
         ListHeaderComponent={
           <View>
              {/* Favorites Section */}
              <View style={styles.sectionTitleRow}>
                 <ThemedText style={styles.sectionTitle}>Favorites</ThemedText>
-                <Pressable onPress={() => { dispatch(resetChats()); dispatch(fetchChats({ limit: 20 })); }}>
+                <Pressable onPress={() => { lastChatsRef.current = []; lastConversationsRef.current = []; lastLoadMoreCursorRef.current = null; dispatch(resetChats()); dispatch(fetchChats({ limit: 20 })); }}>
                     <RefreshCcw size={14} color={secondaryTextColor} />
                 </Pressable>
              </View>
@@ -354,6 +410,20 @@ export default function ChatScreen() {
             </Pressable>
           </Animated.View>
         )}
+        ListEmptyComponent={
+          !loading && listData.length === 0 ? (
+            <View style={{ paddingTop: 80, alignItems: 'center' }}>
+              <ThemedText style={{ color: secondaryTextColor }}>No conversations yet.</ThemedText>
+            </View>
+          ) : null
+        }
+        ListFooterComponent={
+          loading ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <ThemedText style={{ color: secondaryTextColor }}>Loading…</ThemedText>
+            </View>
+          ) : null
+        }
       />
 
       {/* Modern B&W Bottom Sheet Modal */}

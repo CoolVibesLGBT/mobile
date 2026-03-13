@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image, Pressable, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Image, Pressable, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
@@ -29,7 +29,7 @@ const TABS = [
     { key: 'likes', title: 'Likes' },
 ];
 
-const UserCard = ({ user, onDismiss }: any) => {
+const UserCard = ({ user, onDismiss, onChat, chatLoadingId }: any) => {
     const { colors, dark } = useTheme();
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const insets = useSafeAreaInsets();
@@ -54,6 +54,10 @@ const UserCard = ({ user, onDismiss }: any) => {
         Haptics.notificationAsync(
              action === 'like' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
         );
+        if (action === 'chat' && onChat) {
+            onChat(user);
+            return;
+        }
         onDismiss(user);
     };
 
@@ -263,8 +267,13 @@ const UserCard = ({ user, onDismiss }: any) => {
                 <TouchableOpacity
                     style={[styles.mainActionButton, { backgroundColor: iconColor }]}
                     onPress={() => handleAction('chat')}
+                    disabled={chatLoadingId === user?.id}
                 >
-                    <MaterialCommunityIcons name="chat" size={30} color={dark ? '#000' : '#FFF'} />
+                    {chatLoadingId === user?.id ? (
+                        <ActivityIndicator size="small" color={dark ? '#000' : '#FFF'} />
+                    ) : (
+                        <MaterialCommunityIcons name="chat" size={30} color={dark ? '#000' : '#FFF'} />
+                    )}
                 </TouchableOpacity>
 
                 <TouchableOpacity

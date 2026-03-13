@@ -1,0 +1,339 @@
+{
+    "success": true,
+    "data": {
+        "messages": [
+            {
+                "public_id": "2032384733500936192",
+                "id": "944e39f8-5dd7-467f-b923-cb24097d8989",
+                "post_kind": "message",
+                "domain": "coolvibes",
+                "content_category": "normal",
+                "contentable_id": "e4653701-b4e8-4048-8672-02fc9b290b78",
+                "contentable_type": "chat",
+                "author_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                "slug": "",
+                "content": {
+                    "en": "welcome"
+                },
+                "audience": "",
+                "author": {
+                    "public_id": "2029006997717782528",
+                    "id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                    "socket_id": "a",
+                    "domain": "coolvibes",
+                    "username": "coolvibes",
+                    "displayname": "coolvibes",
+                    "bio": {
+                        "en": "\u003cp class=\"mb-2 text-base text-gray-900\"\u003e\u003cspan style=\"white-space: pre-wrap;\"\u003ehello \u003c/span\u003e\u003cspan class=\"hashtag inline-block bg-[linear-gradient(to_right,_#d04b36,_#e36511,_#ffba00,_#00b180,_#147aab,_#675997)] bg-clip-text text-transparent font-semibold hover:underline cursor-pointer\" style=\"white-space: pre-wrap;\"\u003e#coolvibes\u003c/span\u003e\u003c/p\u003e"
+                    },
+                    "date_of_birth": "1989-12-05T00:00:00Z",
+                    "balance": "0",
+                    "is_online": false,
+                    "privacy_level": "public",
+                    "preferences_flags": "08002020000d64ffc420d800000000000000000002108000000007fc00030100001a34900c050010008000010021002000010088404200011100220000884000088102010080000000000000000000010000000000000200000000000400b000c000000c0800002002",
+                    "user_role": "user",
+                    "is_active": false,
+                    "created_at": "2026-03-04T01:32:20.04031Z",
+                    "updated_at": "2026-03-13T14:49:28.574726Z",
+                    "last_online": "2026-03-13T14:49:28.574186Z",
+                    "default_language": "en",
+                    "avatar_id": "3ea25a5b-7dc9-4e73-9ac9-7ef88206106e",
+                    "avatar": {
+                        "public_id": "2029009079141142528",
+                        "id": "3ea25a5b-7dc9-4e73-9ac9-7ef88206106e",
+                        "file_id": "72d72ff9-c398-43af-a78d-7c1a1d1c7bf3",
+                        "owner_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                        "owner_type": "user",
+                        "user_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                        "role": "avatar",
+                        "is_public": true,
+                        "file": {
+                            "id": "72d72ff9-c398-43af-a78d-7c1a1d1c7bf3",
+                            "url": "",
+                            "storage_path": "./static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b.jpg",
+                            "mime_type": "image/jpeg",
+                            "size": 493095,
+                            "name": "b976ae19-f286-4117-8c65-19a619347a78.jpg",
+                            "width": 960,
+                            "height": 960,
+                            "variants": {
+                                "image": {
+                                    "icon": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_icon.webp",
+                                        "width": 128,
+                                        "height": 128,
+                                        "format": "webp",
+                                        "size": 19778
+                                    },
+                                    "thumbnail": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_thumb.webp",
+                                        "width": 240,
+                                        "height": 240,
+                                        "format": "webp",
+                                        "size": 56788
+                                    },
+                                    "small": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_sm.webp",
+                                        "width": 128,
+                                        "height": 128,
+                                        "format": "webp",
+                                        "size": 19778
+                                    },
+                                    "medium": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_md.webp",
+                                        "width": 256,
+                                        "height": 256,
+                                        "format": "webp",
+                                        "size": 63364
+                                    },
+                                    "large": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_lg.webp",
+                                        "width": 512,
+                                        "height": 512,
+                                        "format": "webp",
+                                        "size": 213360
+                                    },
+                                    "original": {
+                                        "url": "/static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b.jpg",
+                                        "width": 960,
+                                        "height": 960,
+                                        "format": "jpg",
+                                        "size": 493095
+                                    }
+                                }
+                            },
+                            "created_at": "2026-03-04T01:40:36.29057Z"
+                        },
+                        "created_at": "2026-03-04T01:40:36.29057Z",
+                        "updated_at": "2026-03-04T01:40:36.290571Z"
+                    },
+                    "languages": null,
+                    "travel": {
+                        "visited_countries": null,
+                        "travel_frequency": "",
+                        "favorite_places": null
+                    },
+                    "wallet": {
+                        "id": "00000000-0000-0000-0000-000000000000",
+                        "hd_account_id": 0,
+                        "hd_address_id": 0,
+                        "bitcoin": "",
+                        "ethereum": "",
+                        "avalanche": "",
+                        "tron": "",
+                        "solana": "",
+                        "chiliz": "",
+                        "created_at": "0001-01-01T00:00:00Z",
+                        "updated_at": "0001-01-01T00:00:00Z"
+                    },
+                    "deleted_at": null
+                },
+                "processed": false,
+                "published": true,
+                "created_at": "2026-03-13T09:14:15.006231Z",
+                "updated_at": "2026-03-13T09:14:15.009862Z",
+                "deleted_at": null
+            },
+            {
+                "public_id": "2032469984730419200",
+                "id": "de6f0fe0-5fcf-4593-a712-e2749f483bc4",
+                "post_kind": "message",
+                "domain": "coolvibes",
+                "content_category": "normal",
+                "contentable_id": "e4653701-b4e8-4048-8672-02fc9b290b78",
+                "contentable_type": "chat",
+                "author_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                "slug": "",
+                "audience": "",
+                "author": {
+                    "public_id": "2029006997717782528",
+                    "id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                    "socket_id": "a",
+                    "domain": "coolvibes",
+                    "username": "coolvibes",
+                    "displayname": "coolvibes",
+                    "bio": {
+                        "en": "\u003cp class=\"mb-2 text-base text-gray-900\"\u003e\u003cspan style=\"white-space: pre-wrap;\"\u003ehello \u003c/span\u003e\u003cspan class=\"hashtag inline-block bg-[linear-gradient(to_right,_#d04b36,_#e36511,_#ffba00,_#00b180,_#147aab,_#675997)] bg-clip-text text-transparent font-semibold hover:underline cursor-pointer\" style=\"white-space: pre-wrap;\"\u003e#coolvibes\u003c/span\u003e\u003c/p\u003e"
+                    },
+                    "date_of_birth": "1989-12-05T00:00:00Z",
+                    "balance": "0",
+                    "is_online": false,
+                    "privacy_level": "public",
+                    "preferences_flags": "08002020000d64ffc420d800000000000000000002108000000007fc00030100001a34900c050010008000010021002000010088404200011100220000884000088102010080000000000000000000010000000000000200000000000400b000c000000c0800002002",
+                    "user_role": "user",
+                    "is_active": false,
+                    "created_at": "2026-03-04T01:32:20.04031Z",
+                    "updated_at": "2026-03-13T14:49:28.574726Z",
+                    "last_online": "2026-03-13T14:49:28.574186Z",
+                    "default_language": "en",
+                    "avatar_id": "3ea25a5b-7dc9-4e73-9ac9-7ef88206106e",
+                    "avatar": {
+                        "public_id": "2029009079141142528",
+                        "id": "3ea25a5b-7dc9-4e73-9ac9-7ef88206106e",
+                        "file_id": "72d72ff9-c398-43af-a78d-7c1a1d1c7bf3",
+                        "owner_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                        "owner_type": "user",
+                        "user_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                        "role": "avatar",
+                        "is_public": true,
+                        "file": {
+                            "id": "72d72ff9-c398-43af-a78d-7c1a1d1c7bf3",
+                            "url": "",
+                            "storage_path": "./static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b.jpg",
+                            "mime_type": "image/jpeg",
+                            "size": 493095,
+                            "name": "b976ae19-f286-4117-8c65-19a619347a78.jpg",
+                            "width": 960,
+                            "height": 960,
+                            "variants": {
+                                "image": {
+                                    "icon": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_icon.webp",
+                                        "width": 128,
+                                        "height": 128,
+                                        "format": "webp",
+                                        "size": 19778
+                                    },
+                                    "thumbnail": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_thumb.webp",
+                                        "width": 240,
+                                        "height": 240,
+                                        "format": "webp",
+                                        "size": 56788
+                                    },
+                                    "small": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_sm.webp",
+                                        "width": 128,
+                                        "height": 128,
+                                        "format": "webp",
+                                        "size": 19778
+                                    },
+                                    "medium": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_md.webp",
+                                        "width": 256,
+                                        "height": 256,
+                                        "format": "webp",
+                                        "size": 63364
+                                    },
+                                    "large": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_lg.webp",
+                                        "width": 512,
+                                        "height": 512,
+                                        "format": "webp",
+                                        "size": 213360
+                                    },
+                                    "original": {
+                                        "url": "/static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b.jpg",
+                                        "width": 960,
+                                        "height": 960,
+                                        "format": "jpg",
+                                        "size": 493095
+                                    }
+                                }
+                            },
+                            "created_at": "2026-03-04T01:40:36.29057Z"
+                        },
+                        "created_at": "2026-03-04T01:40:36.29057Z",
+                        "updated_at": "2026-03-04T01:40:36.290571Z"
+                    },
+                    "languages": null,
+                    "travel": {
+                        "visited_countries": null,
+                        "travel_frequency": "",
+                        "favorite_places": null
+                    },
+                    "wallet": {
+                        "id": "00000000-0000-0000-0000-000000000000",
+                        "hd_account_id": 0,
+                        "hd_address_id": 0,
+                        "bitcoin": "",
+                        "ethereum": "",
+                        "avalanche": "",
+                        "tron": "",
+                        "solana": "",
+                        "chiliz": "",
+                        "created_at": "0001-01-01T00:00:00Z",
+                        "updated_at": "0001-01-01T00:00:00Z"
+                    },
+                    "deleted_at": null
+                },
+                "attachments": [
+                    {
+                        "public_id": "2032470003424432128",
+                        "id": "ee2dc44b-ac9c-4513-bcf6-0f6afb0b4bb3",
+                        "file_id": "1d35f21a-931a-4c23-b767-427c7ef88563",
+                        "owner_id": "de6f0fe0-5fcf-4593-a712-e2749f483bc4",
+                        "owner_type": "post",
+                        "user_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                        "role": "chat_media",
+                        "is_public": true,
+                        "file": {
+                            "id": "1d35f21a-931a-4c23-b767-427c7ef88563",
+                            "url": "",
+                            "storage_path": "./static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/chat/2026-03-13/de6f0fe0-5fcf-4593-a712-e2749f483bc4/3cb9a526-1d6a-476f-b340-e2556d203b5d.jpg",
+                            "mime_type": "image/jpeg",
+                            "size": 10986,
+                            "name": "b976ae19-f286-4117-8c65-19a619347a78.jpg",
+                            "width": 100,
+                            "height": 100,
+                            "variants": {
+                                "image": {
+                                    "icon": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/chat/2026-03-13/de6f0fe0-5fcf-4593-a712-e2749f483bc4/3cb9a526-1d6a-476f-b340-e2556d203b5d_landscape_icon.webp",
+                                        "width": 128,
+                                        "height": 128,
+                                        "format": "webp",
+                                        "size": 24664
+                                    },
+                                    "thumbnail": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/chat/2026-03-13/de6f0fe0-5fcf-4593-a712-e2749f483bc4/3cb9a526-1d6a-476f-b340-e2556d203b5d_landscape_thumb.webp",
+                                        "width": 240,
+                                        "height": 240,
+                                        "format": "webp",
+                                        "size": 58444
+                                    },
+                                    "small": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/chat/2026-03-13/de6f0fe0-5fcf-4593-a712-e2749f483bc4/3cb9a526-1d6a-476f-b340-e2556d203b5d_landscape_sm.webp",
+                                        "width": 480,
+                                        "height": 720,
+                                        "format": "webp",
+                                        "size": 197464
+                                    },
+                                    "medium": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/chat/2026-03-13/de6f0fe0-5fcf-4593-a712-e2749f483bc4/3cb9a526-1d6a-476f-b340-e2556d203b5d_landscape_md.webp",
+                                        "width": 720,
+                                        "height": 1080,
+                                        "format": "webp",
+                                        "size": 371778
+                                    },
+                                    "large": {
+                                        "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/chat/2026-03-13/de6f0fe0-5fcf-4593-a712-e2749f483bc4/3cb9a526-1d6a-476f-b340-e2556d203b5d_landscape_lg.webp",
+                                        "width": 1080,
+                                        "height": 1440,
+                                        "format": "webp",
+                                        "size": 580938
+                                    },
+                                    "original": {
+                                        "url": "/static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/chat/2026-03-13/de6f0fe0-5fcf-4593-a712-e2749f483bc4/3cb9a526-1d6a-476f-b340-e2556d203b5d.jpg",
+                                        "width": 100,
+                                        "height": 100,
+                                        "format": "jpg",
+                                        "size": 10986
+                                    }
+                                }
+                            },
+                            "created_at": "2026-03-13T14:53:04.940004Z"
+                        },
+                        "created_at": "2026-03-13T14:53:04.940004Z",
+                        "updated_at": "2026-03-13T14:53:04.940004Z"
+                    }
+                ],
+                "processed": false,
+                "published": true,
+                "created_at": "2026-03-13T14:53:00.483373Z",
+                "updated_at": "2026-03-13T14:53:04.945682Z",
+                "deleted_at": null
+            }
+        ]
+    }
+}

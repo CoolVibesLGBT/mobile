@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect, useMemo } from 'react';
+import React from 'react';
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, Animated, Easing, LayoutAnimation, Platform, UIManager, KeyboardAvoidingView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 const MasonryFlashListAny: any = FlashList;
@@ -7,8 +7,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { Colors } from '@/constants/Colors';
 
 import { useNavigation } from '@react-navigation/native';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchChats, resetChats } from '@/store/slice/chat';
+import { useAppSelector } from '@/store/hooks';
 
 
 if (Platform.OS === 'android') {
@@ -41,32 +40,11 @@ const mockGridData = [
 
 export default function Everyone() {
     const navigation = useNavigation();
-    const dispatch = useAppDispatch();
-
-
-
-    const { chats, loading, error, cursor } = useAppSelector(state => state.chat);
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
 
-    useEffect(() => {
-        loadChats();
-    }, [dispatch]);
-
-    const loadChats = () => {
-        dispatch(resetChats());
-        dispatch(fetchChats({ limit: 20 }));
-    }
-
     const loadMoreChats = () => {
-        if (!loading && cursor) {
-            dispatch(fetchChats({ limit: 20, cursor }));
-        }
+        // Placeholder: this tab does not drive chat fetching.
     };
-
-
-    useEffect(() => {
-        console.log('Chats updated:', { chats, loading, error });
-    }, [chats, loading, error]);
 
 
 

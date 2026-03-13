@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useRef, ReactNode, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { socketURL, defaultSocketServerId } from '../config';
 
@@ -10,6 +10,7 @@ const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     socketRef.current = io(socketURL[defaultSocketServerId], {
@@ -17,6 +18,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       reconnectionAttempts: 5,
       timeout: 10000,
     });
+    setSocket(socketRef.current);
 
     socketRef.current.on('connect', () => {
       console.log('Socket connected', socketRef.current?.id);
@@ -33,11 +35,12 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       socketRef.current?.disconnect();
       socketRef.current = null;
+      setSocket(null);
     };
   }, []);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current }}>
+    <SocketContext.Provider value={{ socket }}>
       {children}
     </SocketContext.Provider>
   );
