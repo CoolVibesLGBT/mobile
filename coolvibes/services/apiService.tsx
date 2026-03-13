@@ -35,6 +35,10 @@ export class ApiService {
                 if (val !== undefined && val !== null) {
                   if (val instanceof File || val instanceof Blob) {
                     formData.append(key, val);
+                  } else if (typeof val === 'object' && val !== null && 'uri' in val) {
+                    formData.append(key, val as any);
+                  } else if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
+                    formData.append(key, JSON.stringify(val));
                   } else {
                     formData.append(key, val.toString());
                   }
@@ -137,6 +141,69 @@ export class ApiService {
     return this.call(Actions.CMD_AUTH_USER_INFO, {
       method: "POST",
       body: {},
+    });
+  }
+
+  async updateProfile(userData: Record<string, any>) {
+    return this.call(Actions.CMD_UPDATE_USER_PROFILE, {
+      method: "POST",
+      body: userData,
+    });
+  }
+
+  async updatePassword(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_UPDATE_PASSWORD, {
+      method: "POST",
+      body: payload,
+    });
+  }
+
+  async updateIdentify(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_UPDATE_IDENTIFY, {
+      method: "POST",
+      body: payload,
+    });
+  }
+
+  async updateAttribute(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_UPDATE_ATTRIBUTE, {
+      method: "POST",
+      body: payload,
+    });
+  }
+
+  async updateInterest(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_UPDATE_INTEREST, {
+      method: "POST",
+      body: payload,
+    });
+  }
+
+  async updateFantasy(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_UPDATE_FANTASY, {
+      method: "POST",
+      body: payload,
+    });
+  }
+
+  async updatePreferences(id: string, bit_index: number, enabled: boolean) {
+    return this.call(Actions.CMD_USER_UPDATE_PREFERENCES, {
+      method: "POST",
+      body: { id, bit_index, enabled },
+    });
+  }
+
+  async uploadAvatar(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_UPLOAD_AVATAR, {
+      method: "POST",
+      body: payload,
+    });
+  }
+
+  async uploadCover(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_UPLOAD_COVER, {
+      method: "POST",
+      body: payload,
     });
   }
 

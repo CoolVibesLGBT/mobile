@@ -7,7 +7,8 @@ import { useRouter, useSegments, useGlobalSearchParams as useSearchParams } from
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useAppSelector } from '@/store/hooks';
-import { BottomSheetModal, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useCallback, useRef, useState } from 'react';
 import { Dimensions } from 'react-native';
 import { MessageSquare, MapPin, Calendar, Users, Star, ScrollText } from 'lucide-react-native';
@@ -15,6 +16,7 @@ import ProfileAboutView from './ProfileAboutView';
 import FullProfileView from './FullProfileView';
 import { ScrollView } from 'react-native-gesture-handler';
 import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
+import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const secondaryText = '#888';
@@ -52,8 +54,9 @@ export default function GlobalHeader() {
     const isSettings = (segments as any[]).includes('Settings');
     const isActivity = (segments as any[]).includes('Activity');
     const isMatch = (segments as any[]).includes('Match') || (segments as any[]).includes('MatchScreen');
+    const isProfileEdit = (segments as any[]).includes('ProfileEdit');
 
-    if (isAuth || isMatch) return null;
+    if (isAuth || isMatch || isProfileEdit) return null;
 
     const rootSubSegments = ['index', 'chat', 'Profile', 'Discover', 'nearby', 'Activity'];
     const segs = segments as string[];
@@ -253,32 +256,32 @@ export default function GlobalHeader() {
             </View>
 
             {/* Profile Preview Sheet */}
-            <BottomSheetModal
+            <BaseBottomSheetModal
                 ref={profileSheetRef}
                 index={0}
                 snapPoints={['92%']}
                 onChange={onSheetChange}
                 backdropComponent={renderBackdrop}
+                enableDynamicSizing={false}
                 backgroundStyle={{ backgroundColor: dark ? '#000' : '#FFF' }}
                 handleIndicatorStyle={{ backgroundColor: dark ? '#333' : '#E0E0E0' }}
             >
-                <BottomSheetView style={{ flex: 1 }}>
-                    <FullProfileView 
-                        user={{
-                            id: chatUserName,
-                            displayname: chatUserName,
-                            avatar_url: chatUserAvatar,
-                            banner_url: `https://picsum.photos/seed/${chatUserName}/1500/500`,
-                            bio: "The best app in the world. Building the future of social media, one line of code at a time.",
-                            location: "San Francisco, CA",
-                            followers_count: 12,
-                            following_count: 2,
-                        }} 
-                        isMe={false} 
-                        onMessage={() => profileSheetRef.current?.dismiss()}
-                    />
-                </BottomSheetView>
-            </BottomSheetModal>
+                <FullProfileView 
+                    user={{
+                        id: chatUserName,
+                        displayname: chatUserName,
+                        avatar_url: chatUserAvatar,
+                        banner_url: `https://picsum.photos/seed/${chatUserName}/1500/500`,
+                        bio: "The best app in the world. Building the future of social media, one line of code at a time.",
+                        location: "San Francisco, CA",
+                        followers_count: 12,
+                        following_count: 2,
+                    }}
+                    useBottomSheetScroll
+                    isMe={false} 
+                    onMessage={() => profileSheetRef.current?.dismiss()}
+                />
+            </BaseBottomSheetModal>
         </View>
     );
 }

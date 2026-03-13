@@ -16665,143 +16665,193 @@
         },
         "checkin_tag_types": [
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "c784c7a7-f958-5338-b536-7ce0b803189a",
                 "tag": "has_place",
                 "name": {
                     "en": "Has Place",
-                    "tr": "Mekanı Var"
+                    "tr": "Mekanım Var"
                 },
-                "icon": "home-outline",
+                "icon": "home",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "836eb9d7-2c12-59f2-8988-2212f7ab8f39",
                 "tag": "has_vehicle",
                 "name": {
                     "en": "Has Vehicle",
-                    "tr": "Aracı Var"
+                    "tr": "Aracım Var"
                 },
-                "icon": "car-outline",
+                "icon": "car",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "9bf5372d-7fd8-5269-abbb-36b0069f7a7b",
                 "tag": "owns_home",
                 "name": {
                     "en": "Owns Home",
-                    "tr": "Evi Var"
+                    "tr": "Evim Var"
                 },
-                "icon": "office-building",
+                "icon": "building",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "da3dd23b-834b-50e6-9ebb-46b0f01f1528",
                 "tag": "has_money",
                 "name": {
                     "en": "Has Money",
-                    "tr": "Parası Var"
+                    "tr": "Param Var"
                 },
-                "icon": "wallet-outline",
+                "icon": "wallet",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "8c250d9d-59cb-5d17-8a03-7e08aef70081",
                 "tag": "seeking_love",
                 "name": {
                     "en": "Seeking Love",
-                    "tr": "Aşk Arıyor"
+                    "tr": "Aşk Arıyorum"
                 },
-                "icon": "heart-outline",
+                "icon": "heart",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "c89f22b0-820d-562c-a196-d552031595ba",
                 "tag": "seeking_fun",
                 "name": {
                     "en": "Seeking Fun",
-                    "tr": "Takılmak İstiyor"
+                    "tr": "Takılmak İstiyorum"
                 },
-                "icon": "flash-outline",
+                "icon": "zap",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "4d6c3509-19c9-5437-b0c2-40b309af2b79",
                 "tag": "seeking_chat",
                 "name": {
                     "en": "Seeking Chat",
-                    "tr": "Sohbet Etmek İstiyor"
+                    "tr": "Sohbet Etmek İstiyorum"
                 },
-                "icon": "message-text-outline",
+                "icon": "message-circle",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "f33e6ab1-7790-5457-a85f-6fb476155af5",
                 "tag": "paid_meeting",
                 "name": {
                     "en": "Paid Meeting",
-                    "tr": "Ücretli Görüşüyor"
+                    "tr": "Ücretli Görüşüyorum"
                 },
-                "icon": "cash-multiple",
+                "icon": "banknote",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "44dedfb6-9dec-5b58-8c66-3f4ea6b1fa7b",
+                "tag": "clean_hygienic",
+                "name": {
+                    "en": "Clean \u0026 Hygienic",
+                    "tr": "Temiz ve Hijyenik"
+                },
+                "icon": "sparkles",
+                "is_visible": true
+            },
+            {
+                "id": "ba8f2dfb-2d3d-520f-869d-a267d87eb9ee",
+                "tag": "hairless",
+                "name": {
+                    "en": "Hairless",
+                    "tr": "Kılsız / Tüysüz"
+                },
+                "icon": "droplet",
+                "is_visible": true
+            },
+            {
+                "id": "0316f86c-99ae-5a5c-aa91-8fd5cd50f6d7",
+                "tag": "hairy",
+                "name": {
+                    "en": "Hairy",
+                    "tr": "Kıllı / Tüylü"
+                },
+                "icon": "feather",
+                "is_visible": true
+            },
+            {
+                "id": "10467e44-ffd3-5c7c-b6a6-665f83cacc30",
+                "tag": "muscular",
+                "name": {
+                    "en": "Muscular",
+                    "tr": "Kaslı"
+                },
+                "icon": "dumbbell",
+                "is_visible": true
+            },
+            {
+                "id": "3b384544-4848-5044-9f17-63b9821eaa87",
+                "tag": "chubby",
+                "name": {
+                    "en": "Chubby",
+                    "tr": "Şişman"
+                },
+                "icon": "flask-round",
+                "is_visible": true
+            },
+            {
+                "id": "451be5be-139e-5095-a43b-5fcc3ca95de8",
                 "tag": "available_now",
                 "name": {
                     "en": "Available Now",
-                    "tr": "Şu An Müsait"
+                    "tr": "Şu An Müsaitim"
                 },
-                "icon": "clock-check-outline",
+                "icon": "clock",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "0c57266a-b250-55ee-be9b-3de3b0e53a70",
                 "tag": "night_only",
                 "name": {
                     "en": "Night Only",
-                    "tr": "Gece Uygun"
+                    "tr": "Gece Uygunum"
                 },
-                "icon": "moon-waning-crescent",
+                "icon": "moon",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "8ce0fd40-3ac5-54dc-8942-c8e4af47d01f",
                 "tag": "chill",
                 "name": {
                     "en": "Chill",
                     "tr": "Sakin"
                 },
-                "icon": "coffee-outline",
+                "icon": "coffee",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "c209ad9e-33d0-5243-9821-3d91b522b98a",
                 "tag": "fun",
                 "name": {
                     "en": "Fun",
                     "tr": "Eğlenceli"
                 },
-                "icon": "emoticon-happy-outline",
+                "icon": "smile",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "30aa38d4-cab7-5270-ab78-049549b9e31e",
                 "tag": "respectful",
                 "name": {
                     "en": "Respectful",
                     "tr": "Saygılı"
                 },
-                "icon": "shield-check-outline",
+                "icon": "shield-check",
                 "is_visible": true
             },
             {
-                "id": "00000000-0000-0000-0000-000000000000",
+                "id": "3652e39a-50b2-5fd4-a068-0b47dece7117",
                 "tag": "no_pressure",
                 "name": {
                     "en": "No Pressure",
                     "tr": "Israrcı Değil"
                 },
-                "icon": "hand-back-left-outline",
+                "icon": "hand",
                 "is_visible": true
             }
         ],

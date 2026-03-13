@@ -181,6 +181,7 @@ function ThemedApp() {
           <Stack.Screen name="ChatDetail" options={{ headerShown: false }} />
           <Stack.Screen name="CheckIn" options={{ headerShown: false }} />
           <Stack.Screen name="Settings" options={{ headerShown: false }} />
+          <Stack.Screen name="ProfileEdit" options={{ headerShown: false }} />
         </Stack>
       </View>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />

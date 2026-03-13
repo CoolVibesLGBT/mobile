@@ -1,0 +1,2119 @@
+{
+    "success": true,
+    "data": {
+        "cursor": "2031752839042174976",
+        "users": [
+            {
+                "public_id": "2029006393452793856",
+                "id": "055c0450-cf64-408c-b917-b2e405e483b1",
+                "domain": "coolvibes",
+                "username": "system",
+                "displayname": "system",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T01:29:55.976387Z",
+                "updated_at": "2026-03-04T02:15:55.30207Z",
+                "location": {
+                    "id": "2e96baaa-ddca-40bb-abce-e16ce4e44082",
+                    "contentable_id": "055c0450-cf64-408c-b917-b2e405e483b1",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0105,
+                    "longitude": 28.9345,
+                    "location_point": {
+                        "lng": 28.9345,
+                        "lat": 41.0105
+                    },
+                    "created_at": "2026-03-04T02:15:53.131344Z",
+                    "updated_at": "2026-03-04T02:15:53.131344Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "ab5dc7bf-4272-40d5-afdf-f4847ac2a847",
+                "avatar": {
+                    "public_id": "2029017966904872960",
+                    "id": "ab5dc7bf-4272-40d5-afdf-f4847ac2a847",
+                    "file_id": "0255742f-dd97-4c2e-a84c-aca929fb92a4",
+                    "owner_id": "055c0450-cf64-408c-b917-b2e405e483b1",
+                    "owner_type": "user",
+                    "user_id": "055c0450-cf64-408c-b917-b2e405e483b1",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "0255742f-dd97-4c2e-a84c-aca929fb92a4",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/055c0450-cf64-408c-b917-b2e405e483b1/avatar/2026-03-04/9b1602d0-3c10-4e18-b5bc-2f1b00e82bd6.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 877498,
+                        "name": "239c2210-32b9-497e-80d9-b2426dbe6292.jpg",
+                        "width": 720,
+                        "height": 1280,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/055c0450-cf64-408c-b917-b2e405e483b1/avatar/2026-03-04/9b1602d0-3c10-4e18-b5bc-2f1b00e82bd6_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 28648
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/055c0450-cf64-408c-b917-b2e405e483b1/avatar/2026-03-04/9b1602d0-3c10-4e18-b5bc-2f1b00e82bd6_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 82928
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/055c0450-cf64-408c-b917-b2e405e483b1/avatar/2026-03-04/9b1602d0-3c10-4e18-b5bc-2f1b00e82bd6_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 28648
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/055c0450-cf64-408c-b917-b2e405e483b1/avatar/2026-03-04/9b1602d0-3c10-4e18-b5bc-2f1b00e82bd6_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 92454
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/055c0450-cf64-408c-b917-b2e405e483b1/avatar/2026-03-04/9b1602d0-3c10-4e18-b5bc-2f1b00e82bd6_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 313386
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/055c0450-cf64-408c-b917-b2e405e483b1/avatar/2026-03-04/9b1602d0-3c10-4e18-b5bc-2f1b00e82bd6.jpg",
+                                    "width": 720,
+                                    "height": 1280,
+                                    "format": "jpg",
+                                    "size": 877498
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-04T02:15:55.298017Z"
+                    },
+                    "created_at": "2026-03-04T02:15:55.298017Z",
+                    "updated_at": "2026-03-04T02:15:55.298017Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029006393486348288",
+                "id": "3d787466-7c1d-4d10-9eba-1ed4196b9b47",
+                "socket_id": "4",
+                "domain": "coolvibes",
+                "username": "admin",
+                "displayname": "admin",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T01:29:55.980882Z",
+                "updated_at": "2026-03-07T03:55:58.863954Z",
+                "last_online": "2026-03-07T03:55:58.863528Z",
+                "location": {
+                    "id": "c0b115a2-c787-425d-b230-5392ab18913e",
+                    "contentable_id": "3d787466-7c1d-4d10-9eba-1ed4196b9b47",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0105,
+                    "longitude": 28.9345,
+                    "location_point": {
+                        "lng": 28.9345,
+                        "lat": 41.0105
+                    },
+                    "created_at": "2026-03-04T02:15:14.940375Z",
+                    "updated_at": "2026-03-04T02:15:14.940375Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "157050a5-4a6a-4f00-8429-a9318194b607",
+                "avatar": {
+                    "public_id": "2029017806221086720",
+                    "id": "157050a5-4a6a-4f00-8429-a9318194b607",
+                    "file_id": "8091260d-f06e-4228-aba0-0411e2e5b571",
+                    "owner_id": "3d787466-7c1d-4d10-9eba-1ed4196b9b47",
+                    "owner_type": "user",
+                    "user_id": "3d787466-7c1d-4d10-9eba-1ed4196b9b47",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "8091260d-f06e-4228-aba0-0411e2e5b571",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/3d787466-7c1d-4d10-9eba-1ed4196b9b47/avatar/2026-03-04/f2f38d4e-6467-4796-9a41-4f6d14dfeed3.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 858085,
+                        "name": "8f2aec8e-5349-4d56-98f8-bd29e6461f34.jpg",
+                        "width": 720,
+                        "height": 1280,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/3d787466-7c1d-4d10-9eba-1ed4196b9b47/avatar/2026-03-04/f2f38d4e-6467-4796-9a41-4f6d14dfeed3_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 27936
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/3d787466-7c1d-4d10-9eba-1ed4196b9b47/avatar/2026-03-04/f2f38d4e-6467-4796-9a41-4f6d14dfeed3_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 81060
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/3d787466-7c1d-4d10-9eba-1ed4196b9b47/avatar/2026-03-04/f2f38d4e-6467-4796-9a41-4f6d14dfeed3_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 27936
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/3d787466-7c1d-4d10-9eba-1ed4196b9b47/avatar/2026-03-04/f2f38d4e-6467-4796-9a41-4f6d14dfeed3_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 90396
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/3d787466-7c1d-4d10-9eba-1ed4196b9b47/avatar/2026-03-04/f2f38d4e-6467-4796-9a41-4f6d14dfeed3_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 305152
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/3d787466-7c1d-4d10-9eba-1ed4196b9b47/avatar/2026-03-04/f2f38d4e-6467-4796-9a41-4f6d14dfeed3.jpg",
+                                    "width": 720,
+                                    "height": 1280,
+                                    "format": "jpg",
+                                    "size": 858085
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-04T02:15:16.988141Z"
+                    },
+                    "created_at": "2026-03-04T02:15:16.988141Z",
+                    "updated_at": "2026-03-04T02:15:16.988141Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029006393494736896",
+                "id": "b3871a6c-e235-4125-8e2a-a53f190c810b",
+                "domain": "coolvibes",
+                "username": "moderator",
+                "displayname": "moderator",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T01:29:55.982462Z",
+                "updated_at": "2026-03-04T02:19:25.2759Z",
+                "location": {
+                    "id": "3a988f79-3990-4746-b4c2-8cafb7a5bfae",
+                    "contentable_id": "b3871a6c-e235-4125-8e2a-a53f190c810b",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0105,
+                    "longitude": 28.9345,
+                    "location_point": {
+                        "lng": 28.9345,
+                        "lat": 41.0105
+                    },
+                    "created_at": "2026-03-04T02:19:12.49916Z",
+                    "updated_at": "2026-03-04T02:19:12.49916Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "e459ecb4-2a8c-479d-8e63-1467ad123186",
+                "avatar": {
+                    "public_id": "2029018847595466752",
+                    "id": "e459ecb4-2a8c-479d-8e63-1467ad123186",
+                    "file_id": "d6476150-e910-4a90-84a4-c59a5e6ce260",
+                    "owner_id": "b3871a6c-e235-4125-8e2a-a53f190c810b",
+                    "owner_type": "user",
+                    "user_id": "b3871a6c-e235-4125-8e2a-a53f190c810b",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "d6476150-e910-4a90-84a4-c59a5e6ce260",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/b3871a6c-e235-4125-8e2a-a53f190c810b/avatar/2026-03-04/223ac135-2222-40b7-8f43-f00ef9f76630.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 812616,
+                        "name": "f5acacca-8a3e-422a-9a1d-d885666cddb3.jpg",
+                        "width": 720,
+                        "height": 1280,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/b3871a6c-e235-4125-8e2a-a53f190c810b/avatar/2026-03-04/223ac135-2222-40b7-8f43-f00ef9f76630_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 28350
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/b3871a6c-e235-4125-8e2a-a53f190c810b/avatar/2026-03-04/223ac135-2222-40b7-8f43-f00ef9f76630_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 81030
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/b3871a6c-e235-4125-8e2a-a53f190c810b/avatar/2026-03-04/223ac135-2222-40b7-8f43-f00ef9f76630_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 28350
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/b3871a6c-e235-4125-8e2a-a53f190c810b/avatar/2026-03-04/223ac135-2222-40b7-8f43-f00ef9f76630_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 89948
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/b3871a6c-e235-4125-8e2a-a53f190c810b/avatar/2026-03-04/223ac135-2222-40b7-8f43-f00ef9f76630_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 301680
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/b3871a6c-e235-4125-8e2a-a53f190c810b/avatar/2026-03-04/223ac135-2222-40b7-8f43-f00ef9f76630.jpg",
+                                    "width": 720,
+                                    "height": 1280,
+                                    "format": "jpg",
+                                    "size": 812616
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-04T02:19:25.271705Z"
+                    },
+                    "created_at": "2026-03-04T02:19:25.271705Z",
+                    "updated_at": "2026-03-04T02:19:25.271705Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029006393498931200",
+                "id": "ce50386d-9c1a-44db-80d4-cbc8db5697e9",
+                "domain": "coolvibes",
+                "username": "support",
+                "displayname": "support",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T01:29:55.983739Z",
+                "updated_at": "2026-03-04T02:16:30.258875Z",
+                "location": {
+                    "id": "fa74ee3f-296d-4cb4-9dce-a9ce144a964d",
+                    "contentable_id": "ce50386d-9c1a-44db-80d4-cbc8db5697e9",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0105,
+                    "longitude": 28.9345,
+                    "location_point": {
+                        "lng": 28.9345,
+                        "lat": 41.0105
+                    },
+                    "created_at": "2026-03-04T02:16:18.213093Z",
+                    "updated_at": "2026-03-04T02:16:18.213092Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "51db018d-72ef-45b0-8771-da58fcb5c36b",
+                "avatar": {
+                    "public_id": "2029018113520963584",
+                    "id": "51db018d-72ef-45b0-8771-da58fcb5c36b",
+                    "file_id": "01fd5218-5652-4dc1-8255-9dd7662069a3",
+                    "owner_id": "ce50386d-9c1a-44db-80d4-cbc8db5697e9",
+                    "owner_type": "user",
+                    "user_id": "ce50386d-9c1a-44db-80d4-cbc8db5697e9",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "01fd5218-5652-4dc1-8255-9dd7662069a3",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/ce50386d-9c1a-44db-80d4-cbc8db5697e9/avatar/2026-03-04/faeea516-90bf-47e7-ac5b-44c5e1b68531.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 800317,
+                        "name": "bc8120e7-88cc-490e-80f5-b107ec0e7835.jpg",
+                        "width": 720,
+                        "height": 1280,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/ce50386d-9c1a-44db-80d4-cbc8db5697e9/avatar/2026-03-04/faeea516-90bf-47e7-ac5b-44c5e1b68531_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 29018
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/ce50386d-9c1a-44db-80d4-cbc8db5697e9/avatar/2026-03-04/faeea516-90bf-47e7-ac5b-44c5e1b68531_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 84492
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/ce50386d-9c1a-44db-80d4-cbc8db5697e9/avatar/2026-03-04/faeea516-90bf-47e7-ac5b-44c5e1b68531_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 29018
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/ce50386d-9c1a-44db-80d4-cbc8db5697e9/avatar/2026-03-04/faeea516-90bf-47e7-ac5b-44c5e1b68531_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 93836
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/ce50386d-9c1a-44db-80d4-cbc8db5697e9/avatar/2026-03-04/faeea516-90bf-47e7-ac5b-44c5e1b68531_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 316962
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/ce50386d-9c1a-44db-80d4-cbc8db5697e9/avatar/2026-03-04/faeea516-90bf-47e7-ac5b-44c5e1b68531.jpg",
+                                    "width": 720,
+                                    "height": 1280,
+                                    "format": "jpg",
+                                    "size": 800317
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-04T02:16:30.254814Z"
+                    },
+                    "created_at": "2026-03-04T02:16:30.254814Z",
+                    "updated_at": "2026-03-04T02:16:30.254814Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029006393507319808",
+                "id": "859267c5-368f-4a63-be6c-352c59a7fca0",
+                "domain": "coolvibes",
+                "username": "bot",
+                "displayname": "bot",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T01:29:55.985328Z",
+                "updated_at": "2026-03-04T02:16:59.042655Z",
+                "location": {
+                    "id": "8046806a-de23-4f06-b962-910a17954461",
+                    "contentable_id": "859267c5-368f-4a63-be6c-352c59a7fca0",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0105,
+                    "longitude": 28.9345,
+                    "location_point": {
+                        "lng": 28.9345,
+                        "lat": 41.0105
+                    },
+                    "created_at": "2026-03-04T02:16:48.213344Z",
+                    "updated_at": "2026-03-04T02:16:48.213344Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "2917f5bd-93b5-4a9c-ab0a-f588eed9879e",
+                "avatar": {
+                    "public_id": "2029018234249809920",
+                    "id": "2917f5bd-93b5-4a9c-ab0a-f588eed9879e",
+                    "file_id": "7a4e6fed-0d33-4872-b880-5fe826822720",
+                    "owner_id": "859267c5-368f-4a63-be6c-352c59a7fca0",
+                    "owner_type": "user",
+                    "user_id": "859267c5-368f-4a63-be6c-352c59a7fca0",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "7a4e6fed-0d33-4872-b880-5fe826822720",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/859267c5-368f-4a63-be6c-352c59a7fca0/avatar/2026-03-04/cd6ac7ef-a4f9-4b12-8013-f0f7d2d8956e.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 816290,
+                        "name": "a6a09b28-06df-49e8-af4a-448c2f1fc9d1.jpg",
+                        "width": 720,
+                        "height": 1280,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/859267c5-368f-4a63-be6c-352c59a7fca0/avatar/2026-03-04/cd6ac7ef-a4f9-4b12-8013-f0f7d2d8956e_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 28898
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/859267c5-368f-4a63-be6c-352c59a7fca0/avatar/2026-03-04/cd6ac7ef-a4f9-4b12-8013-f0f7d2d8956e_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 84318
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/859267c5-368f-4a63-be6c-352c59a7fca0/avatar/2026-03-04/cd6ac7ef-a4f9-4b12-8013-f0f7d2d8956e_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 28898
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/859267c5-368f-4a63-be6c-352c59a7fca0/avatar/2026-03-04/cd6ac7ef-a4f9-4b12-8013-f0f7d2d8956e_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 94080
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/859267c5-368f-4a63-be6c-352c59a7fca0/avatar/2026-03-04/cd6ac7ef-a4f9-4b12-8013-f0f7d2d8956e_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 316006
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/859267c5-368f-4a63-be6c-352c59a7fca0/avatar/2026-03-04/cd6ac7ef-a4f9-4b12-8013-f0f7d2d8956e.jpg",
+                                    "width": 720,
+                                    "height": 1280,
+                                    "format": "jpg",
+                                    "size": 816290
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-04T02:16:59.038577Z"
+                    },
+                    "created_at": "2026-03-04T02:16:59.038577Z",
+                    "updated_at": "2026-03-04T02:16:59.038577Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029006393511514112",
+                "id": "0b510131-24a0-4efa-b90a-55522c195f6c",
+                "domain": "coolvibes",
+                "username": "news",
+                "displayname": "news",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T01:29:55.98686Z",
+                "updated_at": "2026-03-04T02:17:35.32375Z",
+                "location": {
+                    "id": "5353d352-3e11-4a9f-8e0b-0cd9c31c91b5",
+                    "contentable_id": "0b510131-24a0-4efa-b90a-55522c195f6c",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0105,
+                    "longitude": 28.9345,
+                    "location_point": {
+                        "lng": 28.9345,
+                        "lat": 41.0105
+                    },
+                    "created_at": "2026-03-04T02:17:20.046564Z",
+                    "updated_at": "2026-03-04T02:17:20.046564Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "afc87cdc-667a-4c67-af44-b78b45481ac1",
+                "avatar": {
+                    "public_id": "2029018386423353344",
+                    "id": "afc87cdc-667a-4c67-af44-b78b45481ac1",
+                    "file_id": "2acf3eea-8ffe-4f91-992d-1b6a0081cdd8",
+                    "owner_id": "0b510131-24a0-4efa-b90a-55522c195f6c",
+                    "owner_type": "user",
+                    "user_id": "0b510131-24a0-4efa-b90a-55522c195f6c",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "2acf3eea-8ffe-4f91-992d-1b6a0081cdd8",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/0b510131-24a0-4efa-b90a-55522c195f6c/avatar/2026-03-04/da7bcfda-4673-4176-98f3-b3aa2be1b5a1.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 842891,
+                        "name": "e3e1806b-24c4-486a-9cdf-9f03e9b264a8.jpg",
+                        "width": 720,
+                        "height": 1280,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/0b510131-24a0-4efa-b90a-55522c195f6c/avatar/2026-03-04/da7bcfda-4673-4176-98f3-b3aa2be1b5a1_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 29204
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/0b510131-24a0-4efa-b90a-55522c195f6c/avatar/2026-03-04/da7bcfda-4673-4176-98f3-b3aa2be1b5a1_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 84074
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/0b510131-24a0-4efa-b90a-55522c195f6c/avatar/2026-03-04/da7bcfda-4673-4176-98f3-b3aa2be1b5a1_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 29204
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/0b510131-24a0-4efa-b90a-55522c195f6c/avatar/2026-03-04/da7bcfda-4673-4176-98f3-b3aa2be1b5a1_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 93622
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/0b510131-24a0-4efa-b90a-55522c195f6c/avatar/2026-03-04/da7bcfda-4673-4176-98f3-b3aa2be1b5a1_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 314200
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/0b510131-24a0-4efa-b90a-55522c195f6c/avatar/2026-03-04/da7bcfda-4673-4176-98f3-b3aa2be1b5a1.jpg",
+                                    "width": 720,
+                                    "height": 1280,
+                                    "format": "jpg",
+                                    "size": 842891
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-04T02:17:35.319488Z"
+                    },
+                    "created_at": "2026-03-04T02:17:35.319488Z",
+                    "updated_at": "2026-03-04T02:17:35.319489Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029006393519902720",
+                "id": "9661c17f-ba5d-4f3b-aaaf-4ad092a636b9",
+                "domain": "coolvibes",
+                "username": "explorer",
+                "displayname": "explorer",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T01:29:55.988324Z",
+                "updated_at": "2026-03-04T02:18:39.752539Z",
+                "location": {
+                    "id": "14aea603-3355-42ba-b8b6-83768efba968",
+                    "contentable_id": "9661c17f-ba5d-4f3b-aaaf-4ad092a636b9",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0105,
+                    "longitude": 28.9345,
+                    "location_point": {
+                        "lng": 28.9345,
+                        "lat": 41.0105
+                    },
+                    "created_at": "2026-03-04T02:18:27.601446Z",
+                    "updated_at": "2026-03-04T02:18:27.601446Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "8e062c43-c5ab-4f0e-bab6-ad54c5f9b651",
+                "avatar": {
+                    "public_id": "2029018656658165760",
+                    "id": "8e062c43-c5ab-4f0e-bab6-ad54c5f9b651",
+                    "file_id": "3cc95cba-02af-4310-87dd-e19624256f3a",
+                    "owner_id": "9661c17f-ba5d-4f3b-aaaf-4ad092a636b9",
+                    "owner_type": "user",
+                    "user_id": "9661c17f-ba5d-4f3b-aaaf-4ad092a636b9",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "3cc95cba-02af-4310-87dd-e19624256f3a",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/9661c17f-ba5d-4f3b-aaaf-4ad092a636b9/avatar/2026-03-04/93a95516-9467-4fb9-87bd-6f9befa3a169.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 677007,
+                        "name": "33d466f3-2f7a-4283-ac28-7e96a46ffe7d.jpg",
+                        "width": 720,
+                        "height": 1280,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/9661c17f-ba5d-4f3b-aaaf-4ad092a636b9/avatar/2026-03-04/93a95516-9467-4fb9-87bd-6f9befa3a169_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 28044
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/9661c17f-ba5d-4f3b-aaaf-4ad092a636b9/avatar/2026-03-04/93a95516-9467-4fb9-87bd-6f9befa3a169_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 80272
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/9661c17f-ba5d-4f3b-aaaf-4ad092a636b9/avatar/2026-03-04/93a95516-9467-4fb9-87bd-6f9befa3a169_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 28044
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/9661c17f-ba5d-4f3b-aaaf-4ad092a636b9/avatar/2026-03-04/93a95516-9467-4fb9-87bd-6f9befa3a169_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 89456
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/9661c17f-ba5d-4f3b-aaaf-4ad092a636b9/avatar/2026-03-04/93a95516-9467-4fb9-87bd-6f9befa3a169_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 295810
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/9661c17f-ba5d-4f3b-aaaf-4ad092a636b9/avatar/2026-03-04/93a95516-9467-4fb9-87bd-6f9befa3a169.jpg",
+                                    "width": 720,
+                                    "height": 1280,
+                                    "format": "jpg",
+                                    "size": 677007
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-04T02:18:39.7481Z"
+                    },
+                    "created_at": "2026-03-04T02:18:39.7481Z",
+                    "updated_at": "2026-03-04T02:18:39.7481Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029006393524097024",
+                "id": "0f6524ff-d4ce-4833-8283-d76fbafca959",
+                "domain": "coolvibes",
+                "username": "core",
+                "displayname": "core",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T01:29:55.989847Z",
+                "updated_at": "2026-03-04T02:18:05.56518Z",
+                "location": {
+                    "id": "3358d10f-b0f5-4245-ae9d-ab2a7438f624",
+                    "contentable_id": "0f6524ff-d4ce-4833-8283-d76fbafca959",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0105,
+                    "longitude": 28.9345,
+                    "location_point": {
+                        "lng": 28.9345,
+                        "lat": 41.0105
+                    },
+                    "created_at": "2026-03-04T02:17:49.957874Z",
+                    "updated_at": "2026-03-04T02:17:49.957874Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "8da0f198-9795-4155-91dd-9ea975d67b7c",
+                "avatar": {
+                    "public_id": "2029018513267494912",
+                    "id": "8da0f198-9795-4155-91dd-9ea975d67b7c",
+                    "file_id": "151b0dea-4aec-4bd5-ba51-a2c0ef8c7be3",
+                    "owner_id": "0f6524ff-d4ce-4833-8283-d76fbafca959",
+                    "owner_type": "user",
+                    "user_id": "0f6524ff-d4ce-4833-8283-d76fbafca959",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "151b0dea-4aec-4bd5-ba51-a2c0ef8c7be3",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/0f6524ff-d4ce-4833-8283-d76fbafca959/avatar/2026-03-04/70b8027b-2fa6-4351-96e0-631e387669ed.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 1025607,
+                        "name": "efda9d87-0fb1-468c-921a-e845c53879ce.jpg",
+                        "width": 720,
+                        "height": 1280,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/0f6524ff-d4ce-4833-8283-d76fbafca959/avatar/2026-03-04/70b8027b-2fa6-4351-96e0-631e387669ed_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 34392
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/0f6524ff-d4ce-4833-8283-d76fbafca959/avatar/2026-03-04/70b8027b-2fa6-4351-96e0-631e387669ed_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 101452
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/0f6524ff-d4ce-4833-8283-d76fbafca959/avatar/2026-03-04/70b8027b-2fa6-4351-96e0-631e387669ed_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 34392
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/0f6524ff-d4ce-4833-8283-d76fbafca959/avatar/2026-03-04/70b8027b-2fa6-4351-96e0-631e387669ed_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 113244
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/0f6524ff-d4ce-4833-8283-d76fbafca959/avatar/2026-03-04/70b8027b-2fa6-4351-96e0-631e387669ed_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 378342
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/0f6524ff-d4ce-4833-8283-d76fbafca959/avatar/2026-03-04/70b8027b-2fa6-4351-96e0-631e387669ed.jpg",
+                                    "width": 720,
+                                    "height": 1280,
+                                    "format": "jpg",
+                                    "size": 1025607
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-04T02:18:05.561007Z"
+                    },
+                    "created_at": "2026-03-04T02:18:05.561007Z",
+                    "updated_at": "2026-03-04T02:18:05.561007Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029006997717782528",
+                "id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                "socket_id": "c",
+                "domain": "coolvibes",
+                "username": "coolvibes",
+                "displayname": "coolvibes",
+                "bio": {
+                    "en": "\u003cp class=\"mb-2 text-base text-gray-900\"\u003e\u003cspan style=\"white-space: pre-wrap;\"\u003ehello \u003c/span\u003e\u003cspan class=\"hashtag inline-block bg-[linear-gradient(to_right,_#d04b36,_#e36511,_#ffba00,_#00b180,_#147aab,_#675997)] bg-clip-text text-transparent font-semibold hover:underline cursor-pointer\" style=\"white-space: pre-wrap;\"\u003e#coolvibes\u003c/span\u003e\u003c/p\u003e"
+                },
+                "date_of_birth": "1989-12-05T00:00:00Z",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "08002020000d64ffc420d8000000000000000000021080000000000000030100001a34900c050010008000010021002000010088404200011100220000884000088102010080000000000000000000010000000000000200000000000400b000c000000c0800002002",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T01:32:20.04031Z",
+                "updated_at": "2026-03-13T10:22:07.678731Z",
+                "last_online": "2026-03-13T10:22:07.677895Z",
+                "location": {
+                    "id": "a3b2e95c-12de-4369-814c-e7f273df2313",
+                    "contentable_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "address": "",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "region": "",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0105,
+                    "longitude": 28.9345,
+                    "location_point": {
+                        "lng": 28.9345,
+                        "lat": 41.0105
+                    },
+                    "created_at": "2026-03-10T06:10:33.802992Z",
+                    "updated_at": "2026-03-10T06:10:33.804154Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "3ea25a5b-7dc9-4e73-9ac9-7ef88206106e",
+                "avatar": {
+                    "public_id": "2029009079141142528",
+                    "id": "3ea25a5b-7dc9-4e73-9ac9-7ef88206106e",
+                    "file_id": "72d72ff9-c398-43af-a78d-7c1a1d1c7bf3",
+                    "owner_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                    "owner_type": "user",
+                    "user_id": "81eb4d27-96bd-444e-93a7-574c095ac91c",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "72d72ff9-c398-43af-a78d-7c1a1d1c7bf3",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 493095,
+                        "name": "b976ae19-f286-4117-8c65-19a619347a78.jpg",
+                        "width": 960,
+                        "height": 960,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 19778
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 56788
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 19778
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 63364
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 213360
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/81eb4d27-96bd-444e-93a7-574c095ac91c/avatar/2026-03-04/88476ad4-5e0e-4726-9052-3d2fdca5513b.jpg",
+                                    "width": 960,
+                                    "height": 960,
+                                    "format": "jpg",
+                                    "size": 493095
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-04T01:40:36.29057Z"
+                    },
+                    "created_at": "2026-03-04T01:40:36.29057Z",
+                    "updated_at": "2026-03-04T01:40:36.290571Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029054330874630144",
+                "id": "6007f19e-fdac-48ea-bd5c-647242cf3d10",
+                "socket_id": "g",
+                "domain": "coolvibes",
+                "username": "helloworld",
+                "displayname": "helloworld",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T04:40:25.144545Z",
+                "updated_at": "2026-03-13T11:34:08.560793Z",
+                "last_online": "2026-03-13T11:34:08.560125Z",
+                "location": {
+                    "id": "39489dfc-aeaa-4fc5-b3ef-49f159dd0d90",
+                    "contentable_id": "6007f19e-fdac-48ea-bd5c-647242cf3d10",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Istanbul",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Istanbul",
+                    "latitude": 41.0207,
+                    "longitude": 28.9285,
+                    "location_point": {
+                        "lng": 28.9285,
+                        "lat": 41.0207
+                    },
+                    "created_at": "2026-03-04T04:40:35.505018Z",
+                    "updated_at": "2026-03-04T04:40:35.505018Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2031029292141383680",
+                "id": "b8726e06-6ff2-41f9-8132-8b4e5d5535b5",
+                "socket_id": "s",
+                "domain": "coolvibes",
+                "username": "sqeqeq23",
+                "displayname": "sqeqeq23",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-09T15:28:12.603746Z",
+                "updated_at": "2026-03-09T15:30:02.05867Z",
+                "last_online": "2026-03-09T15:30:02.058175Z",
+                "location": {
+                    "id": "140e5876-9efe-4517-be53-76bea820a280",
+                    "contentable_id": "b8726e06-6ff2-41f9-8132-8b4e5d5535b5",
+                    "contentable_type": "user",
+                    "country_code": "TR",
+                    "city": "Kocasinan",
+                    "country": "Türkiye",
+                    "timezone": "Europe/Istanbul",
+                    "display": "Kocasinan",
+                    "latitude": 41.0156,
+                    "longitude": 28.8369,
+                    "location_point": {
+                        "lng": 28.8369,
+                        "lat": 41.0156
+                    },
+                    "created_at": "2026-03-09T15:28:13.367982Z",
+                    "updated_at": "2026-03-09T15:28:13.367982Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2030074236873216000",
+                "id": "b73b3d13-bd43-4c1c-98cb-a41e2b2592fc",
+                "socket_id": "w",
+                "domain": "coolvibes",
+                "username": "cryptoknigh567",
+                "displayname": "cryptoknigh567",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-07T00:13:09.683986Z",
+                "updated_at": "2026-03-07T01:15:10.677584Z",
+                "last_online": "2026-03-07T01:15:10.677095Z",
+                "location": {
+                    "id": "277aaaa8-68eb-4424-954e-f474538cee5b",
+                    "contentable_id": "b73b3d13-bd43-4c1c-98cb-a41e2b2592fc",
+                    "contentable_type": "user",
+                    "country_code": "NL",
+                    "city": "Amsterdam",
+                    "country": "Netherlands",
+                    "timezone": "Europe/Amsterdam",
+                    "display": "Amsterdam",
+                    "latitude": 52.3759,
+                    "longitude": 4.8975,
+                    "location_point": {
+                        "lng": 4.8975,
+                        "lat": 52.3759
+                    },
+                    "created_at": "2026-03-07T00:13:14.260492Z",
+                    "updated_at": "2026-03-07T00:13:14.260492Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2031801536916492288",
+                "id": "c74f9fa0-6c2c-4ed6-b883-31aaca94917b",
+                "socket_id": "b",
+                "domain": "coolvibes",
+                "username": "testo",
+                "displayname": "testo",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-11T18:36:50.105973Z",
+                "updated_at": "2026-03-11T18:43:36.076422Z",
+                "last_online": "2026-03-11T18:43:36.076031Z",
+                "location": {
+                    "id": "3cf2ca0c-11b3-4e83-aa9f-8433dbbff75b",
+                    "contentable_id": "c74f9fa0-6c2c-4ed6-b883-31aaca94917b",
+                    "contentable_type": "user",
+                    "country_code": "AE",
+                    "city": "Dubai",
+                    "country": "United Arab Emirates",
+                    "timezone": "Asia/Dubai",
+                    "display": "Dubai",
+                    "latitude": 25.0734,
+                    "longitude": 55.2979,
+                    "location_point": {
+                        "lng": 55.2979,
+                        "lat": 25.0734
+                    },
+                    "created_at": "2026-03-11T18:37:05.35435Z",
+                    "updated_at": "2026-03-11T18:37:05.35435Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029120138149629952",
+                "id": "ca0d2104-cd00-46c3-9356-168f28cf8f88",
+                "socket_id": "v",
+                "domain": "coolvibes",
+                "username": "onura",
+                "displayname": "onura",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-04T09:01:54.821931Z",
+                "updated_at": "2026-03-04T15:15:54.641765Z",
+                "last_online": "2026-03-04T15:15:54.641275Z",
+                "location": {
+                    "id": "66fedf03-2892-48cb-895a-cb9d3f949e0c",
+                    "contentable_id": "ca0d2104-cd00-46c3-9356-168f28cf8f88",
+                    "contentable_type": "user",
+                    "country_code": "NG",
+                    "city": "Lagos",
+                    "country": "Nigeria",
+                    "timezone": "Africa/Lagos",
+                    "display": "Lagos",
+                    "latitude": 6.4474,
+                    "longitude": 3.3903,
+                    "location_point": {
+                        "lng": 3.3903,
+                        "lat": 6.4474
+                    },
+                    "created_at": "2026-03-04T14:48:43.162499Z",
+                    "updated_at": "2026-03-04T14:48:43.162499Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2029811387416449024",
+                "id": "a746c1fc-4e09-4134-a2f4-ef2268b2bec3",
+                "domain": "coolvibes",
+                "username": "emersonwild",
+                "displayname": "emersonwild",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-06T06:48:41.489775Z",
+                "updated_at": "2026-03-06T06:48:41.489775Z",
+                "location": {
+                    "id": "cb3a9b26-07c7-42e9-9382-8ee9aa357c9a",
+                    "contentable_id": "a746c1fc-4e09-4134-a2f4-ef2268b2bec3",
+                    "contentable_type": "user",
+                    "country_code": "NG",
+                    "city": "Lagos",
+                    "country": "Nigeria",
+                    "timezone": "Africa/Lagos",
+                    "display": "Lagos",
+                    "latitude": 6.4474,
+                    "longitude": 3.3903,
+                    "location_point": {
+                        "lng": 3.3903,
+                        "lat": 6.4474
+                    },
+                    "created_at": "2026-03-06T06:48:52.075493Z",
+                    "updated_at": "2026-03-06T06:48:52.075492Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2030751073920094208",
+                "id": "07350d09-adb8-46a0-82b0-3af10e837107",
+                "socket_id": "n",
+                "domain": "coolvibes",
+                "username": "damian",
+                "displayname": "damian",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-08T21:02:40.211141Z",
+                "updated_at": "2026-03-09T02:01:50.867681Z",
+                "last_online": "2026-03-09T02:01:50.867087Z",
+                "location": {
+                    "id": "eb88529a-09bd-455e-8fd1-7d225e376732",
+                    "contentable_id": "07350d09-adb8-46a0-82b0-3af10e837107",
+                    "contentable_type": "user",
+                    "country_code": "NG",
+                    "city": "Lagos",
+                    "country": "Nigeria",
+                    "timezone": "Africa/Lagos",
+                    "display": "Lagos",
+                    "latitude": 6.4474,
+                    "longitude": 3.3903,
+                    "location_point": {
+                        "lng": 3.3903,
+                        "lat": 6.4474
+                    },
+                    "created_at": "2026-03-08T21:03:05.340709Z",
+                    "updated_at": "2026-03-08T21:03:05.340709Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2031383594961735680",
+                "id": "e3cf3dd5-906b-42bf-8f7b-246f7394fdf0",
+                "socket_id": "1l",
+                "domain": "coolvibes",
+                "username": "shaktiman",
+                "displayname": "shaktiman",
+                "balance": "50",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-10T14:56:04.978616Z",
+                "updated_at": "2026-03-10T15:09:08.961381Z",
+                "last_online": "2026-03-10T15:09:08.961051Z",
+                "location": {
+                    "id": "40aa89cf-6825-48a2-bc41-d2ece8c1699d",
+                    "contentable_id": "e3cf3dd5-906b-42bf-8f7b-246f7394fdf0",
+                    "contentable_type": "user",
+                    "country_code": "IN",
+                    "city": "Nashik",
+                    "country": "India",
+                    "timezone": "Asia/Kolkata",
+                    "display": "Nashik",
+                    "latitude": 20.0024,
+                    "longitude": 73.7945,
+                    "location_point": {
+                        "lng": 73.7945,
+                        "lat": 20.0024
+                    },
+                    "created_at": "2026-03-10T14:56:26.007962Z",
+                    "updated_at": "2026-03-10T14:56:26.007962Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2031383977218019328",
+                "id": "df1d6886-9267-4fcc-8e0f-d11efe9b18cd",
+                "domain": "coolvibes",
+                "username": "mediaomg",
+                "displayname": "mediaomg",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-10T14:57:36.115217Z",
+                "updated_at": "2026-03-10T14:57:36.115217Z",
+                "location": {
+                    "id": "009089c3-699c-4835-a597-334ebdaaf822",
+                    "contentable_id": "df1d6886-9267-4fcc-8e0f-d11efe9b18cd",
+                    "contentable_type": "user",
+                    "country_code": "IN",
+                    "city": "Nashik",
+                    "country": "India",
+                    "timezone": "Asia/Kolkata",
+                    "display": "Nashik",
+                    "latitude": 20.0024,
+                    "longitude": 73.7945,
+                    "location_point": {
+                        "lng": 73.7945,
+                        "lat": 20.0024
+                    },
+                    "created_at": "2026-03-10T14:58:24.569296Z",
+                    "updated_at": "2026-03-10T14:58:24.569296Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2031694619565101056",
+                "id": "7cf4cb3b-2aa2-4651-b5af-402aa183e515",
+                "socket_id": "g",
+                "domain": "coolvibes",
+                "username": "凤兮",
+                "displayname": "凤兮",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-11T11:31:59.022283Z",
+                "updated_at": "2026-03-11T11:39:32.092795Z",
+                "last_online": "2026-03-11T11:39:32.09232Z",
+                "location": {
+                    "id": "33776a07-a4e2-4bfc-8d00-f4e619767aac",
+                    "contentable_id": "7cf4cb3b-2aa2-4651-b5af-402aa183e515",
+                    "contentable_type": "user",
+                    "country_code": "TH",
+                    "city": "Nonthaburi",
+                    "country": "Thailand",
+                    "timezone": "Asia/Bangkok",
+                    "display": "Nonthaburi",
+                    "latitude": 13.8607,
+                    "longitude": 100.5148,
+                    "location_point": {
+                        "lng": 100.5148,
+                        "lat": 13.8607
+                    },
+                    "created_at": "2026-03-11T11:32:01.200491Z",
+                    "updated_at": "2026-03-11T11:32:01.20049Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "avatar_id": "43e6a971-55d6-405c-814d-8f83faf75087",
+                "avatar": {
+                    "public_id": "2031694997463502848",
+                    "id": "43e6a971-55d6-405c-814d-8f83faf75087",
+                    "file_id": "17cbb131-9b01-4915-9b05-c7e6308a743e",
+                    "owner_id": "7cf4cb3b-2aa2-4651-b5af-402aa183e515",
+                    "owner_type": "user",
+                    "user_id": "7cf4cb3b-2aa2-4651-b5af-402aa183e515",
+                    "role": "avatar",
+                    "is_public": true,
+                    "file": {
+                        "id": "17cbb131-9b01-4915-9b05-c7e6308a743e",
+                        "url": "",
+                        "storage_path": "./static/uploads/users/7cf4cb3b-2aa2-4651-b5af-402aa183e515/avatar/2026-03-11/bdb09637-682f-4afb-8d38-aae9fac771ef.jpg",
+                        "mime_type": "image/jpeg",
+                        "size": 122588,
+                        "name": "1000002033.jpg",
+                        "width": 1024,
+                        "height": 1024,
+                        "variants": {
+                            "image": {
+                                "icon": {
+                                    "url": "static/uploads/users/7cf4cb3b-2aa2-4651-b5af-402aa183e515/avatar/2026-03-11/bdb09637-682f-4afb-8d38-aae9fac771ef_square_icon.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 25134
+                                },
+                                "thumbnail": {
+                                    "url": "static/uploads/users/7cf4cb3b-2aa2-4651-b5af-402aa183e515/avatar/2026-03-11/bdb09637-682f-4afb-8d38-aae9fac771ef_square_thumb.webp",
+                                    "width": 240,
+                                    "height": 240,
+                                    "format": "webp",
+                                    "size": 71608
+                                },
+                                "small": {
+                                    "url": "static/uploads/users/7cf4cb3b-2aa2-4651-b5af-402aa183e515/avatar/2026-03-11/bdb09637-682f-4afb-8d38-aae9fac771ef_square_sm.webp",
+                                    "width": 128,
+                                    "height": 128,
+                                    "format": "webp",
+                                    "size": 25134
+                                },
+                                "medium": {
+                                    "url": "static/uploads/users/7cf4cb3b-2aa2-4651-b5af-402aa183e515/avatar/2026-03-11/bdb09637-682f-4afb-8d38-aae9fac771ef_square_md.webp",
+                                    "width": 256,
+                                    "height": 256,
+                                    "format": "webp",
+                                    "size": 78266
+                                },
+                                "large": {
+                                    "url": "static/uploads/users/7cf4cb3b-2aa2-4651-b5af-402aa183e515/avatar/2026-03-11/bdb09637-682f-4afb-8d38-aae9fac771ef_square_lg.webp",
+                                    "width": 512,
+                                    "height": 512,
+                                    "format": "webp",
+                                    "size": 239620
+                                },
+                                "original": {
+                                    "url": "/static/uploads/users/7cf4cb3b-2aa2-4651-b5af-402aa183e515/avatar/2026-03-11/bdb09637-682f-4afb-8d38-aae9fac771ef.jpg",
+                                    "width": 1024,
+                                    "height": 1024,
+                                    "format": "jpg",
+                                    "size": 122588
+                                }
+                            }
+                        },
+                        "created_at": "2026-03-11T11:33:29.120973Z"
+                    },
+                    "created_at": "2026-03-11T11:33:29.120973Z",
+                    "updated_at": "2026-03-11T11:33:29.120973Z"
+                },
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2031632693279592448",
+                "id": "6e2f4db1-8142-4c4b-8b42-5f24f2165e66",
+                "socket_id": "7",
+                "domain": "coolvibes",
+                "username": "yumeng",
+                "displayname": "yumeng",
+                "bio": {
+                    "en": "\u003cp class=\"mb-2 text-base text-gray-900\"\u003e\u003cbr\u003e\u003c/p\u003e"
+                },
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "956280000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a000200000040000000400",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-11T07:25:54.645926Z",
+                "updated_at": "2026-03-11T07:30:38.490381Z",
+                "last_online": "2026-03-11T07:30:38.489839Z",
+                "location": {
+                    "id": "70c015e5-35dc-4b60-aa9c-a42039ff058a",
+                    "contentable_id": "6e2f4db1-8142-4c4b-8b42-5f24f2165e66",
+                    "contentable_type": "user",
+                    "country_code": "CN",
+                    "address": "南宁市",
+                    "city": "南宁市",
+                    "country": "中国",
+                    "region": "广西壮族自治区",
+                    "timezone": "",
+                    "display": "南宁市, 中国",
+                    "latitude": 22.836126,
+                    "longitude": 108.272762,
+                    "location_point": {
+                        "lng": 108.272762,
+                        "lat": 22.836126
+                    },
+                    "created_at": "2026-03-11T07:27:03.378353Z",
+                    "updated_at": "2026-03-11T07:27:03.379145Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2032005828495544320",
+                "id": "518287af-4787-4c49-951d-7b20ee165418",
+                "domain": "coolvibes",
+                "username": "alpe",
+                "displayname": "alpe",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-12T08:08:37.013582Z",
+                "updated_at": "2026-03-12T08:08:37.013582Z",
+                "location": {
+                    "id": "bd265b1e-79c2-4c00-82b4-47d723b90cd7",
+                    "contentable_id": "518287af-4787-4c49-951d-7b20ee165418",
+                    "contentable_type": "user",
+                    "country_code": "KR",
+                    "city": "Suwon",
+                    "country": "South Korea",
+                    "timezone": "Asia/Seoul",
+                    "display": "Suwon",
+                    "latitude": 37.2963,
+                    "longitude": 127.0506,
+                    "location_point": {
+                        "lng": 127.0506,
+                        "lat": 37.2963
+                    },
+                    "created_at": "2026-03-12T08:09:18.123979Z",
+                    "updated_at": "2026-03-12T08:09:18.123978Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2031232606514712576",
+                "id": "6ad6c9b8-0766-410f-8a42-558a87d9cff9",
+                "domain": "coolvibes",
+                "username": "aron",
+                "displayname": "aron",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-10T04:56:06.528049Z",
+                "updated_at": "2026-03-10T04:56:06.528049Z",
+                "location": {
+                    "id": "d3e2c169-3b15-4b57-9718-6bacd7221728",
+                    "contentable_id": "6ad6c9b8-0766-410f-8a42-558a87d9cff9",
+                    "contentable_type": "user",
+                    "country_code": "KH",
+                    "city": "Phnom Penh",
+                    "country": "Cambodia",
+                    "timezone": "Asia/Phnom_Penh",
+                    "display": "Phnom Penh",
+                    "latitude": 11.5583,
+                    "longitude": 104.9121,
+                    "location_point": {
+                        "lng": 104.9121,
+                        "lat": 11.5583
+                    },
+                    "created_at": "2026-03-10T04:56:35.839116Z",
+                    "updated_at": "2026-03-10T04:56:35.839116Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2032377105043427328",
+                "id": "9f027f0b-30db-4e03-b3c5-aec95a0b8491",
+                "domain": "coolvibes",
+                "username": "小涵",
+                "displayname": "小涵",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-13T08:43:56.240877Z",
+                "updated_at": "2026-03-13T08:43:56.240877Z",
+                "location": {
+                    "id": "2fd1221f-bd26-4555-958c-81a16e3f152a",
+                    "contentable_id": "9f027f0b-30db-4e03-b3c5-aec95a0b8491",
+                    "contentable_type": "user",
+                    "country_code": "HK",
+                    "city": "",
+                    "country": "Hong Kong",
+                    "timezone": "Asia/Hong_Kong",
+                    "display": "Hong Kong",
+                    "latitude": 22.2578,
+                    "longitude": 114.1657,
+                    "location_point": {
+                        "lng": 114.1657,
+                        "lat": 22.2578
+                    },
+                    "created_at": "2026-03-13T08:44:18.832699Z",
+                    "updated_at": "2026-03-13T08:44:18.832699Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2031762490295062528",
+                "id": "29cefd4a-eaf6-48d5-ae90-bb2ecd5fbbe1",
+                "socket_id": "19",
+                "domain": "coolvibes",
+                "username": "石ying",
+                "displayname": "石ying",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-11T16:01:40.665579Z",
+                "updated_at": "2026-03-11T16:04:26.716556Z",
+                "last_online": "2026-03-11T16:04:26.716183Z",
+                "location": {
+                    "id": "1d5975c8-5cbf-44b8-91e0-b04ed1883bb1",
+                    "contentable_id": "29cefd4a-eaf6-48d5-ae90-bb2ecd5fbbe1",
+                    "contentable_type": "user",
+                    "country_code": "JP",
+                    "city": "Tokyo",
+                    "country": "Japan",
+                    "timezone": "Asia/Tokyo",
+                    "display": "Tokyo",
+                    "latitude": 35.6893,
+                    "longitude": 139.6899,
+                    "location_point": {
+                        "lng": 139.6899,
+                        "lat": 35.6893
+                    },
+                    "created_at": "2026-03-11T16:02:53.342504Z",
+                    "updated_at": "2026-03-11T16:02:53.342504Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            },
+            {
+                "public_id": "2031752839042174976",
+                "id": "b42d054b-6d8b-4fb1-bfff-a063e24f455d",
+                "domain": "coolvibes",
+                "username": "想吃糖的鸭",
+                "displayname": "想吃糖的鸭",
+                "balance": "0",
+                "is_online": false,
+                "privacy_level": "public",
+                "preferences_flags": "",
+                "user_role": "user",
+                "is_active": false,
+                "created_at": "2026-03-11T15:23:19.62806Z",
+                "updated_at": "2026-03-11T15:23:19.62806Z",
+                "location": {
+                    "id": "348d18b5-bb2a-46cb-9cf7-cb8af27ebd5f",
+                    "contentable_id": "b42d054b-6d8b-4fb1-bfff-a063e24f455d",
+                    "contentable_type": "user",
+                    "country_code": "US",
+                    "city": "Los Angeles",
+                    "country": "United States",
+                    "timezone": "America/Los_Angeles",
+                    "display": "Los Angeles",
+                    "latitude": 34.0515,
+                    "longitude": -118.2707,
+                    "location_point": {
+                        "lng": -118.2707,
+                        "lat": 34.0515
+                    },
+                    "created_at": "2026-03-11T15:23:30.884401Z",
+                    "updated_at": "2026-03-11T15:23:30.884401Z",
+                    "deleted_at": null
+                },
+                "default_language": "en",
+                "languages": null,
+                "travel": {
+                    "visited_countries": null,
+                    "travel_frequency": "",
+                    "favorite_places": null
+                },
+                "wallet": {
+                    "id": "00000000-0000-0000-0000-000000000000",
+                    "hd_account_id": 0,
+                    "hd_address_id": 0,
+                    "bitcoin": "",
+                    "ethereum": "",
+                    "avalanche": "",
+                    "tron": "",
+                    "solana": "",
+                    "chiliz": "",
+                    "created_at": "0001-01-01T00:00:00Z",
+                    "updated_at": "0001-01-01T00:00:00Z"
+                },
+                "deleted_at": null
+            }
+        ]
+    },
+    "message": "Users fetched successfully"
+}

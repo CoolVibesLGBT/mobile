@@ -1,6 +1,6 @@
-import React, { useMemo, useState, memo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Dimensions, Image, ActivityIndicator, TouchableOpacity, Platform, LayoutChangeEvent } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,33 +15,11 @@ import { useTheme } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import UserCard from '@/components/UserCard';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
+import { api } from '@/services/apiService';
+import { calculateAge, getSafeImageURLEx } from '@/helpers/safeUrl';
 
-// --- DUMMY DATA ---
-const ZODIACS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
-const EDUCATIONS = ['High School', 'Bachelors', 'Masters', 'PhD'];
-const PERSONALITIES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'];
-const INTERESTS = [
-    {id: '1', name: 'Photography', emoji: '📷'}, {id: '2', name: 'Gaming', emoji: '🎮'}, {id: '3', name: 'Traveling', emoji: '✈️'},
-    {id: '4', name: 'Cooking', emoji: '🍳'}, {id: '5', name: 'Reading', emoji: '📚'}, {id: '6', name: 'Hiking', emoji: '🥾'},
-];
-
-const createUsers = (count: number, offset = 0) => Array.from({ length: count }).map((_, i) => {
-    const userIndex = offset + i;
-    return {
-        id: userIndex,
-        name: `User ${userIndex}`,
-        age: Math.floor(Math.random() * 15) + 18,
-        imageUrl: `https://picsum.photos/id/${userIndex + 100}/400/400`,
-        distance: (Math.random() * 15).toFixed(1),
-        about: `Just a dummy bio for user ${userIndex}. I enjoy long walks on the virtual beach and coding under the moonlight.`,
-        zodiac_sign: ZODIACS[userIndex % ZODIACS.length],
-        education: EDUCATIONS[userIndex % EDUCATIONS.length],
-        personality: PERSONALITIES[userIndex % PERSONALITIES.length],
-        interests: INTERESTS.slice(i % 3, i % 3 + 3),
-    }
-});
-
-
+const DEFAULT_COORDS = { lat: 41.0082, lng: 28.9784 };
 // --- CONFIGURATION & DIMENSIONS ---
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HEX_SIZE = 100;
@@ -180,16 +158,16 @@ export default function MatchScreen() {
         centerY.value = centerYJs;
     }, [centerX, centerXJs, centerY, centerYJs]);
 
-    const coordGenerator = useRef(spiralCoordGenerator());
-    const [honeycomb, setHoneycomb] = useState(() => {
-        const initialUsers = createUsers(30);
-        return initialUsers.map(user => {
-            const coords = coordGenerator.current.next().value;
-            return { user, ...coords, id: `hex-${user.id}` };
-        });
-    });
+    useEffect(() => {
+        fetchRadarUsers({ reset: true });
+    }, [fetchRadarUsers]);
 
+    const coordGenerator = useRef(spiralCoordGenerator());
+    const seenIdsRef = useRef(new Set<string>());
+    const [honeycomb, setHoneycomb] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [cursor, setCursor] = useState<string | null>(null);
+    const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     const panX = useSharedValue(0);
     const panY = useSharedValue(0);
@@ -214,20 +192,105 @@ export default function MatchScreen() {
         gridBounds.value = { minX, maxX, minY, maxY };
     }, [honeycomb, gridBounds]);
 
-    const loadMore = useCallback(() => {
+    const calcDistanceKm = useCallback((lat1: number, lng1: number, lat2: number, lng2: number) => {
+        const toRad = (value: number) => (value * Math.PI) / 180;
+        const R = 6371;
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLng / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }, []);
+
+    const formatDistance = useCallback((km: number | null) => {
+        if (km === null || !Number.isFinite(km)) return '-';
+        if (km < 1) return km.toFixed(1);
+        if (km < 10) return km.toFixed(1);
+        return km.toFixed(0);
+    }, []);
+
+    const resolveLocation = useCallback(async () => {
+        if (location) return location;
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+            setLocation(DEFAULT_COORDS);
+            return DEFAULT_COORDS;
+        }
+        const loc = await Location.getCurrentPositionAsync({});
+        const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+        setLocation(coords);
+        return coords;
+    }, [location]);
+
+    const mapRadarUser = useCallback((raw: any, coords: { lat: number; lng: number }) => {
+        const latRaw = raw?.location?.latitude ?? raw?.location?.location_point?.lat;
+        const lngRaw = raw?.location?.longitude ?? raw?.location?.location_point?.lng;
+        const lat = typeof latRaw === 'string' ? parseFloat(latRaw) : latRaw;
+        const lng = typeof lngRaw === 'string' ? parseFloat(lngRaw) : lngRaw;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        const distanceKm = calcDistanceKm(coords.lat, coords.lng, lat, lng);
+        const ageValue = typeof raw?.date_of_birth === 'string' ? calculateAge(raw.date_of_birth) : '-';
+        const imageUrl = getSafeImageURLEx(raw?.public_id ?? raw?.id, raw?.avatar, 'medium') || '';
+        const id = String(raw?.id ?? raw?.public_id ?? '');
+        return {
+            ...raw,
+            id,
+            name: raw?.displayname ?? raw?.username ?? 'User',
+            displayname: raw?.displayname ?? raw?.username ?? 'User',
+            username: raw?.username ?? '',
+            age: typeof ageValue === 'number' ? ageValue : '-',
+            imageUrl,
+            distance: formatDistance(distanceKm),
+        };
+    }, [calcDistanceKm, formatDistance]);
+
+    const fetchRadarUsers = useCallback(async (opts?: { reset?: boolean }) => {
         if (isLoading) return;
         setIsLoading(true);
-
-        setTimeout(() => {
-            const newUsers = createUsers(20, honeycomb.length);
-            const newItems = newUsers.map(user => {
+        try {
+            if (opts?.reset) {
+                coordGenerator.current = spiralCoordGenerator();
+                seenIdsRef.current = new Set();
+                setHoneycomb([]);
+                setCursor(null);
+            }
+            const coords = await resolveLocation();
+            const response: any = await api.fetchNearbyUsers(coords.lat, coords.lng, opts?.reset ? null : cursor, 60);
+            const payload = response?.data ?? response;
+            if (response?.success === false || payload?.success === false) {
+                throw new Error(response?.message || payload?.message || 'Failed to fetch users');
+            }
+            const rawUsers = payload?.users ?? response?.users ?? [];
+            const nextCursor = payload?.cursor ?? response?.cursor ?? null;
+            const mapped = rawUsers
+                .map((raw: any) => mapRadarUser(raw, coords))
+                .filter((item: any) => item && item.id);
+            const newItems: any[] = [];
+            for (const user of mapped) {
+                if (seenIdsRef.current.has(user.id)) continue;
+                seenIdsRef.current.add(user.id);
                 const coords = coordGenerator.current.next().value;
-                return { user, ...coords, id: `hex-${user.id}` };
-            });
-            setHoneycomb(prev => [...prev, ...newItems]);
+                newItems.push({ user, ...coords, id: `hex-${user.id}` });
+            }
+            if (opts?.reset) {
+                setHoneycomb(newItems);
+            } else {
+                setHoneycomb(prev => [...prev, ...newItems]);
+            }
+            setCursor(nextCursor);
+        } catch (error) {
+            console.error('Radar fetch failed', error);
+        } finally {
             setIsLoading(false);
-        }, 1500);
-    }, [isLoading, honeycomb.length]);
+        }
+    }, [isLoading, cursor, resolveLocation, mapRadarUser]);
+
+    const loadMore = useCallback(() => {
+        if (!cursor || isLoading) return;
+        fetchRadarUsers();
+    }, [cursor, isLoading, fetchRadarUsers]);
 
     const handleItemPress = (user: any, x: number, y: number) => {
         panX.value = withSpring(-x, { damping: 18, stiffness: 100 });

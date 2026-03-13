@@ -7,6 +7,7 @@ import {
   Dimensions,
   Animated,
   RefreshControlProps,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@react-navigation/native';
@@ -14,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPin, Calendar, MessageSquare, Plus, Edit2, Wallet } from 'lucide-react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import ProfileAboutView from './ProfileAboutView';
+import RenderHTML from 'react-native-render-html';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
 const { width } = Dimensions.get('window');
 const POST_ITEM_SIZE = (width - 2) / 3;
@@ -27,6 +30,7 @@ type FullProfileViewProps = {
     onEdit?: () => void;
     onWallet?: () => void;
     refreshControl?: React.ReactElement<RefreshControlProps>;
+    useBottomSheetScroll?: boolean;
 };
 
 const TABS = [
@@ -36,11 +40,12 @@ const TABS = [
   { key: 'likes', title: 'Likes' },
 ];
 
-export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdit, onWallet, refreshControl }: FullProfileViewProps) {
+export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdit, onWallet, refreshControl, useBottomSheetScroll }: FullProfileViewProps) {
   const { dark } = useTheme();
   const [activeTab, setActiveTab] = useState(TABS[0].key);
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
+  const { width: windowWidth } = useWindowDimensions();
 
   // Monochrome colors
   const textColor = dark ? '#FFFFFF' : '#000000';
@@ -101,19 +106,8 @@ export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdi
     }
   };
 
-  return (
-    <View style={[styles.container, { backgroundColor }]}>
-      <Animated.ScrollView
-        showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[2]} // Sticky Tabs
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
-        scrollEventThrottle={16}
-        refreshControl={refreshControl}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-      >
+  const content = (
+    <>
         {/* Banner */}
         <Animated.View style={styles.bannerContainer}>
           <Image
@@ -165,9 +159,16 @@ export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdi
             </View>
             <Text style={[styles.username, { color: secondaryText }]}>@{user.username || user.displayname?.toLowerCase().replace(/\s+/g, '')}</Text>
             
-            {user.bio && (
+            {!!user.bioHtml ? (
+              <RenderHTML
+                contentWidth={Math.max(0, windowWidth - 32)}
+                source={{ html: user.bioHtml }}
+                baseStyle={[styles.bio, { color: textColor }]}
+                defaultTextProps={{ selectable: false }}
+              />
+            ) : user.bio ? (
               <Text style={[styles.bio, { color: textColor }]}>{user.bio}</Text>
-            )}
+            ) : null}
 
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
@@ -227,7 +228,36 @@ export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdi
         <View style={styles.contentArea}>
           {renderTabContent()}
         </View>
-      </Animated.ScrollView>
+    </>
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor }]}>
+      {useBottomSheetScroll ? (
+        <BottomSheetScrollView
+          showsVerticalScrollIndicator={false}
+          stickyHeaderIndices={[2]}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+          scrollEventThrottle={16}
+          refreshControl={refreshControl}
+        >
+          {content}
+        </BottomSheetScrollView>
+      ) : (
+        <Animated.ScrollView
+          showsVerticalScrollIndicator={false}
+          stickyHeaderIndices={[2]} // Sticky Tabs
+          contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+          scrollEventThrottle={16}
+          refreshControl={refreshControl}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+        >
+          {content}
+        </Animated.ScrollView>
+      )}
     </View>
   );
 }
