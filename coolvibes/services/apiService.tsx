@@ -96,6 +96,20 @@ export class ApiService {
     return this.call(Actions.CMD_FETCH_MESSAGES, { method: 'POST', body: params });
   }
 
+    async fetchStories(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_FETCH_STORIES, {
+      method: "POST",
+      body: payload,
+    });
+  }
+
+  async uploadStory(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_UPLOAD_STORY, {
+      method: "POST",
+      body: payload,
+    });
+  }
+  
   async fetchProfile(username?: string) {
     return this.call(Actions.USER_FETCH_PROFILE, {
       method: 'GET',
