@@ -244,7 +244,11 @@ export default function GlobalHeader() {
                 {/* Left */}
                 <TouchableOpacity
                     onPress={() => {
-                        if (isCheckIn || isChatDetail || isSettings) router.back();
+                        if (isCheckIn && params?.checkin_mode === 'create') {
+                            router.setParams({ checkin_mode: undefined });
+                        } else if (isCheckIn || isChatDetail || isSettings) {
+                            router.back();
+                        }
                         else if (isRoot) router.push('/Settings');
                         else router.back();
                     }}
@@ -253,8 +257,8 @@ export default function GlobalHeader() {
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                     <MaterialCommunityIcons
-                        name={isCheckIn || isSettings ? 'close' : (isRoot ? 'tune-vertical' : 'chevron-left')}
-                        size={isCheckIn || isSettings ? 26 : (isRoot ? 22 : 30)}
+                        name={isCheckIn ? 'chevron-left' : (isSettings ? 'close' : (isRoot ? 'tune-vertical' : 'chevron-left'))}
+                        size={isCheckIn ? 30 : (isSettings ? 26 : (isRoot ? 22 : 30))}
                         color={colors.text}
                     />
                 </TouchableOpacity>

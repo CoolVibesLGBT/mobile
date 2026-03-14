@@ -7,6 +7,7 @@ import { CheckInRadar } from '@/components/CheckInBar';
 import PostCard from '@/components/PostCard';
 import ChatInput from '@/components/ChatInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAppSelector } from '@/store/hooks';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { getCurrentLocation } from '@/utils/location';
@@ -50,6 +51,8 @@ const MOCK_CHECKINS = [
 export default function CheckInScreen() {
     const { colors, dark } = useTheme();
     const insets = useSafeAreaInsets();
+    const router = useRouter();
+    const params = useLocalSearchParams();
     const authUser = useAppSelector(state => state.auth.user);
     const systemData = useAppSelector(state => state.system.data);
     const tabBarHeight = (Platform.OS === 'ios' ? 62 : 66) + Math.max(insets.bottom, 8);
@@ -99,14 +102,24 @@ export default function CheckInScreen() {
     }, []);
 
     useEffect(() => {
+        const mode = params?.checkin_mode;
+        if (mode === 'create') {
+            setIsCreateOpen(true);
+        } else {
+            setIsCreateOpen(false);
+        }
+    }, [params?.checkin_mode]);
+
+    useEffect(() => {
         if (!isCreateOpen) return;
         const onBackPress = () => {
             setIsCreateOpen(false);
+            router.setParams({ checkin_mode: undefined });
             return true;
         };
         const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
         return () => sub.remove();
-    }, [isCreateOpen]);
+    }, [isCreateOpen, router]);
 
     const tagMap = useMemo(() => {
         const map = new Map<string, any>();
@@ -172,21 +185,25 @@ export default function CheckInScreen() {
         setCheckins(prev => [newItem, ...prev]);
         setSelectedTags([]);
         setIsCreateOpen(false);
-    }, [authUser, selectedTags]);
+        router.setParams({ checkin_mode: undefined });
+    }, [authUser, selectedTags, router]);
 
     const handleOpenCreate = useCallback(() => {
         setIsCreateOpen(true);
-    }, []);
+        router.setParams({ checkin_mode: 'create' });
+    }, [router]);
 
     const handleCloseCreate = useCallback(() => {
         setIsCreateOpen(false);
         setSelectedTags([]);
-    }, []);
+        router.setParams({ checkin_mode: undefined });
+    }, [router]);
 
     const handleExit = useCallback(() => {
         setIsCreateOpen(false);
         setSelectedTags([]);
-    }, []);
+        router.setParams({ checkin_mode: undefined });
+    }, [router]);
 
     const sheetBg = dark ? 'rgba(0,0,0,0.82)' : 'rgba(255,255,255,0.96)';
     const sheetBorder = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
