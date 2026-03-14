@@ -7,10 +7,6 @@ import Animated, {
   interpolate,
   Extrapolation,
   withSpring,
-  withTiming,
-  withRepeat,
-  withDelay,
-  Easing,
 } from 'react-native-reanimated';
 import { runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -383,37 +379,11 @@ export default function MatchScreen() {
     const centerYJs = viewportSize.height / 2;
     const centerX = useSharedValue(centerXJs);
     const centerY = useSharedValue(centerYJs);
-    const sweepRotation = useSharedValue(0);
-    const pulseA = useSharedValue(0);
-    const pulseB = useSharedValue(0);
 
     useEffect(() => {
         centerX.value = centerXJs;
         centerY.value = centerYJs;
     }, [centerX, centerXJs, centerY, centerYJs]);
-
-    useEffect(() => {
-        sweepRotation.value = 0;
-        sweepRotation.value = withRepeat(
-            withTiming(360, { duration: 4200, easing: Easing.linear }),
-            -1,
-            false
-        );
-
-        pulseA.value = 0;
-        pulseA.value = withRepeat(
-            withTiming(1, { duration: 3200, easing: Easing.out(Easing.quad) }),
-            -1,
-            false
-        );
-
-        pulseB.value = 0;
-        pulseB.value = withRepeat(
-            withDelay(1600, withTiming(1, { duration: 3200, easing: Easing.out(Easing.quad) })),
-            -1,
-            false
-        );
-    }, [sweepRotation, pulseA, pulseB]);
 
     useEffect(() => {
         fetchRadarUsers({ reset: true });
@@ -759,28 +729,6 @@ export default function MatchScreen() {
         };
     }, [colors.primary, colors.text]);
 
-    const sweepStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${sweepRotation.value}deg` }],
-    }));
-
-    const pulseStyleA = useAnimatedStyle(() => {
-        const scale = interpolate(pulseA.value, [0, 1], [0.2, 1], Extrapolation.CLAMP);
-        const opacity = interpolate(pulseA.value, [0, 0.6, 1], [0.35, 0.12, 0], Extrapolation.CLAMP);
-        return {
-            transform: [{ scale }],
-            opacity,
-        };
-    });
-
-    const pulseStyleB = useAnimatedStyle(() => {
-        const scale = interpolate(pulseB.value, [0, 1], [0.2, 1], Extrapolation.CLAMP);
-        const opacity = interpolate(pulseB.value, [0, 0.6, 1], [0.3, 0.1, 0], Extrapolation.CLAMP);
-        return {
-            transform: [{ scale }],
-            opacity,
-        };
-    });
-
     const handleChat = useCallback(async (user: any) => {
         const userId = user?.id;
         if (!userId) return;
@@ -816,8 +764,6 @@ export default function MatchScreen() {
     }, [router]);
 
     const bottomBarHeight = Platform.OS === 'ios' ? 88 : 68;
-    const sweepSize = Math.max(viewportSize.width, viewportSize.height) * 1.45;
-    const pulseSize = Math.min(viewportSize.width, viewportSize.height) * 0.78;
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
@@ -847,64 +793,6 @@ export default function MatchScreen() {
                             }}
                         >
                             <RadarBackdrop accent={radarAccent.solid} centerX={centerXJs} centerY={centerYJs} />
-
-                            {/* Radar Sweep + Pulse */}
-                            <View
-                                style={[
-                                    styles.sweepContainer,
-                                    {
-                                        width: sweepSize,
-                                        height: sweepSize,
-                                        left: centerXJs - sweepSize / 2,
-                                        top: centerYJs - sweepSize / 2,
-                                    },
-                                ]}
-                                pointerEvents="none"
-                            >
-                                <Animated.View style={[styles.sweep, sweepStyle]}>
-                                    <LinearGradient
-                                        colors={[
-                                            radarAccent.rgba(0),
-                                            radarAccent.rgba(0.08),
-                                            radarAccent.rgba(0.4),
-                                            radarAccent.rgba(0),
-                                        ]}
-                                        locations={[0, 0.45, 0.55, 1]}
-                                        start={{ x: 0.5, y: 0 }}
-                                        end={{ x: 0.5, y: 1 }}
-                                        style={StyleSheet.absoluteFillObject}
-                                    />
-                                </Animated.View>
-                            </View>
-
-                            <Animated.View
-                                style={[
-                                    styles.pulseRing,
-                                    {
-                                        width: pulseSize,
-                                        height: pulseSize,
-                                        left: centerXJs - pulseSize / 2,
-                                        top: centerYJs - pulseSize / 2,
-                                        borderColor: radarAccent.rgba(0.5),
-                                    },
-                                    pulseStyleA,
-                                ]}
-                                pointerEvents="none"
-                            />
-                            <Animated.View
-                                style={[
-                                    styles.pulseRing,
-                                    {
-                                        width: pulseSize,
-                                        height: pulseSize,
-                                        left: centerXJs - pulseSize / 2,
-                                        top: centerYJs - pulseSize / 2,
-                                        borderColor: radarAccent.rgba(0.4),
-                                    },
-                                    pulseStyleB,
-                                ]}
-                                pointerEvents="none"
-                            />
 
                             {honeycomb.map((item) => (
                                 <HexItem
@@ -989,9 +877,6 @@ const styles = StyleSheet.create({
   crossLineH: { position: 'absolute', width: 60, height: 1 },
   centerPulse: { width: 320, height: 320, borderRadius: 160, borderWidth: 1 },
   radarRing: { position: 'absolute', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(127,127,127,0.1)' },
-  pulseRing: { position: 'absolute', borderRadius: 999, borderWidth: 2 },
-  sweepContainer: { position: 'absolute', borderRadius: 999, overflow: 'hidden' },
-  sweep: { flex: 1 },
   cardWrapper: { ...StyleSheet.absoluteFillObject, zIndex: 1000 },
   imageContainer: { position: 'absolute', width: '100%', alignItems: 'center' },
   cardImage: { backgroundColor: '#333' },
