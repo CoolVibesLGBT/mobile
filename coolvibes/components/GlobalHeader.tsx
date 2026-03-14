@@ -12,11 +12,10 @@ import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useCallback, useRef, useState } from 'react';
 import { Dimensions } from 'react-native';
 import { MessageSquare, MapPin, Calendar, Users, Star, ScrollText } from 'lucide-react-native';
-import ProfileAboutView from './ProfileAboutView';
-import FullProfileView from './FullProfileView';
+import ProfileBottomSheet from '@/components/ProfileBottomSheet';
 import { ScrollView } from 'react-native-gesture-handler';
 import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
-import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
+import { decodeProfileParam } from '@/helpers/profile';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const secondaryText = '#888';
@@ -37,10 +36,6 @@ export default function GlobalHeader() {
     const handleOpenProfile = useCallback(() => {
         setIsSheetOpen(true);
         profileSheetRef.current?.present();
-    }, []);
-
-    const onSheetChange = useCallback((index: number) => {
-        if (index === -1) setIsSheetOpen(false);
     }, []);
 
     const renderBackdrop = useCallback(
@@ -71,6 +66,10 @@ export default function GlobalHeader() {
     const chatUserName = chatUserNameRaw === 'Chat' ? 'Chat' : chatUserNameRaw;
     const chatUserStatus: string = (params?.status as string) || 'online';
     const chatUserAvatar: string = (params?.avatar as string) || `https://i.pravatar.cc/150?u=${chatUserName}`;
+    const isTyping = String(params?.typing ?? '') === '1' || String(params?.typing ?? '') === 'true';
+    const chatSubText = isTyping ? 'typing...' : chatUserStatus;
+    const chatProfileParam = params?.profile as string | undefined;
+    const chatProfilePayload = decodeProfileParam(chatProfileParam);
 
     const isOverlayHeader = !isSettings;
     const containerStyle: ViewStyle = {
@@ -110,9 +109,21 @@ export default function GlobalHeader() {
                     activeOpacity={0.7}
                     onPress={handleOpenProfile}
                 >
-                    <Text style={[brandText, { textAlign: 'center' }]} numberOfLines={1}>
-                        {chatUserName}
-                    </Text>
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={[brandText, { textAlign: 'center' }]} numberOfLines={1}>
+                            {chatUserName}
+                        </Text>
+                        {!!chatSubText && (
+                            <View style={styles.statusRow}>
+                                {!isTyping && (
+                                    <View style={[styles.statusDot, { backgroundColor: '#34C759' }]} />
+                                )}
+                                <Text style={[styles.chatStatus, { color: colors.text, opacity: 0.7 }]}>
+                                    {chatSubText}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </TouchableOpacity>
             );
         }
@@ -256,32 +267,20 @@ export default function GlobalHeader() {
             </View>
 
             {/* Profile Preview Sheet */}
-            <BaseBottomSheetModal
+            <ProfileBottomSheet
                 ref={profileSheetRef}
-                index={0}
-                snapPoints={['92%']}
-                onChange={onSheetChange}
                 backdropComponent={renderBackdrop}
-                enableDynamicSizing={false}
-                backgroundStyle={{ backgroundColor: dark ? '#000' : '#FFF' }}
-                handleIndicatorStyle={{ backgroundColor: dark ? '#333' : '#E0E0E0' }}
-            >
-                <FullProfileView 
-                    user={{
-                        id: chatUserName,
-                        displayname: chatUserName,
-                        avatar_url: chatUserAvatar,
-                        banner_url: `https://picsum.photos/seed/${chatUserName}/1500/500`,
-                        bio: "The best app in the world. Building the future of social media, one line of code at a time.",
-                        location: "San Francisco, CA",
-                        followers_count: 12,
-                        following_count: 2,
-                    }}
-                    useBottomSheetScroll
-                    isMe={false} 
-                    onMessage={() => profileSheetRef.current?.dismiss()}
-                />
-            </BaseBottomSheetModal>
+                onDismiss={() => setIsSheetOpen(false)}
+                user={chatProfilePayload}
+                fallback={{
+                    id: String(params?.userId ?? params?.publicId ?? params?.chatId ?? ''),
+                    name: chatUserName,
+                    username: (params?.username as string) || undefined,
+                    avatar: chatUserAvatar,
+                }}
+                isMe={false}
+                onMessage={() => profileSheetRef.current?.dismiss()}
+            />
         </View>
     );
 }

@@ -25,6 +25,7 @@ const BANNER_HEIGHT = 200;
 type FullProfileViewProps = {
     user: any;
     isMe?: boolean;
+    showActions?: boolean;
     onMessage?: () => void;
     onFollow?: () => void;
     onEdit?: () => void;
@@ -40,7 +41,7 @@ const TABS = [
   { key: 'likes', title: 'Likes' },
 ];
 
-export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdit, onWallet, refreshControl, useBottomSheetScroll }: FullProfileViewProps) {
+export default function FullProfileView({ user, isMe, showActions = true, onMessage, onFollow, onEdit, onWallet, refreshControl, useBottomSheetScroll }: FullProfileViewProps) {
   const { dark } = useTheme();
   const [activeTab, setActiveTab] = useState(TABS[0].key);
   const insets = useSafeAreaInsets();
@@ -53,6 +54,11 @@ export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdi
   const secondaryText = dark ? '#888888' : '#666666';
   const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
   const cardColor = dark ? '#0F0F0F' : '#F9F9F9';
+  const locationText = typeof user?.location === 'string' ? user.location.trim() : '';
+  const showLocation = !!locationText;
+  const bioHtml = typeof user?.bioHtml === 'string' ? user.bioHtml : '';
+  const bioHtmlText = bioHtml ? bioHtml.replace(/<[^>]*>/g, '').trim() : '';
+  const showBioHtml = !!bioHtmlText;
 
   const getJoinedDate = () => {
     if (!user.created_at) return 'Recently';
@@ -125,29 +131,31 @@ export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdi
               <Image source={{ uri: user.avatar_url }} style={styles.avatar} contentFit="cover" />
             </View>
             
-            <View style={styles.actionButtons}>
-              {isMe ? (
-                <View style={styles.btnRow}>
-                  <TouchableOpacity onPress={onWallet} style={[styles.circleBtn, { borderColor, backgroundColor: cardColor }]}>
-                    <Wallet size={18} color={textColor} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={onEdit} style={[styles.actionBtn, { borderColor, backgroundColor: cardColor }]}>
-                    <Edit2 size={16} color={textColor} />
-                    <Text style={[styles.btnText, { color: textColor }]}>Edit</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.btnRow}>
-                  <TouchableOpacity onPress={onMessage} style={[styles.circleBtn, { borderColor, backgroundColor: cardColor }]}>
-                    <MessageSquare size={18} color={textColor} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={onFollow} style={[styles.actionBtn, { backgroundColor: textColor }]}>
-                    <Plus size={16} color={backgroundColor} />
-                    <Text style={[styles.btnText, { color: backgroundColor }]}>Follow</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
+            {showActions && (
+              <View style={styles.actionButtons}>
+                {isMe ? (
+                  <View style={styles.btnRow}>
+                    <TouchableOpacity onPress={onWallet} style={[styles.circleBtn, { borderColor, backgroundColor: cardColor }]}>
+                      <Wallet size={18} color={textColor} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={onEdit} style={[styles.actionBtn, { borderColor, backgroundColor: cardColor }]}>
+                      <Edit2 size={16} color={textColor} />
+                      <Text style={[styles.btnText, { color: textColor }]}>Edit</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.btnRow}>
+                    <TouchableOpacity onPress={onMessage} style={[styles.circleBtn, { borderColor, backgroundColor: cardColor }]}>
+                      <MessageSquare size={18} color={textColor} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={onFollow} style={[styles.actionBtn, { backgroundColor: textColor }]}>
+                      <Plus size={16} color={backgroundColor} />
+                      <Text style={[styles.btnText, { color: backgroundColor }]}>Follow</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           <View style={styles.userInfo}>
@@ -159,10 +167,10 @@ export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdi
             </View>
             <Text style={[styles.username, { color: secondaryText }]}>@{user.username || user.displayname?.toLowerCase().replace(/\s+/g, '')}</Text>
             
-            {!!user.bioHtml ? (
+            {showBioHtml ? (
               <RenderHTML
                 contentWidth={Math.max(0, windowWidth - 32)}
-                source={{ html: user.bioHtml }}
+                source={{ html: bioHtml }}
                 baseStyle={[styles.bio, { color: textColor }]}
                 defaultTextProps={{ selectable: false }}
               />
@@ -171,11 +179,13 @@ export default function FullProfileView({ user, isMe, onMessage, onFollow, onEdi
             ) : null}
 
             <View style={styles.metaRow}>
-              <View style={styles.metaItem}>
-                <MapPin size={14} color={secondaryText} />
-                <Text style={[styles.metaText, { color: secondaryText }]}>{user.location || "Earth"}</Text>
-              </View>
-              <View style={[styles.metaItem, { marginLeft: 16 }]}>
+              {showLocation && (
+                <View style={styles.metaItem}>
+                  <MapPin size={14} color={secondaryText} />
+                  <Text style={[styles.metaText, { color: secondaryText }]}>{locationText}</Text>
+                </View>
+              )}
+              <View style={[styles.metaItem, showLocation && { marginLeft: 16 }]}>
                 <Calendar size={14} color={secondaryText} />
                 <Text style={[styles.metaText, { color: secondaryText }]}>{getJoinedDate()}</Text>
               </View>

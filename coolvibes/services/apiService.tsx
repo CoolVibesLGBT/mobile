@@ -86,6 +86,20 @@ export class ApiService {
     return this.call(Actions.CMD_FETCH_MESSAGES, { method: 'POST', body: params });
   }
 
+  async fetchProfile(username?: string) {
+    return this.call(Actions.USER_FETCH_PROFILE, {
+      method: 'GET',
+      params: username ? { username } : {},
+    });
+  }
+
+  async fetchProfileByNickname(nickname: string) {
+    return this.call(Actions.USER_FETCH_PROFILE, {
+      method: 'POST',
+      body: { nickname },
+    });
+  }
+
   async fetchVibes(params: { limit?: number; cursor?: string }) {
     return this.call(Actions.POST_VIBES, { method: 'POST', body: params });
   }

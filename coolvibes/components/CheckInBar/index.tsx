@@ -1,5 +1,5 @@
 
-import React, { useMemo, memo } from 'react';
+import React, { useMemo, memo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Dimensions, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Animated, {
@@ -18,9 +18,12 @@ import { useTheme } from '@react-navigation/native';
 // --- CONFIGURATION & DIMENSIONS ---
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HEX_SIZE = 100;
-const CENTER_X = SCREEN_WIDTH / 2;
-const CENTER_Y = 250; // Dynamic enough for full screen
+const DEFAULT_CENTER_X = SCREEN_WIDTH / 2;
+const DEFAULT_CENTER_Y = 250;
 const ITEM_DIM = 140;
+const HEX_BUTTON_SIZE = 76;
+const HEX_BUTTON_RADIUS = HEX_BUTTON_SIZE / 2;
+const HEX_LABEL_MARGIN = 8;
 const OFFSET = ITEM_DIM / 2;
 
 const axialToPixel = (q: number, r: number) => {
@@ -31,7 +34,7 @@ const axialToPixel = (q: number, r: number) => {
   };
 };
 
-const HexItem = memo(({ authUser, tag, q, r, panX, panY, isSelected, onSelect }: any) => {
+const HexItem = memo(({ authUser, tag, q, r, panX, panY, isSelected, onSelect, centerX, centerY }: any) => {
   const { colors } = useTheme();
   const { x, y } = axialToPixel(q, r);
   const iconName = tag.icon;
@@ -46,8 +49,8 @@ const HexItem = memo(({ authUser, tag, q, r, panX, panY, isSelected, onSelect }:
 
     return {
       transform: [
-        { translateX: px + CENTER_X - OFFSET },
-        { translateY: py + CENTER_Y - OFFSET },
+        { translateX: px + centerX - OFFSET },
+        { translateY: py + centerY - OFFSET },
         { scale: withSpring(scale, { damping: 20, stiffness: 90 }) }
       ] as any,
       opacity,
@@ -61,6 +64,7 @@ const HexItem = memo(({ authUser, tag, q, r, panX, panY, isSelected, onSelect }:
         onPress={() => onSelect(tag.tag, x, y)}
         style={({ pressed }) => [
           styles.hexBtn,
+          styles.hexBtnPosition,
           { 
             backgroundColor: isSelected ? colors.primary : colors.card,
             borderColor: isSelected ? colors.primary : colors.border,
@@ -74,12 +78,9 @@ const HexItem = memo(({ authUser, tag, q, r, panX, panY, isSelected, onSelect }:
           size={isSelected ? 34 : 28}
           color={isSelected ? colors.background : colors.text}
         />
-        {isSelected && (
-          <View style={[styles.selectedIndicator, { backgroundColor: colors.background }]} />
-        )}
       </Pressable>
       <Text style={[
-        styles.hexText, 
+        styles.hexText,
         { color: colors.text, opacity: isSelected ? 1 : 0.6, fontFamily: isSelected ? 'Inter-Bold' : 'Inter-SemiBold' },
       ]}>
         {LocalizedStringToString(tag.name, authUser?.default_language)}
@@ -92,12 +93,17 @@ interface CheckInRadarProps {
   selectedTags: string[];
   onSelectTag: (tag: string) => void;
   onClearTags: () => void;
+  centerOffsetY?: number;
 }
 
-export function CheckInRadar({ selectedTags, onSelectTag, onClearTags }: CheckInRadarProps) {
+export function CheckInRadar({ selectedTags, onSelectTag, onClearTags, centerOffsetY = 0 }: CheckInRadarProps) {
   const { data } = useAppSelector(state => state.system);
   const authUser = useAppSelector(state => state.auth.user);
   const { colors, dark } = useTheme();
+  const [viewport, setViewport] = useState({ width: SCREEN_WIDTH, height: DEFAULT_CENTER_Y * 2 });
+
+  const centerX = viewport.width / 2 || DEFAULT_CENTER_X;
+  const centerY = (viewport.height / 2 || DEFAULT_CENTER_Y) + centerOffsetY;
   
   const panX = useSharedValue(0);
   const panY = useSharedValue(0);
@@ -105,9 +111,12 @@ export function CheckInRadar({ selectedTags, onSelectTag, onClearTags }: CheckIn
   const startY = useSharedValue(0);
 
   const honeycomb = useMemo(() => {
-    if (!data?.checkin_tag_types) return [];
-    
-    const count = data.checkin_tag_types.length;
+    const root = (data as any)?.data ?? data;
+    const tags = root?.checkin_tag_types ?? [];
+    if (!Array.isArray(tags) || tags.length === 0) return [];
+
+    const visibleTags = tags.filter((tag: any) => tag?.is_visible !== false);
+    const count = visibleTags.length;
     const results: { q: number; r: number }[] = [{ q: 0, r: 0 }];
     const directions = [
       { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
@@ -128,11 +137,11 @@ export function CheckInRadar({ selectedTags, onSelectTag, onClearTags }: CheckIn
       radius++;
     }
 
-    return data.checkin_tag_types.map((tag, idx) => ({
+    return visibleTags.map((tag: any, idx: number) => ({
       tag,
       q: results[idx].q,
       r: results[idx].r,
-      id: `hex-${idx}-${tag.tag}`
+      id: `hex-${idx}-${tag.tag ?? idx}`
     }));
   }, [data]);
 
@@ -180,11 +189,18 @@ export function CheckInRadar({ selectedTags, onSelectTag, onClearTags }: CheckIn
   return (
     <View style={styles.radarWrapper}>
       <GestureDetector gesture={gesture}>
-        <View style={styles.radarViewport}>
+        <View
+          style={styles.radarViewport}
+          onLayout={useCallback((e: any) => {
+            const { width, height } = e.nativeEvent.layout;
+            if (!width || !height) return;
+            setViewport((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+          }, [])}
+        >
           {/* Tactical Background Rings */}
-          <View style={[styles.radarRing, { width: 140, height: 140, left: CENTER_X - 70, top: CENTER_Y - 70, borderColor: colors.border }]} pointerEvents="none" />
-          <View style={[styles.radarRing, { width: 300, height: 300, left: CENTER_X - 150, top: CENTER_Y - 150, borderColor: colors.border, opacity: 0.5 }]} pointerEvents="none" />
-          <View style={[styles.radarRing, { width: 460, height: 460, left: CENTER_X - 230, top: CENTER_Y - 230, borderColor: colors.border, opacity: 0.2, borderStyle: 'dashed' }]} pointerEvents="none" />
+          <View style={[styles.radarRing, { width: 140, height: 140, left: centerX - 70, top: centerY - 70, borderColor: colors.border }]} pointerEvents="none" />
+          <View style={[styles.radarRing, { width: 300, height: 300, left: centerX - 150, top: centerY - 150, borderColor: colors.border, opacity: 0.5 }]} pointerEvents="none" />
+          <View style={[styles.radarRing, { width: 460, height: 460, left: centerX - 230, top: centerY - 230, borderColor: colors.border, opacity: 0.2, borderStyle: 'dashed' }]} pointerEvents="none" />
 
           {honeycomb.map((item) => (
             <HexItem
@@ -195,11 +211,13 @@ export function CheckInRadar({ selectedTags, onSelectTag, onClearTags }: CheckIn
               panY={panY}
               isSelected={selectedTags.includes(item.tag.tag)}
               onSelect={handleItemPress}
+              centerX={centerX}
+              centerY={centerY}
             />
           ))}
 
           {/* Crosshair Overlay */}
-          <View style={[styles.crosshairContainer, { left: CENTER_X - 175, top: CENTER_Y - 175 }]} pointerEvents="none">
+          <View style={[styles.crosshairContainer, { left: centerX - 175, top: centerY - 175 }]} pointerEvents="none">
             <View style={[styles.crossLineV, { backgroundColor: colors.primary, height: 40, width: 1, opacity: 0.4 }]} />
             <View style={[styles.crossLineH, { backgroundColor: colors.primary, width: 40, height: 1, opacity: 0.4 }]} />
             <View style={[styles.diagonalLine, { transform: [{ rotate: '45deg' }], backgroundColor: colors.primary, opacity: 0.05 }]} />
@@ -246,9 +264,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center' 
   },
   hexBtn: {
-    width: 76, 
-    height: 76, 
-    borderRadius: 38,
+    width: HEX_BUTTON_SIZE,
+    height: HEX_BUTTON_SIZE,
+    borderRadius: HEX_BUTTON_RADIUS,
     alignItems: 'center', 
     justifyContent: 'center',
     shadowColor: '#000',
@@ -257,18 +275,20 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8
   },
-  pressedBtn: { transform: [{ scale: 0.92 }], opacity: 0.85 },
-  selectedIndicator: {
+  hexBtnPosition: {
     position: 'absolute',
-    bottom: -6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    left: (ITEM_DIM - HEX_BUTTON_SIZE) / 2,
+    top: (ITEM_DIM - HEX_BUTTON_SIZE) / 2,
   },
+  pressedBtn: { transform: [{ scale: 0.92 }], opacity: 0.85 },
   hexText: { 
-    fontSize: 9, 
-    textAlign: 'center', 
-    marginTop: 8, 
+    position: 'absolute',
+    top: ITEM_DIM / 2 + HEX_BUTTON_RADIUS + HEX_LABEL_MARGIN,
+    left: 0,
+    right: 0,
+    fontSize: 9,
+    lineHeight: 12,
+    textAlign: 'center',
     letterSpacing: 0.5,
     textTransform: 'uppercase'
   },

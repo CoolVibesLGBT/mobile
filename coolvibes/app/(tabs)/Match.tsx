@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { api } from '@/services/apiService';
+import { encodeProfileParam } from '@/helpers/profile';
 import { calculateAge, getSafeImageURLEx } from '@/helpers/safeUrl';
 
 const DEFAULT_COORDS = { lat: 41.0082, lng: 28.9784 };
@@ -414,8 +415,10 @@ export default function MatchScreen() {
                 params: {
                     chatId,
                     name: user.displayname || user.name || user.username,
+                    username: user.username,
                     avatar: user.imageUrl,
                     status: 'online',
+                    profile: encodeProfileParam(user),
                 },
             });
         } catch (error) {
@@ -425,8 +428,10 @@ export default function MatchScreen() {
                 params: {
                     chatId: userId,
                     name: user.displayname || user.name || user.username,
+                    username: user.username,
                     avatar: user.imageUrl,
                     status: 'online',
+                    profile: encodeProfileParam(user),
                 },
             });
         } finally {

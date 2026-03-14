@@ -74,5 +74,5 @@ export function calculateAge(dateOfBirth: string): number | string {
 
 function generateFallbackImage(seed: any): string {
   const safeSeed = encodeURIComponent(String(seed ?? 'guest'));
-  return `https://api.dicebear.com/9.x/thumbs/png?seed=${safeSeed}`;
+  return `https://api.dicebear.com/9.x/toon-head/svg?seed=${safeSeed}`;
 }

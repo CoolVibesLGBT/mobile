@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Modal, Pressable } from "react-native";
 import * as Haptics from "expo-haptics";
 import {
@@ -44,9 +44,10 @@ import { GOOGLE_PLACES_KEY } from "@/config";
 // --- Types & Interfaces ---
 interface Media {
   uri?: string;
-  type: "image" | "video" | "document" | "audio" | "location" | "live_location";
+  type: "image" | "video" | "document" | "audio" | "location" | "live_location" | "tag";
   name?: string;
   data?: any;
+  icon?: string;
 }
 
 interface Message {
@@ -74,6 +75,8 @@ interface ChatInputProps {
   onCancelReply: () => void;
   onCancelEdit: () => void;
   onSendMessage: (text: string, media: Media[], replyToId?: string, editingId?: string) => void;
+  extraMedia?: Media[];
+  onRemoveExtraMedia?: (media: Media, index: number) => void;
 }
 
 const VideoPreview = ({ uri }: { uri: string }) => {
@@ -168,6 +171,8 @@ export default function ChatInput({
   onCancelReply,
   onCancelEdit,
   onSendMessage,
+  extraMedia,
+  onRemoveExtraMedia,
 }: ChatInputProps) {
   const insets = useSafeAreaInsets();
   const [inputText, setInputText] = useState("");
@@ -336,9 +341,14 @@ export default function ChatInput({
 
   const handleSendMessagePress = () => {
     console.log("press1")
-    if (!inputText.trim() && selectedMedia.length === 0) return;
+    const outgoingMedia = [
+      ...(extraMedia ?? []),
+      ...selectedMedia,
+    ];
 
-    onSendMessage(inputText.trim(), selectedMedia, replyingTo?.id, editingMessage?.id);
+    if (!inputText.trim() && outgoingMedia.length === 0) return;
+
+    onSendMessage(inputText.trim(), outgoingMedia, replyingTo?.id, editingMessage?.id);
     console.log("press2")
 
     setInputText("");
@@ -500,12 +510,23 @@ export default function ChatInput({
     setShowEmojiPicker(!showEmojiPicker);
   };
 
+  const previewItems = useMemo(() => {
+    const items: Array<{ item: Media; source: 'extra' | 'selected'; index: number }> = [];
+    if (Array.isArray(extraMedia)) {
+      extraMedia.forEach((item, index) => items.push({ item, source: 'extra', index }));
+    }
+    selectedMedia.forEach((item, index) => items.push({ item, source: 'selected', index }));
+    return items;
+  }, [extraMedia, selectedMedia]);
+
+  const hasPreviewItems = previewItems.length > 0;
+
   const isMultiline =
     inputText.includes("\n") ||
     inputHeight > 45 ||
     replyingTo ||
     editingMessage ||
-    (selectedMedia.length > 0 && !isRecording);
+    (hasPreviewItems && !isRecording);
 
   return (
 
@@ -553,23 +574,45 @@ export default function ChatInput({
                       </View>
                     )}
 
-                    {selectedMedia.length > 0 && (
+                    {hasPreviewItems && (
                       <ScrollView horizontal style={styles.mediaPreviewContainer} showsHorizontalScrollIndicator={false}>
-                        {selectedMedia.map((media, index) => (
-                          <View key={index} style={{ marginRight: 8 }}>
+                        {previewItems.map(({ item: media, source, index }) => (
+                          <View key={`${source}-${index}`} style={{ marginRight: 8 }}>
                             {media.type === "image" ? (
                               <Image source={{ uri: media.uri }} style={styles.mediaPreview} />
                             ) : media.type === "video" && media.uri ? (
                               <VideoPreview uri={media.uri} />
                             ) : media.type === "audio" ? (
                               <AudioPreview item={media} />
+                            ) : media.type === "tag" ? (
+                              <View style={[styles.mediaPreview, styles.tagPreview]}>
+                                <MaterialCommunityIcons
+                                  name={(media.icon as any) || "tag-outline"}
+                                  size={20}
+                                  color="#111"
+                                />
+                                <Text numberOfLines={1} style={styles.tagPreviewText}>
+                                  {media.name || media.data?.label || "Tag"}
+                                </Text>
+                              </View>
                             ) : (
                               <View style={[styles.mediaPreview, { backgroundColor: media.type === "document" ? "#E3F2FD" : media.type === "live_location" ? "#FFEDF3" : media.type === "location" ? "#E8FBF0" : "#f0f0f0", alignItems: "center", justifyContent: "center" }]}>
                                 <MaterialCommunityIcons name={media.type === "location" || media.type === "live_location" ? "map-marker" : "file-document"} size={24} color={media.type === "document" ? "#007AFF" : media.type === "live_location" ? "#FF2D55" : media.type === "location" ? "#25D366" : "#555"} />
                                 {media.name && (<Text numberOfLines={1} style={{ fontSize: 10, maxWidth: 70, marginTop: 4, color: "#333" }} > {media.name} </Text>)}
                               </View>
                             )}
-                            <TouchableOpacity style={styles.closeMediaPreview} onPress={() => setSelectedMedia((prev) => prev.filter((_, i) => i !== index))}>
+                            <TouchableOpacity
+                              style={styles.closeMediaPreview}
+                              onPress={() => {
+                                if (source === "selected") {
+                                  setSelectedMedia((prev) => prev.filter((_, i) => i !== index));
+                                  return;
+                                }
+                                if (source === "extra" && onRemoveExtraMedia) {
+                                  onRemoveExtraMedia(media, index);
+                                }
+                              }}
+                            >
                               <Entypo name="cross" size={16} color="white" />
                             </TouchableOpacity>
                           </View>
@@ -594,7 +637,7 @@ export default function ChatInput({
                         <TouchableOpacity style={[styles.internalActionBtn]} onPress={handleEmojiToggle}>
                           <MaterialCommunityIcons name={showEmojiPicker ? "keyboard-outline" : "sticker-circle-outline"} size={26} color="black" />
                         </TouchableOpacity>
-                        {(inputText.trim().length > 0 || selectedMedia.length > 0) && (
+                        {(inputText.trim().length > 0 || hasPreviewItems) && (
                           <TouchableOpacity onPress={handleSendMessagePress} style={styles.internalActionBtn}>
                             <MaterialCommunityIcons name="send-circle" size={26} color="black" />
                           </TouchableOpacity>
@@ -605,7 +648,7 @@ export default function ChatInput({
                 )}
               </View>
 
-              {(!inputText.trim() && selectedMedia.length === 0) && (
+              {(!inputText.trim() && !hasPreviewItems) && (
                 <TouchableOpacity style={styles.externalButton} onPress={isRecording ? stopRecording : startRecording}>
                   <MaterialCommunityIcons name={isRecording ? "stop" : "microphone"} size={24} color={isRecording ? "#FF3B30" : "black"} />
                 </TouchableOpacity>
@@ -866,6 +909,18 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     backgroundColor: '#eee',
+  },
+  tagPreview: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#F3F4F6',
+  },
+  tagPreviewText: {
+    fontSize: 10,
+    maxWidth: 70,
+    textAlign: 'center',
+    color: '#111',
   },
   closeMediaPreview: {
     position: 'absolute',

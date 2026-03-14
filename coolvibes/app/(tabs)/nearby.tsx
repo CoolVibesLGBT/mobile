@@ -25,10 +25,11 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '@/store/hooks';
 import { api } from '@/services/apiService';
 import { calculateAge, getSafeImageURLEx } from '@/helpers/safeUrl';
+import { encodeProfileParam } from '@/helpers/profile';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 import { BottomSheetBackdrop, BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import FullProfileView from '@/components/FullProfileView';
+import ProfileBottomSheet from '@/components/ProfileBottomSheet';
 import { GOOGLE_PLACES_KEY } from '@/config';
 import { BlurView } from 'expo-blur';
 
@@ -574,8 +575,10 @@ export default function NearbyScreen() {
         (navigation as any).navigate('ChatDetail', {
             chatId: user.id,
             name: user.displayname || user.username,
+            username: user.username,
             avatar: user.imageUrl,
             status: user.online ? 'online' : `${user.distance} km away`,
+            profile: encodeProfileParam(user.raw ?? user),
         });
     }, [navigation]);
 
@@ -639,27 +642,6 @@ export default function NearbyScreen() {
         { cols: 3, icon: 'view-grid' },
         { cols: 4, icon: 'view-comfy' },
     ];
-
-    const profileUser = selectedUser ? (() => {
-        const raw = selectedUser.raw ?? {};
-        const bioHtml = typeof raw?.bio === 'object'
-            ? (raw?.bio?.en ?? raw?.bio?.tr ?? raw?.bio?.[Object.keys(raw?.bio ?? {})[0]])
-            : undefined;
-        const bioText = typeof raw?.bio === 'string' ? raw.bio : undefined;
-        const avatarUrl = getSafeImageURLEx(raw?.public_id ?? raw?.id ?? selectedUser.id, raw?.avatar, 'large') || selectedUser.imageUrl;
-        return {
-            ...raw,
-            id: raw?.id ?? selectedUser.id,
-            public_id: raw?.public_id ?? selectedUser.id,
-            displayname: raw?.displayname ?? selectedUser.displayname,
-            username: raw?.username ?? selectedUser.username,
-            avatar_url: avatarUrl,
-            banner_url: raw?.banner_url,
-            bioHtml,
-            bio: bioText,
-            location: raw?.location?.display || raw?.location?.city || raw?.location?.country || 'Earth',
-        };
-    })() : null;
 
     const initialRegion = {
         latitude: location?.lat ?? DEFAULT_COORDS.lat,
@@ -866,31 +848,26 @@ export default function NearbyScreen() {
             </View>
 
             {/* ── Profile Bottom Sheet ── */}
-            <BaseBottomSheetModal
+            <ProfileBottomSheet
                 ref={profileSheetRef}
-                index={0}
-                snapPoints={['92%']}
-                enableDynamicSizing={false}
                 backdropComponent={renderBackdrop}
                 onDismiss={() => setSelectedUser(null)}
-                backgroundStyle={{ backgroundColor: dark ? '#000' : '#FFF' }}
-                handleIndicatorStyle={{ backgroundColor: dark ? '#333' : '#E0E0E0' }}
-            >
-                {profileUser && (
-                    <FullProfileView
-                        user={profileUser}
-                        isMe={false}
-                        useBottomSheetScroll
-                        onMessage={() => {
-                            profileSheetRef.current?.dismiss();
-                            if (selectedUser) goToChat(selectedUser);
-                        }}
-                        onFollow={() => {
-                            if (selectedUser) handleLike(selectedUser.id);
-                        }}
-                    />
-                )}
-            </BaseBottomSheetModal>
+                user={selectedUser}
+                fallback={selectedUser ? {
+                    id: selectedUser.id,
+                    name: selectedUser.displayname,
+                    username: selectedUser.username,
+                    avatar: selectedUser.imageUrl,
+                } : undefined}
+                isMe={false}
+                onMessage={() => {
+                    profileSheetRef.current?.dismiss();
+                    if (selectedUser) goToChat(selectedUser);
+                }}
+                onFollow={() => {
+                    if (selectedUser) handleLike(selectedUser.id);
+                }}
+            />
 
             {/* ── Teleport Sheet ── */}
             <BaseBottomSheetModal

@@ -7,7 +7,7 @@ import FullProfileView from '@/components/FullProfileView';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
 import { getAuthUserThunk } from '@/store/slice/auth';
-import { toSafeBioHtml } from '@/helpers/lexicalPlainText';
+import { normalizeProfileUser } from '@/helpers/profile';
 
 export default function ProfileScreen() {
   const { dark } = useTheme();
@@ -40,23 +40,12 @@ export default function ProfileScreen() {
     );
   }
 
-  const getLocalizedBio = (bioObj: any) => {
-    if (!bioObj) return '';
-    if (typeof bioObj === 'string') return bioObj;
-    const text = bioObj[lang] || bioObj['en'] || Object.values(bioObj)[0] || '';
-    return typeof text === 'string' ? text : '';
-  };
-
-  // Map real data to format expected by FullProfileView
+  const normalizedUser = normalizeProfileUser(authUser, undefined, { language: lang });
   const mappedUser = {
       ...authUser,
-      avatar_url: getSafeImageURLEx(authUser.id, authUser.avatar, 'large'),
-      banner_url: getSafeImageURL(authUser.banner, 'large') || `https://picsum.photos/seed/${authUser.id}banner/1500/500`,
-      location: authUser.location?.display || authUser.location?.city || "Earth",
-      followers_count: authUser.engagements?.counts?.follower_count || 0,
-      following_count: authUser.engagements?.counts?.following_count || 0,
-      bio: getLocalizedBio(authUser.bio || authUser.status_message),
-      bioHtml: toSafeBioHtml(getLocalizedBio(authUser.bio || authUser.status_message)),
+      ...normalizedUser,
+      avatar_url: getSafeImageURLEx(authUser.id, authUser.avatar, 'large') || normalizedUser?.avatar_url,
+      banner_url: getSafeImageURL(authUser.banner, 'large') || normalizedUser?.banner_url || `https://picsum.photos/seed/${authUser.id}banner/1500/500`,
   };
 
   return (

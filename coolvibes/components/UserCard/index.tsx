@@ -1,12 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image, Pressable, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Pressable, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   interpolate,
-  runOnJS,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
@@ -14,7 +13,8 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppSelector } from '@/store/hooks';
-import ProfileAboutView from '../ProfileAboutView';
+import FullProfileView from '@/components/FullProfileView';
+import { normalizeProfileUser } from '@/helpers/profile';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_DIAMETER = SCREEN_WIDTH * 0.8;
@@ -22,19 +22,12 @@ const ACTION_BUTTON_SIZE = 70;
 const EXPANDED_AVATAR_SIZE = 110;
 const NAME_AGE_HEIGHT_ESTIMATE = 70; 
 
-const TABS = [
-    { key: 'about', title: 'About' },
-    { key: 'posts', title: 'Posts' },
-    { key: 'media', title: 'Media' },
-    { key: 'likes', title: 'Likes' },
-];
-
 const UserCard = ({ user, onDismiss, onChat, chatLoadingId }: any) => {
     const { colors, dark } = useTheme();
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const insets = useSafeAreaInsets();
     const [isExpanded, setIsExpanded] = useState(false);
-    const [activeTab, setActiveTab] = useState(TABS[0].key);
+    const profileUser = useMemo(() => normalizeProfileUser(user), [user]);
     const animationProgress = useSharedValue(0);
 
     const handleToggleExpand = useCallback(() => {
@@ -43,12 +36,6 @@ const UserCard = ({ user, onDismiss, onChat, chatLoadingId }: any) => {
         setIsExpanded(!isExpanded);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }, [isExpanded, animationProgress]);
-
-    useEffect(() => {
-        if (!isExpanded) {
-            setActiveTab(TABS[0].key);
-        }
-    }, [isExpanded]);
 
     const handleAction = (action: 'like' | 'dislike' | 'chat') => {
         Haptics.notificationAsync(
@@ -93,9 +80,16 @@ const UserCard = ({ user, onDismiss, onChat, chatLoadingId }: any) => {
         opacity: interpolate(animationProgress.value, [0, 0.3], [1, 0]),
     }));
 
-    const animatedDetailsStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(animationProgress.value, [0.4, 1], [0, 1]),
-    }));
+    const animatedDetailsStyle = useAnimatedStyle(() => {
+        const progress = animationProgress.value;
+        return {
+            opacity: interpolate(progress, [0, 0.25, 1], [0, 0, 1]),
+            transform: [
+                { translateY: interpolate(progress, [0, 1], [SCREEN_HEIGHT * 0.08, 0]) },
+                { scale: interpolate(progress, [0, 1], [0.98, 1]) },
+            ],
+        };
+    });
 
     const animatedCloseButtonStyle = useAnimatedStyle(() => ({
         opacity: interpolate(animationProgress.value, [0.8, 1], [0, 1]),
@@ -136,41 +130,9 @@ const UserCard = ({ user, onDismiss, onChat, chatLoadingId }: any) => {
     const iconColor = dark ? '#FFFFFF' : '#000000';
     const premiumAccent = '#7C4DFF';
 
-    const tabContent = () => {
-        if (activeTab === 'about') {
-            return <ProfileAboutView user={user} />;
-        }
-        if (activeTab === 'media') {
-            return (
-                <View style={styles.postsGrid}>
-                    {Array.from({ length: 12 }).map((_, index) => (
-                        <View key={`media-${index}`} style={styles.postItem}>
-                            <Image
-                                source={{ uri: `https://picsum.photos/seed/${user.id}-media-${index}/300/300` }}
-                                style={styles.postImage}
-                            />
-                        </View>
-                    ))}
-                </View>
-            );
-        }
-        return (
-            <View style={styles.postsGrid}>
-                {Array.from({ length: 6 }).map((_, index) => (
-                    <View key={`post-${index}`} style={[styles.postPlaceholder, { borderBottomColor: dark ? '#1A1A1A' : '#EEE' }]}>
-                        <View style={styles.postHeader}>
-                            <View style={[styles.postAvatar, { backgroundColor: dark ? '#1A1A1A' : '#EEE' }]} />
-                            <View style={styles.postHeaderInfo}>
-                                <View style={[styles.postLineHeader, { backgroundColor: dark ? '#1A1A1A' : '#EEE' }]} />
-                                <View style={[styles.postLineSub, { backgroundColor: dark ? '#1A1A1A' : '#EEE', width: '40%' }]} />
-                            </View>
-                        </View>
-                        <View style={[styles.postLine, { backgroundColor: dark ? '#1A1A1A' : '#EEE' }]} />
-                    </View>
-                ))}
-            </View>
-        );
-    };
+    const animatedFadeOutStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(animationProgress.value, [0, 0.6, 1], [1, 0.35, 0]),
+    }));
 
     return (
         <View style={styles.wrapper} pointerEvents="auto">
@@ -190,44 +152,18 @@ const UserCard = ({ user, onDismiss, onChat, chatLoadingId }: any) => {
             <View style={[styles.glassOverlay, { backgroundColor: 'rgba(255,255,255,0.6)', borderColor: 'rgba(255,255,255,0.9)' }]} pointerEvents="none" />
             
             <Animated.View style={[styles.detailsContainer, animatedDetailsStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
-                <ScrollView 
-                    showsVerticalScrollIndicator={false} 
-                    contentContainerStyle={{
-                        paddingBottom: 150, 
-                        paddingTop: insets.top + 40 + EXPANDED_AVATAR_SIZE + NAME_AGE_HEIGHT_ESTIMATE + ACTION_BUTTON_SIZE + 40
-                    }}
-                >
-                    <View style={[styles.tabsWrapper, { borderBottomColor: dark ? '#1A1A1A' : '#EEE' }]}>
-                        <View style={styles.tabsInner}>
-                            {TABS.map((tab) => (
-                                <TouchableOpacity
-                                    key={tab.key}
-                                    onPress={() => setActiveTab(tab.key)}
-                                    style={styles.tabItem}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.tabText,
-                                            { color: activeTab === tab.key ? colors.text : (dark ? '#777' : '#999') },
-                                            activeTab === tab.key && styles.tabTextActive
-                                        ]}
-                                    >
-                                        {tab.title}
-                                    </Text>
-                                    {activeTab === tab.key && (
-                                        <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />
-                                    )}
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                    <View style={styles.contentArea}>
-                        {tabContent()}
-                    </View>
-                </ScrollView>
+                {profileUser && (
+                    <FullProfileView
+                        user={profileUser}
+                        isMe={false}
+                        showActions={false}
+                        onMessage={() => handleAction('chat')}
+                        onFollow={() => handleAction('like')}
+                    />
+                )}
             </Animated.View>
 
-            <Animated.View style={[styles.imageContainer, animatedImageContainerStyle]}>
+            <Animated.View style={[styles.imageContainer, animatedImageContainerStyle, animatedFadeOutStyle]}>
                 <Pressable
                     onPress={handleToggleExpand}
                     onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
@@ -245,7 +181,7 @@ const UserCard = ({ user, onDismiss, onChat, chatLoadingId }: any) => {
                 </Pressable>
             </Animated.View>
 
-            <Animated.View style={[animatedNameAgePositionStyle]}>
+            <Animated.View style={[animatedNameAgePositionStyle, animatedFadeOutStyle]}>
                 <Text style={[styles.cardName, { color: colors.text }]}>{user.name}, {user.age}</Text>
                 <View style={styles.badgeRow}>
                     <View style={[styles.verifiedBadge, { backgroundColor: dark ? '#333' : '#EEE' }]}>
@@ -256,7 +192,7 @@ const UserCard = ({ user, onDismiss, onChat, chatLoadingId }: any) => {
                 </View>
             </Animated.View>
 
-            <Animated.View style={[animatedActionsPositionStyle]} pointerEvents="auto">
+            <Animated.View style={[animatedActionsPositionStyle, animatedFadeOutStyle]} pointerEvents="auto">
                 <TouchableOpacity
                     style={[styles.actionButton, { backgroundColor: dark ? '#222' : '#F5F5F5' }]}
                     onPress={() => handleAction('dislike')}
@@ -354,23 +290,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(127,127,127,0.15)',
     },
-    tabsWrapper: { borderBottomWidth: 1, marginTop: 10 },
-    tabsInner: { flexDirection: 'row', paddingHorizontal: 4 },
-    tabItem: { flex: 1, paddingVertical: 14, alignItems: 'center' },
-    tabText: { fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
-    tabTextActive: { opacity: 1 },
-    tabIndicator: { position: 'absolute', bottom: 0, height: 2, width: '40%', borderRadius: 1 },
-    contentArea: { paddingTop: 12 },
-    postsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-    postItem: { width: '33.3333%', aspectRatio: 1 },
-    postImage: { width: '100%', height: '100%' },
-    postPlaceholder: { width: '100%', padding: 16, borderBottomWidth: 1 },
-    postHeader: { flexDirection: 'row', marginBottom: 12 },
-    postAvatar: { width: 34, height: 34, borderRadius: 17, marginRight: 12 },
-    postHeaderInfo: { flex: 1, justifyContent: 'center' },
-    postLineHeader: { height: 10, borderRadius: 5, marginBottom: 6, width: '50%' },
-    postLineSub: { height: 8, borderRadius: 4 },
-    postLine: { height: 10, borderRadius: 5, width: '100%' },
+    
 });
 
 export default UserCard;

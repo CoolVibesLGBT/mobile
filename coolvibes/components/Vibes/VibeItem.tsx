@@ -10,6 +10,7 @@ import RenderHTML from 'react-native-render-html';
 
 import { api } from '@/services/apiService';
 import { calculateAge } from '@/helpers/safeUrl';
+import { encodeProfileParam } from '@/helpers/profile';
 
 import { ActionBar } from './ActionBar';
 import type { BurstType, VibeItemData } from './types';
@@ -136,8 +137,10 @@ export function VibeItem({
         params: {
           chatId,
           name: vibe.author.displayname || vibe.username,
+          username: vibe.author.username || vibe.username,
           avatar: vibe.avatar,
           status: 'online',
+          profile: encodeProfileParam(vibe.author),
         },
       });
     } catch (error) {
@@ -147,8 +150,10 @@ export function VibeItem({
         params: {
           chatId: userId,
           name: vibe.author.displayname || vibe.username,
+          username: vibe.author.username || vibe.username,
           avatar: vibe.avatar,
           status: 'online',
+          profile: encodeProfileParam(vibe.author),
         },
       });
     }

@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchChats, resetChats } from '@/store/slice/chat';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 import { getSafeImageURLEx } from '@/helpers/safeUrl';
+import { encodeProfileParam } from '@/helpers/profile';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -36,6 +37,7 @@ type ConversationItem = {
   online: boolean;
   avatar: string;
   status: string;
+  profile?: any;
 };
 
 function getLocalizedText(value: any, language: string) {
@@ -100,6 +102,7 @@ function normalizeChat(chat: any, index: number, authUserId: string | null, lang
     online: Boolean(counterpart?.is_online ?? counterpart?.online ?? false),
     avatar: avatar || counterpart?.avatar_url || counterpart?.avatarUrl || '',
     status: counterpart?.is_online || counterpart?.online ? 'Online' : '',
+    profile: counterpart || null,
   };
 }
 
@@ -240,8 +243,15 @@ export default function ChatScreen() {
       params: {
         chatId: item.id,
         name: item.name,
+        username: item.profile?.username || item.name,
         avatar: item.avatar,
         status: item.status,
+        profile: encodeProfileParam(item.profile || {
+          id: item.id,
+          displayname: item.name,
+          username: item.name,
+          avatar_url: item.avatar,
+        }),
       },
     });
   };
@@ -304,7 +314,19 @@ export default function ChatScreen() {
                    <Pressable 
                     onPress={() => router.push({
                         pathname: '/ChatDetail',
-                        params: { chatId: item.id, name: item.name, avatar: item.avatar, status: 'Online' },
+                        params: {
+                          chatId: item.id,
+                          name: item.name,
+                          username: item.name,
+                          avatar: item.avatar,
+                          status: 'Online',
+                          profile: encodeProfileParam({
+                            id: item.id,
+                            displayname: item.name,
+                            username: item.name,
+                            avatar_url: item.avatar,
+                          }),
+                        },
                       })}
                     style={styles.favoritePress}>
                      <View style={[styles.favoriteAvatarContainer, { borderColor: borderColor }]}>

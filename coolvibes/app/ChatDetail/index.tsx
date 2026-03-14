@@ -19,7 +19,7 @@ import { useTheme } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, SlideInRight, SlideInLeft } from "react-native-reanimated";
 import { BottomSheetView, BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as SecureStore from 'expo-secure-store';
@@ -78,6 +78,7 @@ export default function ChatDetail() {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
+  const router = useRouter();
   const language = useAppSelector((state) => state.system.language) || 'en';
   const authUser = useAppSelector((state) => state.auth.user);
   const authUserId = useAppSelector((state) => state.auth.user?.id ?? null);
@@ -123,6 +124,8 @@ export default function ChatDetail() {
 
   const flashListRef = useRef<any>(null);
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const typingIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingParamRef = useRef<string | null>(null);
 
   const chatId = (params.chatId as string) || "";
   const currentChatRoomRef = useRef<string | null>(null);
@@ -175,7 +178,11 @@ export default function ChatDetail() {
 
     const id = String(msg?.id ?? msg?.public_id ?? msg?.uuid ?? msg?.slug ?? Math.random());
     const sender: "me" | "them" = msg?.author_id && authUserId && String(msg.author_id) === String(authUserId) ? "me" : "them";
-    const text = getLocalizedText(msg?.content) || '';
+    const text =
+      getLocalizedText(msg?.content) ||
+      getLocalizedText(msg?.text) ||
+      getLocalizedText(msg?.body) ||
+      '';
     const timestamp = formatTime(msg?.created_at || msg?.updated_at || msg?.timestamp);
 
     return {
@@ -257,17 +264,66 @@ export default function ChatDetail() {
     const handleSocketMessage = (msg: any) => {
       const messageData = parseSocketPayload(msg);
       const action = messageData?.action;
-      const message = messageData?.message || messageData?.data;
+      const message = messageData?.message || messageData?.data?.message || messageData?.data || messageData;
 
-      if (action === Actions.CMD_SEND_MESSAGE && message) {
-        const messageChatId = message.contentable_id || message.chat_id;
+      if (action === Actions.CMD_TYPING || messageData?.typing !== undefined) {
+        const typingChatId = messageData?.chatID || messageData?.chat_id || messageData?.chatId;
+        const typingUserId = messageData?.userID || messageData?.user_id || messageData?.userId;
+        const isTypingActive = messageData?.typing === true;
+
+        if (
+          typingChatId &&
+          String(typingChatId) === String(chatId) &&
+          typingUserId &&
+          String(typingUserId) !== String(authUserId)
+        ) {
+          if (typingIndicatorTimeoutRef.current) {
+            clearTimeout(typingIndicatorTimeoutRef.current);
+            typingIndicatorTimeoutRef.current = null;
+          }
+
+          if (isTypingActive) {
+            setIsTyping(true);
+            typingIndicatorTimeoutRef.current = setTimeout(() => {
+              setIsTyping(false);
+              typingIndicatorTimeoutRef.current = null;
+            }, 3000);
+          } else {
+            setIsTyping(false);
+          }
+        }
+        return;
+      }
+
+      const isMessageLike = Boolean(message?.contentable_id || message?.chat_id || message?.content || message?.text);
+
+      if ((action === Actions.CMD_SEND_MESSAGE || (!action && isMessageLike)) && message) {
+        const messageChatId = message.contentable_id || message.chat_id || messageData?.chat_id || messageData?.chatID;
         if (messageChatId && chatId && String(messageChatId) !== String(chatId)) {
           return;
         }
         const mapped = toMessage(message);
         if (!mapped) return;
+
+        if (mapped.sender === 'them') {
+          setIsTyping(false);
+          if (typingIndicatorTimeoutRef.current) {
+            clearTimeout(typingIndicatorTimeoutRef.current);
+            typingIndicatorTimeoutRef.current = null;
+          }
+        }
+
         setMessages((prev) => {
           if (prev.some((m) => m.id === mapped.id)) return prev;
+
+          if (mapped.sender === 'me') {
+            const recent = prev.slice(-5).reverse();
+            const optimistic = recent.find((m) => m.sender === 'me' && m.text === mapped.text && String(m.id).startsWith('temp-'));
+            if (optimistic) {
+              return prev.map((m) => (m.id === optimistic.id ? { ...m, id: mapped.id, status: mapped.status ?? m.status } : m));
+            }
+          }
+
           return [...prev, mapped];
         });
       }
@@ -303,8 +359,21 @@ export default function ChatDetail() {
         socket.emit('leave', JSON.stringify({ chat_id: currentChatRoomRef.current }));
         currentChatRoomRef.current = null;
       }
+
+      if (typingIndicatorTimeoutRef.current) {
+        clearTimeout(typingIndicatorTimeoutRef.current);
+        typingIndicatorTimeoutRef.current = null;
+      }
     };
-  }, [socket, chatId, toMessage]);
+  }, [socket, chatId, toMessage, authUserId]);
+
+  useEffect(() => {
+    const nextParam = isTyping ? '1' : '0';
+    if (lastTypingParamRef.current !== nextParam) {
+      lastTypingParamRef.current = nextParam;
+      router.setParams({ typing: nextParam });
+    }
+  }, [isTyping, router]);
 
   // Chat Partner Data
   const chatPartner: User = {
@@ -329,8 +398,11 @@ export default function ChatDetail() {
     if (editingId) {
       setMessages(prev => prev.map(m => m.id === editingId ? { ...m, text: text } : m));
     } else {
+      if (!text?.trim() && (!media || media.length === 0)) return;
+
+      const tempId = `temp-${Date.now()}`;
       const newMessage: Message = {
-        id: Date.now().toString(),
+        id: tempId,
         sender: "me",
         text: text,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -340,17 +412,9 @@ export default function ChatDetail() {
 
       setMessages((prev) => [...prev, newMessage]);
 
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        const botMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          sender: "them",
-          text: "That's exactly what we need! 🚀",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
-        setMessages(prev => [...prev, botMsg]);
-      }, 2000);
+      api.sendMessage(chatId, text).catch(() => {
+        // keep optimistic message; errors will be visible when server doesn't echo
+      });
     }
   };
 
@@ -543,15 +607,7 @@ export default function ChatDetail() {
               </View>
             )
           }
-          ListFooterComponent={
-            isTyping ? (
-              <Animated.View entering={FadeIn} style={styles.typingContainer}>
-                <View style={[styles.messageIn, { backgroundColor: bubbleThem, paddingVertical: 12, paddingHorizontal: 16 }]}>
-                  <ActivityIndicator size="small" color={secondaryText} />
-                </View>
-              </Animated.View>
-            ) : null
-          }
+          ListFooterComponent={null}
         />
 
         <ChatInput

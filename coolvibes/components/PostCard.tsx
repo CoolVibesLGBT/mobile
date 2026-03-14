@@ -21,7 +21,7 @@ interface PostCardProps {
         username: string;
         verified?: boolean;
     };
-    image: string;
+    image?: string;
     caption: string;
     likes: number;
     comments: number;
@@ -82,15 +82,17 @@ const PostCard: React.FC<PostCardProps> = ({ user, image, caption, likes, commen
             </View>
 
             {/* Post Image with Subtle Rounded Corners */}
-            <Pressable onPress={handleLike}>
-                <Image 
-                    source={{ uri: image }} 
-                    style={[styles.postImage, { backgroundColor: dark ? '#1C1C1E' : '#F2F2F7' }]} 
-                    contentFit="cover" 
-                    transition={300}
-                    blurRadius={blurPhotos ? 25 : 0}
-                />
-            </Pressable>
+            {image ? (
+                <Pressable onPress={handleLike}>
+                    <Image 
+                        source={{ uri: image }} 
+                        style={[styles.postImage, { backgroundColor: dark ? '#1C1C1E' : '#F2F2F7' }]} 
+                        contentFit="cover" 
+                        transition={300}
+                        blurRadius={blurPhotos ? 25 : 0}
+                    />
+                </Pressable>
+            ) : null}
 
             {/* Actions Bar */}
             <View style={styles.actions}>
