@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
@@ -9,13 +9,14 @@ import { Image } from 'expo-image';
 import { useAppSelector } from '@/store/hooks';
 import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useCallback, useRef, useState } from 'react';
 import { Dimensions } from 'react-native';
 import { MessageSquare, MapPin, Calendar, Users, Star, ScrollText } from 'lucide-react-native';
-import ProfileBottomSheet from '@/components/ProfileBottomSheet';
+import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
+import FullProfileView from '@/components/FullProfileView';
 import { ScrollView } from 'react-native-gesture-handler';
 import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
-import { decodeProfileParam } from '@/helpers/profile';
+import { decodeProfileParam, normalizeProfileUser } from '@/helpers/profile';
+import { api } from '@/services/apiService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const secondaryText = '#888';
@@ -30,6 +31,8 @@ export default function GlobalHeader() {
     // Read logged-in user from Redux store
     const authUser = useAppSelector(state => state.auth.user);
     const profileSheetRef = useRef<BottomSheetModal>(null);
+    const [fetchedUser, setFetchedUser] = useState<any | null>(null);
+    const lastFetchKeyRef = useRef<string | null>(null);
 
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -50,8 +53,7 @@ export default function GlobalHeader() {
     const isActivity = (segments as any[]).includes('Activity');
     const isMatch = (segments as any[]).includes('Match') || (segments as any[]).includes('MatchScreen');
     const isProfileEdit = (segments as any[]).includes('ProfileEdit');
-
-    if (isAuth || isMatch || isProfileEdit) return null;
+    const shouldHide = isAuth || isMatch || isProfileEdit;
 
     const rootSubSegments = ['index', 'chat', 'Profile', 'Discover', 'nearby', 'Activity'];
     const segs = segments as string[];
@@ -70,6 +72,96 @@ export default function GlobalHeader() {
     const chatSubText = isTyping ? 'typing...' : chatUserStatus;
     const chatProfileParam = params?.profile as string | undefined;
     const chatProfilePayload = decodeProfileParam(chatProfileParam);
+
+    const profileFallback = useMemo(() => ({
+        id: String(params?.userId ?? params?.publicId ?? params?.chatId ?? ''),
+        name: chatUserName,
+        username: (params?.username as string) || undefined,
+        avatar: chatUserAvatar,
+    }), [params?.userId, params?.publicId, params?.chatId, params?.username, chatUserName, chatUserAvatar]);
+
+    const normalizeName = (value?: string) => (typeof value === 'string' ? value.trim() : '');
+    const isGenericName = (value: string) => {
+        const lower = value.toLowerCase();
+        return lower === 'chat' || lower === 'user' || lower === 'unknown' || lower === 'me';
+    };
+    const isValidUsername = (value?: string) => {
+        const name = normalizeName(value);
+        if (!name) return false;
+        if (isGenericName(name)) return false;
+        if (/\s/.test(name)) return false;
+        return true;
+    };
+    const isValidNickname = (value?: string) => {
+        const name = normalizeName(value);
+        if (!name) return false;
+        if (isGenericName(name)) return false;
+        return true;
+    };
+
+    const fetchUsername = isValidUsername(chatProfilePayload?.username || chatProfilePayload?.raw?.username || profileFallback?.username)
+        ? normalizeName(chatProfilePayload?.username || chatProfilePayload?.raw?.username || profileFallback?.username)
+        : null;
+
+    const fetchNickname = !fetchUsername && isValidNickname(chatProfilePayload?.nickname || chatProfilePayload?.raw?.nickname)
+        ? normalizeName(chatProfilePayload?.nickname || chatProfilePayload?.raw?.nickname)
+        : null;
+
+    const identityKey =
+        chatProfilePayload?.id ||
+        chatProfilePayload?.public_id ||
+        chatProfilePayload?.username ||
+        chatProfilePayload?.raw?.id ||
+        chatProfilePayload?.raw?.public_id ||
+        chatProfilePayload?.raw?.username ||
+        profileFallback?.id ||
+        profileFallback?.username ||
+        null;
+
+    useEffect(() => {
+        if (shouldHide) {
+            setFetchedUser(null);
+            lastFetchKeyRef.current = null;
+            return;
+        }
+        setFetchedUser(null);
+        lastFetchKeyRef.current = null;
+    }, [identityKey, shouldHide]);
+
+    useEffect(() => {
+        if (shouldHide) return;
+        const fetchKey = fetchUsername || fetchNickname;
+        if (!fetchKey || lastFetchKeyRef.current === fetchKey) return;
+        lastFetchKeyRef.current = fetchKey;
+        let isActive = true;
+        const run = async () => {
+            try {
+                const response = fetchUsername
+                    ? await api.fetchProfile(fetchUsername)
+                    : await api.fetchProfileByNickname(fetchNickname as string);
+                const payload = (response as any)?.data ?? response;
+                const profile =
+                    payload?.user ||
+                    payload?.data?.user ||
+                    payload?.profile ||
+                    payload?.data?.profile ||
+                    payload?.data ||
+                    payload;
+                if (isActive && profile) setFetchedUser(profile);
+            } catch {
+                // ignore fetch errors
+            }
+        };
+        run();
+        return () => {
+            isActive = false;
+        };
+    }, [fetchUsername, fetchNickname, shouldHide]);
+
+    const profileUser = useMemo(
+        () => normalizeProfileUser(fetchedUser ?? chatProfilePayload, profileFallback),
+        [fetchedUser, chatProfilePayload, profileFallback]
+    );
 
     const isOverlayHeader = !isSettings;
     const containerStyle: ViewStyle = {
@@ -233,6 +325,8 @@ export default function GlobalHeader() {
 
     const borderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
 
+    if (shouldHide) return null;
+
     return (
         <View style={[containerStyle, (!isRoot && !isChatDetail && !isCheckIn) && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: borderColor }]}>
             <BlurView
@@ -271,20 +365,33 @@ export default function GlobalHeader() {
             </View>
 
             {/* Profile Preview Sheet */}
-            <ProfileBottomSheet
+            <BaseBottomSheetModal
                 ref={profileSheetRef}
+                index={0}
+                snapPoints={['92%']}
+                enableDynamicSizing={false}
                 backdropComponent={renderBackdrop}
                 onDismiss={() => setIsSheetOpen(false)}
-                user={chatProfilePayload}
-                fallback={{
-                    id: String(params?.userId ?? params?.publicId ?? params?.chatId ?? ''),
-                    name: chatUserName,
-                    username: (params?.username as string) || undefined,
-                    avatar: chatUserAvatar,
-                }}
-                isMe={false}
-                onMessage={() => profileSheetRef.current?.dismiss()}
-            />
+                backgroundStyle={{ backgroundColor: dark ? '#000' : '#FFF' }}
+                handleIndicatorStyle={{ backgroundColor: dark ? '#333' : '#E0E0E0' }}
+            >
+                {profileUser && (
+                    <FullProfileView
+                        user={profileUser}
+                        isMe={false}
+                        useBottomSheetScroll
+                        onMessage={() => profileSheetRef.current?.dismiss()}
+                        onFollow={async () => {
+                            const targetId = profileUser?.public_id || profileUser?.id;
+                            if (targetId) await api.toggleFollow(String(targetId));
+                        }}
+                        onBlock={async () => {
+                            const targetId = profileUser?.public_id || profileUser?.id;
+                            if (targetId) await api.toggleBlockUser(String(targetId));
+                        }}
+                    />
+                )}
+            </BaseBottomSheetModal>
         </View>
     );
 }

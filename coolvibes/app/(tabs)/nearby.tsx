@@ -25,11 +25,11 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '@/store/hooks';
 import { api } from '@/services/apiService';
 import { calculateAge, getSafeImageURLEx } from '@/helpers/safeUrl';
-import { encodeProfileParam } from '@/helpers/profile';
+import { encodeProfileParam, normalizeProfileUser } from '@/helpers/profile';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 import { BottomSheetBackdrop, BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import ProfileBottomSheet from '@/components/ProfileBottomSheet';
+import FullProfileView from '@/components/FullProfileView';
 import { GOOGLE_PLACES_KEY } from '@/config';
 import { BlurView } from 'expo-blur';
 
@@ -234,6 +234,8 @@ export default function NearbyScreen() {
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [mapRegion, setMapRegion] = useState<Region | null>(null);
     const [selectedUser, setSelectedUser] = useState<NearbyUser | null>(null);
+    const [profileFetchedUser, setProfileFetchedUser] = useState<any | null>(null);
+    const lastProfileFetchKeyRef = useRef<string | null>(null);
     const [activeMarkerId, setActiveMarkerId] = useState<string | null>(null);
     const [pressedMarkerId, setPressedMarkerId] = useState<string | null>(null);
     const [pressTick, setPressTick] = useState(0);
@@ -245,6 +247,92 @@ export default function NearbyScreen() {
     const [teleportRegion, setTeleportRegion] = useState<Region | null>(null);
     const [teleportSearching, setTeleportSearching] = useState(false);
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
+
+    const normalizeName = (value?: string) => (typeof value === 'string' ? value.trim() : '');
+    const isGenericName = (value: string) => {
+        const lower = value.toLowerCase();
+        return lower === 'chat' || lower === 'user' || lower === 'unknown' || lower === 'me';
+    };
+    const isValidUsername = (value?: string) => {
+        const name = normalizeName(value);
+        if (!name) return false;
+        if (isGenericName(name)) return false;
+        if (/\s/.test(name)) return false;
+        return true;
+    };
+    const isValidNickname = (value?: string) => {
+        const name = normalizeName(value);
+        if (!name) return false;
+        if (isGenericName(name)) return false;
+        return true;
+    };
+
+    const profileFallback = useMemo(() => selectedUser ? {
+        id: selectedUser.id,
+        name: selectedUser.displayname,
+        username: selectedUser.username,
+        avatar: selectedUser.imageUrl,
+    } : undefined, [selectedUser]);
+
+    const profileFetchUsername = useMemo(() => {
+        if (!selectedUser) return null;
+        const candidate = selectedUser?.username || (selectedUser as any)?.raw?.username || profileFallback?.username;
+        return isValidUsername(candidate) ? normalizeName(candidate) : null;
+    }, [selectedUser, profileFallback]);
+
+    const profileFetchNickname = useMemo(() => {
+        if (!selectedUser || profileFetchUsername) return null;
+        const candidate = (selectedUser as any)?.raw?.nickname;
+        return isValidNickname(candidate) ? normalizeName(candidate) : null;
+    }, [selectedUser, profileFetchUsername]);
+
+    const profileIdentityKey =
+        selectedUser?.id ||
+        (selectedUser as any)?.raw?.id ||
+        (selectedUser as any)?.raw?.public_id ||
+        profileFallback?.id ||
+        profileFallback?.username ||
+        null;
+
+    useEffect(() => {
+        setProfileFetchedUser(null);
+        lastProfileFetchKeyRef.current = null;
+    }, [profileIdentityKey]);
+
+    useEffect(() => {
+        if (!selectedUser) return;
+        const fetchKey = profileFetchUsername || profileFetchNickname;
+        if (!fetchKey || lastProfileFetchKeyRef.current === fetchKey) return;
+        lastProfileFetchKeyRef.current = fetchKey;
+        let isActive = true;
+        const run = async () => {
+            try {
+                const response = profileFetchUsername
+                    ? await api.fetchProfile(profileFetchUsername)
+                    : await api.fetchProfileByNickname(profileFetchNickname as string);
+                const payload = (response as any)?.data ?? response;
+                const profile =
+                    payload?.user ||
+                    payload?.data?.user ||
+                    payload?.profile ||
+                    payload?.data?.profile ||
+                    payload?.data ||
+                    payload;
+                if (isActive && profile) setProfileFetchedUser(profile);
+            } catch {
+                // ignore
+            }
+        };
+        run();
+        return () => {
+            isActive = false;
+        };
+    }, [selectedUser, profileFetchUsername, profileFetchNickname]);
+
+    const resolvedProfileUser = useMemo(
+        () => selectedUser ? normalizeProfileUser(profileFetchedUser ?? selectedUser, profileFallback) : null,
+        [profileFetchedUser, selectedUser, profileFallback]
+    );
 
     useEffect(() => {
         cursorRef.current = cursor;
@@ -286,21 +374,43 @@ export default function NearbyScreen() {
 
     const resolveLocation = useCallback(async () => {
         if (location) return location;
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setLocation(DEFAULT_COORDS);
+                return DEFAULT_COORDS;
+            }
+            try {
+                const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+                setLocation(coords);
+                mapRef.current?.animateToRegion({
+                    latitude: coords.lat,
+                    longitude: coords.lng,
+                    latitudeDelta: 0.06,
+                    longitudeDelta: 0.06,
+                });
+                return coords;
+            } catch {
+                const lastKnown = await Location.getLastKnownPositionAsync({});
+                if (lastKnown?.coords) {
+                    const coords = { lat: lastKnown.coords.latitude, lng: lastKnown.coords.longitude };
+                    setLocation(coords);
+                    mapRef.current?.animateToRegion({
+                        latitude: coords.lat,
+                        longitude: coords.lng,
+                        latitudeDelta: 0.06,
+                        longitudeDelta: 0.06,
+                    });
+                    return coords;
+                }
+                setLocation(DEFAULT_COORDS);
+                return DEFAULT_COORDS;
+            }
+        } catch {
             setLocation(DEFAULT_COORDS);
             return DEFAULT_COORDS;
         }
-        const loc = await Location.getCurrentPositionAsync({});
-        const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-        setLocation(coords);
-        mapRef.current?.animateToRegion({
-            latitude: coords.lat,
-            longitude: coords.lng,
-            latitudeDelta: 0.06,
-            longitudeDelta: 0.06,
-        });
-        return coords;
     }, [location]);
 
     const mapUser = useCallback((raw: any, coords: { lat: number; lng: number }) => {
@@ -592,22 +702,46 @@ export default function NearbyScreen() {
     }, []);
 
     const handleMyLocation = async () => {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') return;
-        const loc = await Location.getCurrentPositionAsync({});
-        setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
-        setMapRegion({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.015,
-        });
-        mapRef.current?.animateToRegion({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.015,
-        });
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setLocation(DEFAULT_COORDS);
+                return;
+            }
+            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+            setLocation(coords);
+            setMapRegion({
+                latitude: coords.lat,
+                longitude: coords.lng,
+                latitudeDelta: 0.015,
+                longitudeDelta: 0.015,
+            });
+            mapRef.current?.animateToRegion({
+                latitude: coords.lat,
+                longitude: coords.lng,
+                latitudeDelta: 0.015,
+                longitudeDelta: 0.015,
+            });
+        } catch {
+            const fallback = await Location.getLastKnownPositionAsync({});
+            const coords = fallback?.coords
+                ? { lat: fallback.coords.latitude, lng: fallback.coords.longitude }
+                : DEFAULT_COORDS;
+            setLocation(coords);
+            setMapRegion({
+                latitude: coords.lat,
+                longitude: coords.lng,
+                latitudeDelta: 0.015,
+                longitudeDelta: 0.015,
+            });
+            mapRef.current?.animateToRegion({
+                latitude: coords.lat,
+                longitude: coords.lng,
+                latitudeDelta: 0.015,
+                longitudeDelta: 0.015,
+            });
+        }
     };
 
     const handleLoadMore = useCallback(() => {
@@ -848,26 +982,35 @@ export default function NearbyScreen() {
             </View>
 
             {/* ── Profile Bottom Sheet ── */}
-            <ProfileBottomSheet
+            <BaseBottomSheetModal
                 ref={profileSheetRef}
+                index={0}
+                snapPoints={['92%']}
+                enableDynamicSizing={false}
                 backdropComponent={renderBackdrop}
                 onDismiss={() => setSelectedUser(null)}
-                user={selectedUser}
-                fallback={selectedUser ? {
-                    id: selectedUser.id,
-                    name: selectedUser.displayname,
-                    username: selectedUser.username,
-                    avatar: selectedUser.imageUrl,
-                } : undefined}
-                isMe={false}
-                onMessage={() => {
-                    profileSheetRef.current?.dismiss();
-                    if (selectedUser) goToChat(selectedUser);
-                }}
-                onFollow={() => {
-                    if (selectedUser) handleLike(selectedUser.id);
-                }}
-            />
+                backgroundStyle={{ backgroundColor: dark ? '#000' : '#FFF' }}
+                handleIndicatorStyle={{ backgroundColor: dark ? '#333' : '#E0E0E0' }}
+            >
+                {resolvedProfileUser && (
+                    <FullProfileView
+                        user={resolvedProfileUser}
+                        isMe={false}
+                        useBottomSheetScroll
+                        onMessage={() => {
+                            profileSheetRef.current?.dismiss();
+                            if (selectedUser) goToChat(selectedUser);
+                        }}
+                        onFollow={() => {
+                            if (selectedUser) handleLike(selectedUser.id);
+                        }}
+                        onBlock={async () => {
+                            const targetId = resolvedProfileUser?.public_id || resolvedProfileUser?.id;
+                            if (targetId) await api.toggleBlockUser(String(targetId));
+                        }}
+                    />
+                )}
+            </BaseBottomSheetModal>
 
             {/* ── Teleport Sheet ── */}
             <BaseBottomSheetModal

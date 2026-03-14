@@ -51,7 +51,7 @@ export default function ProfileScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: dark ? '#000' : '#fff' }]}>
         <StatusBar translucent backgroundColor="transparent" barStyle={dark ? 'light-content' : 'dark-content'} />
-        <View style={{ flex: 1, paddingTop: insets.top + 60 }}>
+        <View style={{ flex: 1 }}>
             <FullProfileView 
               user={mappedUser} 
               isMe={true} 

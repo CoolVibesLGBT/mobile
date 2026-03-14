@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Entypo from "@expo/vector-icons/Entypo";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from 'expo-document-picker';
 import {
@@ -48,6 +49,7 @@ interface Media {
   name?: string;
   data?: any;
   icon?: string;
+  gradient?: { colors: string[]; textColor?: string };
 }
 
 interface Message {
@@ -586,12 +588,18 @@ export default function ChatInput({
                               <AudioPreview item={media} />
                             ) : media.type === "tag" ? (
                               <View style={[styles.mediaPreview, styles.tagPreview]}>
+                                {Array.isArray((media as any)?.gradient?.colors) && (
+                                  <LinearGradient
+                                    colors={(media as any).gradient.colors}
+                                    style={styles.tagGradient}
+                                  />
+                                )}
                                 <MaterialCommunityIcons
                                   name={(media.icon as any) || "tag-outline"}
                                   size={20}
-                                  color="#111"
+                                  color={(media as any)?.gradient?.textColor || "#111"}
                                 />
-                                <Text numberOfLines={1} style={styles.tagPreviewText}>
+                                <Text numberOfLines={1} style={[styles.tagPreviewText, { color: (media as any)?.gradient?.textColor || "#111" }]}>
                                   {media.name || media.data?.label || "Tag"}
                                 </Text>
                               </View>
@@ -915,6 +923,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
     backgroundColor: '#F3F4F6',
+    overflow: 'hidden',
+  },
+  tagGradient: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 8,
   },
   tagPreviewText: {
     fontSize: 10,

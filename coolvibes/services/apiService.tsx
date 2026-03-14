@@ -1,5 +1,6 @@
 import { Actions, ActionType } from './actions';
 import httpClient from './httpClient';
+import { reportAppError } from '@/helpers/errorReporter';
 
 interface ApiRequestOptions {
   method?: 'GET' | 'POST';
@@ -53,6 +54,15 @@ export class ApiService {
       console.log(`[API RESPONSE] Action: ${action}`, response.data);
       return response.data as T;
     } catch (error: any) {
+      reportAppError(error, {
+        source: 'api',
+        action,
+        extra: {
+          status: error?.response?.status,
+          data: error?.response?.data,
+          message: error?.message,
+        },
+      });
       console.error(`[API ERROR] Action: ${action}`, error.response?.data || error.message);
       throw error;
     }
@@ -102,6 +112,10 @@ export class ApiService {
 
   async fetchVibes(params: { limit?: number; cursor?: string }) {
     return this.call(Actions.POST_VIBES, { method: 'POST', body: params });
+  }
+
+  async fetchCheckIns(params: { limit?: number; cursor?: string }) {
+    return this.call(Actions.CMD_USER_CHECK_IN_FETCH, { method: 'POST', body: params });
   }
 
   async sendMessage(chatId: string, content: string) {
@@ -197,6 +211,20 @@ export class ApiService {
     });
   }
 
+  async toggleBlockUser(blockedId: string) {
+    return this.call(Actions.CMD_USER_TOGGLE_BLOCK, {
+      method: 'POST',
+      body: { blocked_id: blockedId },
+    });
+  }
+
+  async toggleFollow(followeeId: string) {
+    return this.call(Actions.CMD_USER_TOGGLE_FOLLOW, {
+      method: 'POST',
+      body: { followee_id: followeeId },
+    });
+  }
+
   async updateFantasy(payload: Record<string, any>) {
     return this.call(Actions.CMD_USER_UPDATE_FANTASY, {
       method: "POST",
@@ -239,6 +267,13 @@ export class ApiService {
     return this.call(Actions.CMD_USER_FETCH_NEARBY_USERS, {
       method: 'POST',
       body: { latitude: latitude, longitude: longitude, cursor: cursor, limit: limit },
+    });
+  }
+
+  async createMatch(publicId: string | number, reaction: 'like' | 'dislike' | 'superlike' | 'favorite' | 'bookmark') {
+    return this.call(Actions.CMD_MATCH_CREATE, {
+      method: 'POST',
+      body: { public_id: publicId, reaction },
     });
   }
 }

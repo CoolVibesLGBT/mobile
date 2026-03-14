@@ -14,6 +14,8 @@ import * as Haptics from 'expo-haptics';
 import { useAppSelector } from '@/store/hooks';
 import { LocalizedStringToString } from '@/utils/utils';
 import { useTheme } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { getTagGradient } from '@/helpers/colors';
 
 // --- CONFIGURATION & DIMENSIONS ---
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -34,10 +36,17 @@ const axialToPixel = (q: number, r: number) => {
   };
 };
 
-const HexItem = memo(({ authUser, tag, q, r, panX, panY, isSelected, onSelect, centerX, centerY }: any) => {
+const clamp = (value: number, min: number, max: number) => {
+  if (min > max) return value;
+  return Math.max(min, Math.min(value, max));
+};
+
+const HexItem = memo(({ authUser, language, tag, q, r, panX, panY, isSelected, onSelect, centerX, centerY }: any) => {
   const { colors } = useTheme();
   const { x, y } = axialToPixel(q, r);
   const iconName = tag.icon;
+  const gradient = getTagGradient(tag.tag ?? tag.id ?? 'tag');
+  const activeTextColor = gradient.textColor;
   
   const style = useAnimatedStyle(() => {
     const px = x + panX.value;
@@ -45,7 +54,7 @@ const HexItem = memo(({ authUser, tag, q, r, panX, panY, isSelected, onSelect, c
     const dist = Math.sqrt(px * px + py * py);
 
     const scale = interpolate(dist, [0, 80, 400], [1.6, 1.0, 0.5], Extrapolation.CLAMP);
-    const opacity = interpolate(dist, [0, 250, 450], [1, 0.8, 0.05], Extrapolation.CLAMP);
+    const opacity = interpolate(dist, [0, 250, 450], [1, 0.85, 0.35], Extrapolation.CLAMP);
 
     return {
       transform: [
@@ -66,24 +75,34 @@ const HexItem = memo(({ authUser, tag, q, r, panX, panY, isSelected, onSelect, c
           styles.hexBtn,
           styles.hexBtnPosition,
           { 
-            backgroundColor: isSelected ? colors.primary : colors.card,
-            borderColor: isSelected ? colors.primary : colors.border,
+            backgroundColor: isSelected ? 'transparent' : colors.card,
+            borderColor: isSelected ? 'transparent' : colors.border,
             borderWidth: 1.5,
           },
           pressed && styles.pressedBtn
         ]}
       >
+        {isSelected && (
+          <LinearGradient
+            colors={gradient.colors}
+            style={styles.hexGradient}
+          />
+        )}
         <MaterialCommunityIcons
           name={iconName}
           size={isSelected ? 34 : 28}
-          color={isSelected ? colors.background : colors.text}
+          color={isSelected ? activeTextColor : colors.text}
         />
       </Pressable>
-      <Text style={[
-        styles.hexText,
-        { color: colors.text, opacity: isSelected ? 1 : 0.6, fontFamily: isSelected ? 'Inter-Bold' : 'Inter-SemiBold' },
-      ]}>
-        {LocalizedStringToString(tag.name, authUser?.default_language)}
+      <Text
+        numberOfLines={2}
+        ellipsizeMode="tail"
+        style={[
+          styles.hexText,
+          { color: isSelected ? activeTextColor : colors.text, opacity: isSelected ? 1 : 0.65, fontFamily: isSelected ? 'Inter-Bold' : 'Inter-SemiBold' },
+        ]}
+      >
+        {LocalizedStringToString(tag.name, language || authUser?.default_language)}
       </Text>
     </Animated.View>
   );
@@ -99,12 +118,10 @@ interface CheckInRadarProps {
 export function CheckInRadar({ selectedTags, onSelectTag, onClearTags, centerOffsetY = 0 }: CheckInRadarProps) {
   const { data } = useAppSelector(state => state.system);
   const authUser = useAppSelector(state => state.auth.user);
+  const language = useAppSelector(state => state.system.language) || authUser?.default_language || 'en';
   const { colors, dark } = useTheme();
   const [viewport, setViewport] = useState({ width: SCREEN_WIDTH, height: DEFAULT_CENTER_Y * 2 });
 
-  const centerX = viewport.width / 2 || DEFAULT_CENTER_X;
-  const centerY = (viewport.height / 2 || DEFAULT_CENTER_Y) + centerOffsetY;
-  
   const panX = useSharedValue(0);
   const panY = useSharedValue(0);
   const startX = useSharedValue(0);
@@ -144,6 +161,44 @@ export function CheckInRadar({ selectedTags, onSelectTag, onClearTags, centerOff
       id: `hex-${idx}-${tag.tag ?? idx}`
     }));
   }, [data]);
+
+  const bounds = useMemo(() => {
+    if (honeycomb.length === 0) return null;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    honeycomb.forEach(item => {
+      const p = axialToPixel(item.q, item.r);
+      minX = Math.min(minX, p.x);
+      maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y);
+      maxY = Math.max(maxY, p.y);
+    });
+    return {
+      minX: minX - OFFSET,
+      maxX: maxX - OFFSET + ITEM_DIM,
+      minY: minY - OFFSET,
+      maxY: maxY - OFFSET + ITEM_DIM,
+    };
+  }, [honeycomb]);
+
+  const { centerX, centerY } = useMemo(() => {
+    const desiredCenterX = viewport.width / 2 || DEFAULT_CENTER_X;
+    const desiredCenterY = (viewport.height / 2 || DEFAULT_CENTER_Y) + centerOffsetY;
+    if (!bounds) {
+      return { centerX: desiredCenterX, centerY: desiredCenterY };
+    }
+    const padding = 14;
+    const minCenterX = padding - bounds.minX;
+    const maxCenterX = viewport.width - padding - bounds.maxX;
+    const minCenterY = padding - bounds.minY;
+    const maxCenterY = viewport.height - padding - bounds.maxY;
+    return {
+      centerX: clamp(desiredCenterX, minCenterX, maxCenterX),
+      centerY: clamp(desiredCenterY, minCenterY, maxCenterY),
+    };
+  }, [bounds, viewport.width, viewport.height, centerOffsetY]);
 
   const snapToCenter = (targetX: number, targetY: number) => {
     panX.value = withSpring(-targetX, { damping: 20, stiffness: 100 });
@@ -205,6 +260,7 @@ export function CheckInRadar({ selectedTags, onSelectTag, onClearTags, centerOff
           {honeycomb.map((item) => (
             <HexItem
               authUser={authUser}
+              language={language}
               key={item.id}
               {...item}
               panX={panX}
@@ -269,11 +325,16 @@ const styles = StyleSheet.create({
     borderRadius: HEX_BUTTON_RADIUS,
     alignItems: 'center', 
     justifyContent: 'center',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 8
+  },
+  hexGradient: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: HEX_BUTTON_RADIUS,
   },
   hexBtnPosition: {
     position: 'absolute',

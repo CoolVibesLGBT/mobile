@@ -34,6 +34,11 @@ import { useRouter, useSegments } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 
 import GlobalHeader from '@/components/GlobalHeader';
+import AppErrorBoundary from '@/components/AppErrorBoundary';
+import AppErrorOverlay from '@/components/AppErrorOverlay';
+import { installGlobalErrorHandler } from '@/helpers/errorReporter';
+
+installGlobalErrorHandler();
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -169,6 +174,7 @@ function ThemedApp() {
       <AuthGuard />
       <View style={{ flex: 1 }}>
         <GlobalHeader />
+        <AppErrorOverlay />
         <Stack screenOptions={{ 
             headerShown: false, 
             contentStyle: { 
@@ -195,7 +201,9 @@ export default function RootLayout() {
       <SocketProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <BottomSheetModalProvider>
-            <ThemedApp />
+            <AppErrorBoundary>
+              <ThemedApp />
+            </AppErrorBoundary>
           </BottomSheetModalProvider>
         </GestureHandlerRootView>
       </SocketProvider>

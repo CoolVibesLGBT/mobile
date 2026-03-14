@@ -1,4 +1,4 @@
-import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, memo, useCallback, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Dimensions, Image, ActivityIndicator, TouchableOpacity, Platform, LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -7,19 +7,25 @@ import Animated, {
   interpolate,
   Extrapolation,
   withSpring,
+  withTiming,
+  withRepeat,
+  withDelay,
+  Easing,
 } from 'react-native-reanimated';
 import { runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import UserCard from '@/components/UserCard';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { api } from '@/services/apiService';
-import { encodeProfileParam } from '@/helpers/profile';
+import { encodeProfileParam, normalizeProfileUser } from '@/helpers/profile';
 import { calculateAge, getSafeImageURLEx } from '@/helpers/safeUrl';
+import FullProfileView from '@/components/FullProfileView';
+import { useAppSelector } from '@/store/hooks';
 
 const DEFAULT_COORDS = { lat: 41.0082, lng: 28.9784 };
 // --- CONFIGURATION & DIMENSIONS ---
@@ -28,6 +34,26 @@ const HEX_SIZE = 100;
 const RADAR_HEIGHT = SCREEN_HEIGHT;
 const ITEM_DIM = 140;
 const OFFSET = ITEM_DIM / 2;
+const CARD_DIAMETER = SCREEN_WIDTH * 0.8;
+const ACTION_BUTTON_SIZE = 70;
+const EXPANDED_AVATAR_SIZE = 110;
+const NAME_AGE_HEIGHT_ESTIMATE = 70;
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+const DEFAULT_RADAR_COLOR = { r: 52, g: 199, b: 89 };
+
+const parseHexColor = (value?: string) => {
+  if (!value || typeof value !== 'string') return null;
+  const hex = value.trim();
+  if (!hex.startsWith('#')) return null;
+  const normalized = hex.length === 4
+    ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
+    : hex;
+  if (!/^#([0-9a-fA-F]{6})$/.test(normalized)) return null;
+  const r = parseInt(normalized.slice(1, 3), 16);
+  const g = parseInt(normalized.slice(3, 5), 16);
+  const b = parseInt(normalized.slice(5, 7), 16);
+  return { r, g, b };
+};
 
 
 const axialToPixel = (q: number, r: number) => {
@@ -145,21 +171,249 @@ function* spiralCoordGenerator() {
     }
 }
 
+type RadarUserCardProps = {
+    radarUser: any;
+    profileUser: any;
+    blurPhotos: boolean;
+    onDismiss: () => void;
+    onLike: () => void;
+    onDislike: () => void;
+    onChat: () => void;
+};
+
+const RadarUserCard = memo(({ radarUser, profileUser, blurPhotos, onDismiss, onLike, onDislike, onChat }: RadarUserCardProps) => {
+    const { colors, dark } = useTheme();
+    const insets = useSafeAreaInsets();
+    const [isExpanded, setIsExpanded] = useState(false);
+    const animationProgress = useSharedValue(0);
+
+    useEffect(() => {
+        setIsExpanded(false);
+        animationProgress.value = 0;
+    }, [radarUser?.id, animationProgress]);
+
+    const handleToggleExpand = useCallback(() => {
+        const toValue = isExpanded ? 0 : 1;
+        animationProgress.value = withSpring(toValue, { damping: 20, stiffness: 120 });
+        setIsExpanded(!isExpanded);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }, [isExpanded, animationProgress]);
+
+    const handleAction = (action: 'like' | 'dislike' | 'chat') => {
+        Haptics.notificationAsync(
+             action === 'like' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
+        );
+        if (action === 'like') onLike();
+        if (action === 'dislike') onDislike();
+        if (action === 'chat') onChat();
+        onDismiss();
+    };
+
+    const handleClose = () => {
+        onDismiss();
+    };
+
+    const animatedBlurStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(animationProgress.value, [0, 0.5, 1], [0.8, 0.9, 1]),
+    }));
+
+    const collapsedY = SCREEN_HEIGHT / 2 - (CARD_DIAMETER / 2) - 60;
+    const expandedY = insets.top + 20;
+
+    const animatedImageContainerStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: interpolate(animationProgress.value, [0, 1], [collapsedY, expandedY]) }],
+    }));
+    
+    const animatedImageStyle = useAnimatedStyle(() => ({
+        width: interpolate(animationProgress.value, [0, 1], [CARD_DIAMETER, EXPANDED_AVATAR_SIZE]),
+        height: interpolate(animationProgress.value, [0, 1], [CARD_DIAMETER, EXPANDED_AVATAR_SIZE]),
+        borderRadius: interpolate(animationProgress.value, [0, 1], [CARD_DIAMETER / 2, EXPANDED_AVATAR_SIZE / 2]),
+        borderWidth: interpolate(animationProgress.value, [0, 1], [4, 2]),
+    }));
+
+    const animatedOverlayStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(animationProgress.value, [0, 0.3], [1, 0]),
+    }));
+
+    const animatedDetailsStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(animationProgress.value, [0.4, 1], [0, 1]),
+    }));
+
+    const animatedCloseButtonStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(animationProgress.value, [0.8, 1], [0, 1]),
+    }));
+
+    const animatedNameAgePositionStyle = useAnimatedStyle(() => {
+        const imageContainerTranslateY = interpolate(animationProgress.value, [0, 1], [collapsedY, expandedY]);
+        const imageHeight = interpolate(animationProgress.value, [0, 1], [CARD_DIAMETER, EXPANDED_AVATAR_SIZE]);
+        const nameAgeTop = imageContainerTranslateY + imageHeight + 15; 
+
+        return {
+            position: 'absolute',
+            top: nameAgeTop,
+            width: '100%',
+            alignItems: 'center',
+            zIndex: 25,
+        };
+    });
+
+    const animatedActionsPositionStyle = useAnimatedStyle(() => {
+        const imageContainerTranslateY = interpolate(animationProgress.value, [0, 1], [collapsedY, expandedY]);
+        const imageHeight = interpolate(animationProgress.value, [0, 1], [CARD_DIAMETER, EXPANDED_AVATAR_SIZE]);
+        const nameAgeTop = imageContainerTranslateY + imageHeight + 15; 
+        const actionsTop = nameAgeTop + NAME_AGE_HEIGHT_ESTIMATE + 25; 
+
+        return {
+            position: 'absolute',
+            top: actionsTop,
+            width: '100%',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 20,
+            zIndex: 20,
+        };
+    });
+
+    const iconColor = dark ? '#FFFFFF' : '#000000';
+    const premiumAccent = '#7C4DFF';
+    const displayName = radarUser?.displayname || radarUser?.name || radarUser?.username || 'User';
+    const distanceText = radarUser?.distance ? `${radarUser.distance} km` : '';
+    const ageText = radarUser?.age ? `${radarUser.age}` : '';
+    const imageUrl =
+        getSafeImageURLEx(radarUser?.public_id ?? radarUser?.id, radarUser?.avatar ?? radarUser?.avatar_url ?? radarUser?.imageUrl, 'large') ||
+        radarUser?.imageUrl;
+
+    return (
+        <View style={styles.cardWrapper} pointerEvents="auto">
+            <AnimatedBlurView 
+              style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)' }, animatedBlurStyle]} 
+              tint={dark ? 'dark' : 'light'} 
+              intensity={Platform.OS === 'ios' ? 40 : 100}
+            />
+            
+            <Animated.View style={[styles.detailsContainer, animatedDetailsStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
+                <FullProfileView
+                    user={profileUser}
+                    isMe={false}
+                    showActions={false}
+                    hideHeader
+                    hideTabs
+                    defaultTab="about"
+                    showCover
+                />
+            </Animated.View>
+
+            <Animated.View style={[styles.imageContainer, animatedImageContainerStyle]}>
+                <Pressable
+                    onPress={handleToggleExpand}
+                    onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
+                >
+                    <Animated.Image 
+                        source={{ uri: imageUrl }} 
+                        style={[styles.cardImage, { borderColor: dark ? '#222' : '#EEE' }, animatedImageStyle]} 
+                        blurRadius={blurPhotos ? 20 : 0}
+                    />
+                    <Animated.View style={[styles.cardOverlay, animatedImageStyle, animatedOverlayStyle]} />
+                    <View style={styles.premiumBadge}>
+                        <MaterialCommunityIcons name="star" size={14} color="#FFF" />
+                    </View>
+                </Pressable>
+            </Animated.View>
+
+            <Animated.View style={[animatedNameAgePositionStyle]}>
+                <Text style={[styles.cardName, { color: colors.text }]}>
+                    {displayName}{ageText ? `, ${ageText}` : ''}
+                </Text>
+                <View style={styles.badgeRow}>
+                    <View style={[styles.verifiedBadge, { backgroundColor: dark ? '#333' : '#EEE' }]}>
+                        <MaterialCommunityIcons name="check-decagram" size={14} color={premiumAccent} />
+                        <Text style={[styles.badgeText, { color: colors.text }]}>Verified</Text>
+                    </View>
+                    {!!distanceText && (
+                        <Text style={[styles.cardDistance, { color: colors.text, opacity: 0.5 }]}>• {distanceText}</Text>
+                    )}
+                </View>
+            </Animated.View>
+
+            <Animated.View style={[animatedActionsPositionStyle]} pointerEvents="auto">
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: dark ? '#222' : '#F5F5F5' }]}
+                    onPress={() => handleAction('dislike')}
+                >
+                    <MaterialCommunityIcons name="close" size={32} color="#FF3B30" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                    style={[styles.mainActionButton, { backgroundColor: iconColor }]}
+                    onPress={() => handleAction('chat')}
+                >
+                    <MaterialCommunityIcons name="chat" size={30} color={dark ? '#000' : '#FFF'} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: dark ? '#222' : '#F5F5F5' }]}
+                    onPress={() => handleAction('like')}
+                >
+                    <MaterialCommunityIcons name="heart" size={32} color="#34C759" />
+                </TouchableOpacity>
+            </Animated.View>
+
+            <Animated.View style={[styles.closeButtonContainer, { top: insets.top + 15, right: 25 }, animatedCloseButtonStyle]} pointerEvents={isExpanded ? 'auto' : 'none'}>
+                <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+                    <MaterialCommunityIcons name="chevron-down" size={28} color={iconColor} />
+                </TouchableOpacity>
+            </Animated.View>
+        </View>
+    );
+});
+RadarUserCard.displayName = 'RadarUserCard';
+
 export default function MatchScreen() {
     const { colors, dark } = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const [selectedUser, setSelectedUser] = useState<any>(null);
+    const [profileFetchedUser, setProfileFetchedUser] = useState<any | null>(null);
+    const lastProfileFetchKeyRef = useRef<string | null>(null);
     const [viewportSize, setViewportSize] = useState({ width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
     const centerXJs = viewportSize.width / 2;
     const centerYJs = viewportSize.height / 2;
     const centerX = useSharedValue(centerXJs);
     const centerY = useSharedValue(centerYJs);
+    const sweepRotation = useSharedValue(0);
+    const pulseA = useSharedValue(0);
+    const pulseB = useSharedValue(0);
 
     useEffect(() => {
         centerX.value = centerXJs;
         centerY.value = centerYJs;
     }, [centerX, centerXJs, centerY, centerYJs]);
+
+    useEffect(() => {
+        sweepRotation.value = 0;
+        sweepRotation.value = withRepeat(
+            withTiming(360, { duration: 4200, easing: Easing.linear }),
+            -1,
+            false
+        );
+
+        pulseA.value = 0;
+        pulseA.value = withRepeat(
+            withTiming(1, { duration: 3200, easing: Easing.out(Easing.quad) }),
+            -1,
+            false
+        );
+
+        pulseB.value = 0;
+        pulseB.value = withRepeat(
+            withDelay(1600, withTiming(1, { duration: 3200, easing: Easing.out(Easing.quad) })),
+            -1,
+            false
+        );
+    }, [sweepRotation, pulseA, pulseB]);
 
     useEffect(() => {
         fetchRadarUsers({ reset: true });
@@ -169,9 +423,95 @@ export default function MatchScreen() {
     const seenIdsRef = useRef(new Set<string>());
     const [honeycomb, setHoneycomb] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [chatLoadingId, setChatLoadingId] = useState<string | null>(null);
     const [cursor, setCursor] = useState<string | null>(null);
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+    const normalizeName = (value?: string) => (typeof value === 'string' ? value.trim() : '');
+    const isGenericName = (value: string) => {
+        const lower = value.toLowerCase();
+        return lower === 'chat' || lower === 'user' || lower === 'unknown' || lower === 'me';
+    };
+    const isValidUsername = (value?: string) => {
+        const name = normalizeName(value);
+        if (!name) return false;
+        if (isGenericName(name)) return false;
+        if (/\s/.test(name)) return false;
+        return true;
+    };
+    const isValidNickname = (value?: string) => {
+        const name = normalizeName(value);
+        if (!name) return false;
+        if (isGenericName(name)) return false;
+        return true;
+    };
+
+    const profileFallback = useMemo(() => selectedUser ? {
+        id: String(selectedUser?.id ?? ''),
+        name: selectedUser?.displayname || selectedUser?.name || selectedUser?.username,
+        username: selectedUser?.username,
+        avatar: selectedUser?.imageUrl,
+    } : undefined, [selectedUser]);
+
+    const profileFetchUsername = useMemo(() => {
+        if (!selectedUser) return null;
+        const candidate = selectedUser?.username || selectedUser?.raw?.username || profileFallback?.username;
+        return isValidUsername(candidate) ? normalizeName(candidate) : null;
+    }, [selectedUser, profileFallback]);
+
+    const profileFetchNickname = useMemo(() => {
+        if (!selectedUser || profileFetchUsername) return null;
+        const candidate = selectedUser?.raw?.nickname;
+        return isValidNickname(candidate) ? normalizeName(candidate) : null;
+    }, [selectedUser, profileFetchUsername]);
+
+    const profileIdentityKey =
+        selectedUser?.id ||
+        selectedUser?.public_id ||
+        selectedUser?.raw?.id ||
+        selectedUser?.raw?.public_id ||
+        profileFallback?.id ||
+        profileFallback?.username ||
+        null;
+
+    useEffect(() => {
+        setProfileFetchedUser(null);
+        lastProfileFetchKeyRef.current = null;
+    }, [profileIdentityKey]);
+
+    useEffect(() => {
+        if (!selectedUser) return;
+        const fetchKey = profileFetchUsername || profileFetchNickname;
+        if (!fetchKey || lastProfileFetchKeyRef.current === fetchKey) return;
+        lastProfileFetchKeyRef.current = fetchKey;
+        let isActive = true;
+        const run = async () => {
+            try {
+                const response = profileFetchUsername
+                    ? await api.fetchProfile(profileFetchUsername)
+                    : await api.fetchProfileByNickname(profileFetchNickname as string);
+                const payload = (response as any)?.data ?? response;
+                const profile =
+                    payload?.user ||
+                    payload?.data?.user ||
+                    payload?.profile ||
+                    payload?.data?.profile ||
+                    payload?.data ||
+                    payload;
+                if (isActive && profile) setProfileFetchedUser(profile);
+            } catch {
+                // ignore
+            }
+        };
+        run();
+        return () => {
+            isActive = false;
+        };
+    }, [selectedUser, profileFetchUsername, profileFetchNickname]);
+
+    const resolvedProfileUser = useMemo(
+        () => selectedUser ? normalizeProfileUser(profileFetchedUser ?? selectedUser, profileFallback) : null,
+        [profileFetchedUser, selectedUser, profileFallback]
+    );
 
     const panX = useSharedValue(0);
     const panY = useSharedValue(0);
@@ -217,15 +557,31 @@ export default function MatchScreen() {
 
     const resolveLocation = useCallback(async () => {
         if (location) return location;
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setLocation(DEFAULT_COORDS);
+                return DEFAULT_COORDS;
+            }
+            try {
+                const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+                setLocation(coords);
+                return coords;
+            } catch {
+                const lastKnown = await Location.getLastKnownPositionAsync({});
+                if (lastKnown?.coords) {
+                    const coords = { lat: lastKnown.coords.latitude, lng: lastKnown.coords.longitude };
+                    setLocation(coords);
+                    return coords;
+                }
+                setLocation(DEFAULT_COORDS);
+                return DEFAULT_COORDS;
+            }
+        } catch {
             setLocation(DEFAULT_COORDS);
             return DEFAULT_COORDS;
         }
-        const loc = await Location.getCurrentPositionAsync({});
-        const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-        setLocation(coords);
-        return coords;
     }, [location]);
 
     const mapRadarUser = useCallback((raw: any, coords: { lat: number; lng: number }) => {
@@ -303,6 +659,26 @@ export default function MatchScreen() {
         setSelectedUser(user);
     };
 
+    const sendReaction = useCallback(async (reaction: 'like' | 'dislike') => {
+        if (!selectedUser) return;
+        const targetId = selectedUser?.public_id ?? selectedUser?.id;
+        if (!targetId) return;
+        try {
+            await api.createMatch(targetId, reaction);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } catch (error) {
+            console.error('Radar reaction failed', error);
+        }
+    }, [selectedUser]);
+
+    const handleLike = useCallback(() => {
+        void sendReaction('like');
+    }, [sendReaction]);
+
+    const handleDislike = useCallback(() => {
+        void sendReaction('dislike');
+    }, [sendReaction]);
+
     const panGesture = Gesture.Pan()
         .onBegin(() => {
             startX.value = panX.value;
@@ -373,40 +749,41 @@ export default function MatchScreen() {
         transform: [{ scale: canvasScale.value }]
     }));
 
-    const focusNearest = useCallback((items: any[]) => {
-        if (!items.length) return;
-        let minDist = Infinity;
-        let targetX = 0;
-        let targetY = 0;
-        for (let i = 0; i < items.length; i += 1) {
-            const h = items[i] as any;
-            const p = axialToPixel(h.q, h.r);
-            const px = p.x + panX.value;
-            const py = p.y + panY.value;
-            const d = px * px + py * py;
-            if (d < minDist) {
-                minDist = d;
-                targetX = p.x;
-                targetY = p.y;
-            }
-        }
-        panX.value = withSpring(-targetX, { damping: 18, stiffness: 90 });
-        panY.value = withSpring(-targetY, { damping: 18, stiffness: 90 });
-    }, [panX, panY]);
+    const radarAccent = useMemo(() => {
+        const parsed = parseHexColor(colors.primary) ?? parseHexColor(colors.text) ?? DEFAULT_RADAR_COLOR;
+        const rgb = parsed || DEFAULT_RADAR_COLOR;
+        return {
+            rgb,
+            solid: `rgb(${rgb.r},${rgb.g},${rgb.b})`,
+            rgba: (alpha: number) => `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`,
+        };
+    }, [colors.primary, colors.text]);
 
-    const handleDismissCard = (userToRemove: any) => {
-        setSelectedUser(null);
-        setHoneycomb(prev => {
-            const next = prev.filter(item => item.user.id !== userToRemove.id);
-            requestAnimationFrame(() => focusNearest(next));
-            return next;
-        });
-    };
+    const sweepStyle = useAnimatedStyle(() => ({
+        transform: [{ rotate: `${sweepRotation.value}deg` }],
+    }));
+
+    const pulseStyleA = useAnimatedStyle(() => {
+        const scale = interpolate(pulseA.value, [0, 1], [0.2, 1], Extrapolation.CLAMP);
+        const opacity = interpolate(pulseA.value, [0, 0.6, 1], [0.35, 0.12, 0], Extrapolation.CLAMP);
+        return {
+            transform: [{ scale }],
+            opacity,
+        };
+    });
+
+    const pulseStyleB = useAnimatedStyle(() => {
+        const scale = interpolate(pulseB.value, [0, 1], [0.2, 1], Extrapolation.CLAMP);
+        const opacity = interpolate(pulseB.value, [0, 0.6, 1], [0.3, 0.1, 0], Extrapolation.CLAMP);
+        return {
+            transform: [{ scale }],
+            opacity,
+        };
+    });
 
     const handleChat = useCallback(async (user: any) => {
         const userId = user?.id;
         if (!userId) return;
-        setChatLoadingId(userId);
         try {
             const response = await api.createChat([userId]);
             const chatId = (response as { chat?: { id?: string } })?.chat?.id ?? userId;
@@ -435,12 +812,12 @@ export default function MatchScreen() {
                 },
             });
         } finally {
-            setChatLoadingId(null);
         }
     }, [router]);
 
     const bottomBarHeight = Platform.OS === 'ios' ? 88 : 68;
-    const headerHeight = 60 + insets.top;
+    const sweepSize = Math.max(viewportSize.width, viewportSize.height) * 1.45;
+    const pulseSize = Math.min(viewportSize.width, viewportSize.height) * 0.78;
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
@@ -469,7 +846,65 @@ export default function MatchScreen() {
                                 }
                             }}
                         >
-                            <RadarBackdrop accent={colors.primary || colors.text} centerX={centerXJs} centerY={centerYJs} />
+                            <RadarBackdrop accent={radarAccent.solid} centerX={centerXJs} centerY={centerYJs} />
+
+                            {/* Radar Sweep + Pulse */}
+                            <View
+                                style={[
+                                    styles.sweepContainer,
+                                    {
+                                        width: sweepSize,
+                                        height: sweepSize,
+                                        left: centerXJs - sweepSize / 2,
+                                        top: centerYJs - sweepSize / 2,
+                                    },
+                                ]}
+                                pointerEvents="none"
+                            >
+                                <Animated.View style={[styles.sweep, sweepStyle]}>
+                                    <LinearGradient
+                                        colors={[
+                                            radarAccent.rgba(0),
+                                            radarAccent.rgba(0.08),
+                                            radarAccent.rgba(0.4),
+                                            radarAccent.rgba(0),
+                                        ]}
+                                        locations={[0, 0.45, 0.55, 1]}
+                                        start={{ x: 0.5, y: 0 }}
+                                        end={{ x: 0.5, y: 1 }}
+                                        style={StyleSheet.absoluteFillObject}
+                                    />
+                                </Animated.View>
+                            </View>
+
+                            <Animated.View
+                                style={[
+                                    styles.pulseRing,
+                                    {
+                                        width: pulseSize,
+                                        height: pulseSize,
+                                        left: centerXJs - pulseSize / 2,
+                                        top: centerYJs - pulseSize / 2,
+                                        borderColor: radarAccent.rgba(0.5),
+                                    },
+                                    pulseStyleA,
+                                ]}
+                                pointerEvents="none"
+                            />
+                            <Animated.View
+                                style={[
+                                    styles.pulseRing,
+                                    {
+                                        width: pulseSize,
+                                        height: pulseSize,
+                                        left: centerXJs - pulseSize / 2,
+                                        top: centerYJs - pulseSize / 2,
+                                        borderColor: radarAccent.rgba(0.4),
+                                    },
+                                    pulseStyleB,
+                                ]}
+                                pointerEvents="none"
+                            />
 
                             {honeycomb.map((item) => (
                                 <HexItem
@@ -494,11 +929,16 @@ export default function MatchScreen() {
                 </View>
 
                 {selectedUser && (
-                    <UserCard
-                        user={selectedUser}
-                        onDismiss={handleDismissCard}
-                        onChat={handleChat}
-                        chatLoadingId={chatLoadingId}
+                    <RadarUserCard
+                        radarUser={selectedUser}
+                        profileUser={resolvedProfileUser ?? selectedUser}
+                        blurPhotos={Boolean(blurPhotos)}
+                        onDismiss={() => setSelectedUser(null)}
+                        onLike={handleLike}
+                        onDislike={handleDislike}
+                        onChat={() => {
+                            if (selectedUser) handleChat(selectedUser);
+                        }}
                     />
                 )}
             </View>
@@ -520,7 +960,7 @@ const styles = StyleSheet.create({
   },
   hudLabel: { fontSize: 9, fontFamily: 'Inter-Bold', letterSpacing: 2, marginTop: 2 },
   hudTitle: { fontSize: 28, fontFamily: 'Outfit-Black', letterSpacing: -1 },
-  radarViewport: { position:"relative", flex: 1, justifyContent: 'center', alignItems: 'center' },
+  radarViewport: { position:"relative", flex: 1, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   hexWrap: { position: 'absolute', left: 0, top: 0, width: ITEM_DIM, height: ITEM_DIM, alignItems: 'center', justifyContent: 'center' },
   hexBtn: {
     width: 90, height: 90, borderRadius: 45, 
@@ -550,6 +990,62 @@ const styles = StyleSheet.create({
   centerPulse: { width: 320, height: 320, borderRadius: 160, borderWidth: 1 },
   radarRing: { position: 'absolute', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(127,127,127,0.1)' },
   pulseRing: { position: 'absolute', borderRadius: 999, borderWidth: 2 },
+  sweepContainer: { position: 'absolute', borderRadius: 999, overflow: 'hidden' },
+  sweep: { flex: 1 },
+  cardWrapper: { ...StyleSheet.absoluteFillObject, zIndex: 1000 },
+  imageContainer: { position: 'absolute', width: '100%', alignItems: 'center' },
+  cardImage: { backgroundColor: '#333' },
+  cardOverlay: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.05)' },
+  premiumBadge: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: '#FFD700',
+    padding: 6,
+    borderRadius: 15,
+    elevation: 5,
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 5,
+  },
+  detailsContainer: { ...StyleSheet.absoluteFillObject, backgroundColor: 'transparent' },
+  cardName: { fontSize: 34, fontFamily: 'Outfit-Black', letterSpacing: -1.5, marginBottom: 4 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  verifiedBadge: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4, 
+    paddingHorizontal: 10, 
+    paddingVertical: 4, 
+    borderRadius: 12 
+  },
+  badgeText: { fontSize: 12, fontFamily: 'Inter-Bold' },
+  cardDistance: { fontSize: 14, fontFamily: 'Inter-SemiBold' },
+  actionButton: {
+    width: ACTION_BUTTON_SIZE,
+    height: ACTION_BUTTON_SIZE,
+    borderRadius: ACTION_BUTTON_SIZE / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 15,
+  },
+  mainActionButton: {
+    width: ACTION_BUTTON_SIZE + 10,
+    height: ACTION_BUTTON_SIZE + 10,
+    borderRadius: (ACTION_BUTTON_SIZE + 10) / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20,
+  },
+  closeButtonContainer: { position: 'absolute', zIndex: 30 },
+  closeButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(127,127,127,0.15)',
+  },
 
   // Pro radar background
   ring: { position: 'absolute', borderRadius: 999, borderWidth: 1 },
