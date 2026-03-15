@@ -132,6 +132,13 @@ async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {
     });
   }
 
+  async fetchTimeline({ limit = 10, cursor = "" }: { limit?: number; cursor?: string }) {
+    return this.call(Actions.POST_TIMELINE, {
+      method: "POST",
+      body: { limit, cursor }, // doğru değişkenler gönderiliyor
+    });
+  }
+
   async fetchVibes(params: { limit?: number; cursor?: string }) {
     return this.call(Actions.POST_VIBES, { method: 'POST', body: params });
   }

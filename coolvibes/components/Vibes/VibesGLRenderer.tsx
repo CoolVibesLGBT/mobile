@@ -83,6 +83,7 @@ interface VibesGLRendererProps {
   vibes: VibeItemData[];
   positionRef: React.MutableRefObject<PositionState>;
   opacity: number;
+  onTextureReady?: (vibeId: string, mediaType: VibeItemData['mediaType']) => void;
 }
 
 function createShader(gl: ExpoWebGLRenderingContext, type: number, source: string) {
@@ -126,7 +127,7 @@ async function getImageSize(uri: string): Promise<[number, number]> {
   });
 }
 
-export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRendererProps) {
+export function VibesGLRenderer({ vibes, positionRef, opacity, onTextureReady }: VibesGLRendererProps) {
   const glRef = useRef<ExpoWebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
   const animationFrameRef = useRef<number>(0);
@@ -139,7 +140,7 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
 
   useEffect(() => {
     vibesRef.current = vibes;
-  }, [contextReady, vibes]);
+  }, [contextReady, vibes, onTextureReady]);
 
   useEffect(() => {
     return () => {
@@ -218,7 +219,7 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
 
       await Promise.all(
         loadTargets.map(async ({ vibe, index }) => {
-          const sourceUri = vibe.mediaType === 'video' ? vibe.posterUrl || vibe.mediaUrl : vibe.mediaUrl;
+          const sourceUri = vibe.mediaType === 'video' ? vibe.posterUrl : vibe.mediaUrl;
           if (!sourceUri) {
             return;
           }
@@ -226,8 +227,22 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
           try {
             const asset = Asset.fromURI(sourceUri);
             await asset.downloadAsync();
-            const uri = asset.localUri || asset.uri;
-            const size = await getImageSize(uri);
+            const localUriRaw = asset.localUri;
+            if (!localUriRaw) {
+              console.warn('VibesGL texture has no localUri', { vibeId: vibe.id });
+              return;
+            }
+
+            const localUri = localUriRaw.startsWith('file://') ? localUriRaw : `file://${localUriRaw}`;
+
+            // Prefer remote size (works reliably with RN Image), fall back to local file size.
+            let size = await getImageSize(sourceUri);
+            if (size[0] <= 1 || size[1] <= 1) {
+              size = await getImageSize(localUri);
+            }
+            if (size[0] <= 1 || size[1] <= 1) {
+              size = [gl.drawingBufferWidth, gl.drawingBufferHeight];
+            }
             if (cancelled) {
               return;
             }
@@ -237,9 +252,24 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
             }
 
             gl.bindTexture(gl.TEXTURE_2D, nextTextures[index].texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, asset as never);
+            gl.texImage2D(
+              gl.TEXTURE_2D,
+              0,
+              gl.RGBA,
+              gl.RGBA,
+              gl.UNSIGNED_BYTE,
+              { localUri } as never
+            );
+            const glError = gl.getError();
+            if (glError && glError !== gl.NO_ERROR) {
+              console.warn('VibesGL texImage2D failed', { vibeId: vibe.id, glError });
+              return;
+            }
             nextTextures[index].resolution = size;
             nextTextures[index].isReady = true;
+            if (onTextureReady) {
+              onTextureReady(vibe.id, vibe.mediaType);
+            }
           } catch (error) {
             console.error('VibesGL texture load failed', error);
           }
@@ -252,7 +282,7 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
     return () => {
       cancelled = true;
     };
-  }, [vibes]);
+  }, [contextReady, vibes, onTextureReady]);
 
   const handleContextCreate = async (gl: ExpoWebGLRenderingContext) => {
     glRef.current = gl;
@@ -320,7 +350,7 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
       const fromItem = texturesRef.current[fromIndex];
       const toItem = texturesRef.current[toIndex];
 
-      if (!fromItem || !toItem || !fromItem.texture || !toItem.texture || !fromItem.isReady || !toItem.isReady) {
+      if (!fromItem || !toItem || !fromItem.texture || !toItem.texture) {
         gl.endFrameEXP();
         return;
       }
@@ -347,5 +377,5 @@ export function VibesGLRenderer({ vibes, positionRef, opacity }: VibesGLRenderer
     render();
   };
 
-  return <GLView style={[StyleSheet.absoluteFillObject, { opacity }]} onContextCreate={handleContextCreate} />;
+  return <GLView pointerEvents="none" style={[StyleSheet.absoluteFillObject, { opacity }]} onContextCreate={handleContextCreate} />;
 }

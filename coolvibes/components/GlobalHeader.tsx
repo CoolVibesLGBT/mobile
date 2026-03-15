@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -333,6 +333,8 @@ export default function GlobalHeader() {
                 intensity={dark ? 45 : 90}
                 style={StyleSheet.absoluteFill}
                 tint={dark ? 'dark' : 'light'}
+                blurReductionFactor={Platform.OS === 'android' ? 2 : 4}
+                experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : 'none'}
             />
             <View style={contentStyle}>
                 {/* Left */}

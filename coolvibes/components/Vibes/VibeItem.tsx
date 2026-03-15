@@ -20,7 +20,9 @@ interface VibeItemProps {
   isActive: boolean;
   isMuted: boolean;
   viewportHeight: number;
+  topInset: number;
   bottomInset: number;
+  mediaHeaders?: Record<string, string>;
   onMediaReady: () => void;
   onBurst: (type: BurstType) => void;
 }
@@ -28,18 +30,20 @@ interface VibeItemProps {
 function VideoMedia({
   uri,
   posterUrl,
+  headers,
   isActive,
   isMuted,
   onReady,
 }: {
   uri: string;
   posterUrl?: string;
+  headers?: Record<string, string>;
   isActive: boolean;
   isMuted: boolean;
   onReady: () => void;
 }) {
   const [hasFirstFrame, setHasFirstFrame] = useState(false);
-  const player = useVideoPlayer(uri, (instance) => {
+  const player = useVideoPlayer({ uri, headers }, (instance) => {
     instance.loop = true;
     instance.muted = isMuted;
   });
@@ -65,7 +69,12 @@ function VideoMedia({
   return (
     <View style={styles.mediaFill}>
       {!hasFirstFrame && posterUrl ? (
-        <Image source={{ uri: posterUrl }} style={styles.mediaFill} contentFit="cover" />
+        <Image
+          source={{ uri: posterUrl, headers }}
+          style={styles.mediaFill}
+          contentFit="cover"
+          contentPosition="top"
+        />
       ) : null}
       <VideoView
         player={player}
@@ -89,7 +98,9 @@ export function VibeItem({
   isActive,
   isMuted,
   viewportHeight,
+  topInset,
   bottomInset,
+  mediaHeaders,
   onMediaReady,
   onBurst,
 }: VibeItemProps) {
@@ -172,20 +183,44 @@ export function VibeItem({
 
   return (
     <View style={[styles.page, { height: viewportHeight }]}> 
-      <View style={styles.mediaFill}>
+      {/* Backdrop media (full-screen) so header/footer blur stays "live" while swiping. */}
+      <View style={styles.mediaFill} pointerEvents="none">
+        {vibe.mediaType === 'video' ? (
+          vibe.posterUrl ? (
+            <Image
+              source={{ uri: vibe.posterUrl, headers: mediaHeaders }}
+              style={styles.mediaFill}
+              contentFit="cover"
+              contentPosition="top"
+            />
+          ) : null
+        ) : (
+          <Image
+            source={{ uri: vibe.mediaUrl, headers: mediaHeaders }}
+            style={styles.mediaFill}
+            contentFit="cover"
+            contentPosition="top"
+          />
+        )}
+      </View>
+
+      {/* Foreground media clipped between header + tab bar (prevents "half visible" look). */}
+      <View style={[styles.safeFrame, { top: topInset, bottom: bottomInset }]} pointerEvents="none">
         {vibe.mediaType === 'video' ? (
           <VideoMedia
             uri={vibe.mediaUrl}
             posterUrl={vibe.posterUrl}
+            headers={mediaHeaders}
             isActive={isActive}
             isMuted={isMuted}
             onReady={onMediaReady}
           />
         ) : (
           <Image
-            source={{ uri: vibe.mediaUrl }}
-            style={styles.mediaFill}
+            source={{ uri: vibe.mediaUrl, headers: mediaHeaders }}
+            style={StyleSheet.absoluteFill}
             contentFit="cover"
+            contentPosition="top"
             onLoadEnd={() => {
               setImageLoaded(true);
               if (isActive) {
@@ -199,7 +234,9 @@ export function VibeItem({
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.78)']}
         locations={[0.5, 0.72, 1]}
-        style={styles.gradient}
+        // Don't darken the area behind the bottom tab bar; otherwise the footer blur looks "stuck".
+        style={[styles.gradient, { bottom: bottomInset }]}
+        pointerEvents="none"
       />
 
       <View style={[styles.overlay, { paddingBottom: bottomInset + 18 }]}> 
@@ -274,6 +311,13 @@ const styles = StyleSheet.create({
   },
   mediaFill: {
     ...StyleSheet.absoluteFillObject,
+  },
+  safeFrame: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   gradient: {
     ...StyleSheet.absoluteFillObject,

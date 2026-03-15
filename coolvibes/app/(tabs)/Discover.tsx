@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, ActivityIndicator } from 'react-native';
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, ActivityIndicator, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,6 +11,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { api } from '@/services/apiService';
 import { useAppSelector } from '@/store/hooks';
 import { reportAppError } from '@/helpers/errorReporter';
+import * as Localization from 'expo-localization';
+import { lexicalToPlainText } from '@/helpers/lexicalPlainText';
 
 type StoryItem = {
     id: string;
@@ -23,35 +25,146 @@ type StoryItem = {
     raw?: any;
 };
 
-const POSTS = [
-    {
-        id: 1,
-        user: { name: 'Jordan Blue', username: 'jordan_b', avatar: 'https://i.pravatar.cc/150?u=jordan' },
-        image: 'https://picsum.photos/800/800?random=1',
-        caption: 'Enjoying the vibes today. #coolvibes #community',
-        likes: 1240,
-        comments: 48,
-        time: '2 hours ago',
-    },
-    {
-        id: 2,
-        user: { name: 'Taylor Swift', username: 'taylor_s', avatar: 'https://i.pravatar.cc/150?u=taylor' },
-        image: 'https://picsum.photos/800/800?random=2',
-        caption: 'New music coming soon! Stay tuned. ✨',
-        likes: 8500,
-        comments: 320,
-        time: '5 hours ago',
-    },
-    {
-        id: 3,
-        user: { name: 'Chris Evans', username: 'cevans', avatar: 'https://i.pravatar.cc/150?u=chris' },
-        image: 'https://picsum.photos/800/800?random=3',
-        caption: 'Morning workout done! 💪',
-        likes: 4500,
-        comments: 110,
-        time: '8 hours ago',
-    },
-];
+type TimelinePostCard = {
+    id: string;
+    user: {
+        name: string;
+        avatar: string;
+        username: string;
+        verified?: boolean;
+    };
+    image?: string;
+    caption: string;
+    likes: number;
+    comments: number;
+    time: string;
+    raw?: any;
+};
+
+function coerceLocalizedText(value: unknown): string {
+    if (typeof value === 'string') return value;
+    if (!value || typeof value !== 'object') return '';
+
+    const record = value as Record<string, unknown>;
+    const languageCode = Localization.getLocales?.()?.[0]?.languageCode;
+    const regionCode = Localization.getLocales?.()?.[0]?.regionCode;
+
+    const candidates = [
+        languageCode,
+        languageCode && regionCode ? `${languageCode}-${regionCode}` : null,
+        'en',
+    ].filter(Boolean) as string[];
+
+    for (const key of candidates) {
+        const v = record[key];
+        if (typeof v === 'string' && v.trim()) return v;
+    }
+
+    for (const v of Object.values(record)) {
+        if (typeof v === 'string' && v.trim()) return v;
+    }
+
+    return '';
+}
+
+function normalizeTimelineResponse(response: any): { posts: any[]; cursor: string | null } {
+    const payload = response?.data ?? response ?? {};
+    const data = payload?.data ?? payload ?? {};
+    const posts = Array.isArray(data?.posts) ? data.posts : Array.isArray(payload?.posts) ? payload.posts : [];
+    const rawCursor = data?.cursor ?? payload?.cursor ?? null;
+    return {
+        posts,
+        cursor: rawCursor != null ? String(rawCursor) : null,
+    };
+}
+
+function formatRelativeTime(value: unknown): string {
+    if (typeof value !== 'string') return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const delta = Date.now() - date.getTime();
+    const minutes = Math.floor(delta / 60000);
+    const hours = Math.floor(delta / 3600000);
+    const days = Math.floor(delta / 86400000);
+
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours} hours ago`;
+    if (days < 7) return `${days} days ago`;
+    return date.toLocaleDateString();
+}
+
+function extractFirstImageAltTextFromLexical(input: unknown): string {
+    if (typeof input !== 'string') return '';
+    const trimmed = input.trim();
+    if (!trimmed.startsWith('{')) return '';
+    try {
+        const parsed = JSON.parse(trimmed) as any;
+        const stack: any[] = [parsed?.root ?? parsed];
+        let guard = 0;
+        while (stack.length && guard < 600) {
+            guard += 1;
+            const node = stack.pop();
+            if (!node || typeof node !== 'object') continue;
+            if (node.type === 'image' && typeof node.altText === 'string' && node.altText.trim()) {
+                return node.altText.trim();
+            }
+            const children = node.children;
+            if (Array.isArray(children)) {
+                for (let i = children.length - 1; i >= 0; i -= 1) {
+                    stack.push(children[i]);
+                }
+            }
+        }
+    } catch {
+        // ignore parse errors
+    }
+    return '';
+}
+
+function mapTimelinePostsToCards(posts: any[]): TimelinePostCard[] {
+    return (Array.isArray(posts) ? posts : [])
+        .map((post: any) => {
+            const author = post?.author ?? {};
+            const seed = author?.public_id || author?.id || post?.author_id || post?.public_id || post?.id;
+            const avatar = getSafeImageURLEx(seed, author?.avatar, 'small') || '';
+            const attachments = Array.isArray(post?.attachments) ? post.attachments : [];
+            const firstAttachment = attachments[0];
+            const image =
+                getSafeImageURL(firstAttachment, 'original') ||
+                getSafeImageURL(firstAttachment, 'large') ||
+                getSafeImageURL(firstAttachment, 'medium') ||
+                getSafeImageURL(firstAttachment, 'small') ||
+                undefined;
+
+            const content = coerceLocalizedText(post?.content);
+            const plain = lexicalToPlainText(content);
+            const caption =
+                (plain != null && plain.trim()) ? plain.trim()
+                : extractFirstImageAltTextFromLexical(content) || '';
+
+            const counts = post?.engagements?.counts || post?.engagement_counts || post?.engagements || {};
+            const likes = Number(counts?.like_received_count ?? counts?.like_count ?? 0) || 0;
+            const comments = Number(counts?.comment_count ?? 0) || 0;
+
+            return {
+                id: String(post?.public_id ?? post?.id ?? seed ?? Math.random()),
+                user: {
+                    name: author?.displayname || author?.username || 'User',
+                    username: author?.username || author?.displayname || 'user',
+                    avatar,
+                },
+                image,
+                caption,
+                likes,
+                comments,
+                time: formatRelativeTime(post?.created_at),
+                raw: post,
+            } as TimelinePostCard;
+        })
+        .filter((item) => Boolean(item.id));
+}
 
 export default function DiscoverScreen({ hideHeader = false }: { hideHeader?: boolean }) {
     const { colors, dark } = useTheme();
@@ -152,6 +265,79 @@ export default function DiscoverScreen({ hideHeader = false }: { hideHeader?: bo
         fetchStories();
     }, [fetchStories]);
 
+    // --- Timeline / Cool posts ---
+    const timelineListRef = useRef<FlatList<TimelinePostCard> | null>(null);
+    const timelineCursorRef = useRef<string | null>(null);
+    const timelineHasMoreRef = useRef(true);
+    const timelineFetchingRef = useRef(false);
+
+    const [timeline, setTimeline] = useState<TimelinePostCard[]>([]);
+    const [timelineLoading, setTimelineLoading] = useState(true);
+    const [timelineRefreshing, setTimelineRefreshing] = useState(false);
+    const [timelineLoadingMore, setTimelineLoadingMore] = useState(false);
+    const [timelineError, setTimelineError] = useState<string | null>(null);
+
+    const fetchTimeline = useCallback(
+        async ({ refresh = false, loadMore = false }: { refresh?: boolean; loadMore?: boolean } = {}) => {
+            if (timelineFetchingRef.current) return;
+            if (loadMore && !timelineHasMoreRef.current) return;
+
+            timelineFetchingRef.current = true;
+            setTimelineError(null);
+
+            if (refresh) setTimelineRefreshing(true);
+            else if (loadMore) setTimelineLoadingMore(true);
+            else setTimelineLoading(true);
+
+            try {
+                if (refresh) {
+                    timelineCursorRef.current = null;
+                    timelineHasMoreRef.current = true;
+                    timelineListRef.current?.scrollToOffset({ offset: 0, animated: false });
+                }
+
+                const response: any = await api.fetchTimeline({
+                    limit: 10,
+                    cursor: loadMore ? (timelineCursorRef.current ?? '') : '',
+                });
+
+                const { posts, cursor } = normalizeTimelineResponse(response);
+                const cards = mapTimelinePostsToCards(posts);
+
+                const hasMore =
+                    Boolean(cursor) &&
+                    cursor !== '0' &&
+                    cursor !== 'null' &&
+                    cursor !== 'undefined';
+
+                timelineCursorRef.current = hasMore ? cursor : null;
+                timelineHasMoreRef.current = hasMore;
+
+                setTimeline((prev) => {
+                    if (!loadMore) return cards;
+                    const existingIds = new Set(prev.map((item) => item.id));
+                    return [...prev, ...cards.filter((item) => !existingIds.has(item.id))];
+                });
+            } catch (error) {
+                console.error('Failed to fetch timeline', error);
+                setTimelineError('Failed to load timeline');
+                // apiService already reports the error globally; this is for UI state.
+                timelineHasMoreRef.current = false;
+                timelineCursorRef.current = null;
+            } finally {
+                setTimelineLoading(false);
+                setTimelineRefreshing(false);
+                setTimelineLoadingMore(false);
+                timelineFetchingRef.current = false;
+            }
+        },
+        []
+    );
+
+    useEffect(() => {
+        void fetchTimeline();
+    }, [fetchTimeline]);
+
     const availableStories = useMemo(
         () => stories.filter((story) => story.mediaUrl || story.cover),
         [stories]
@@ -205,74 +391,137 @@ export default function DiscoverScreen({ hideHeader = false }: { hideHeader?: bo
     }, [availableStories.length, viewerIndex]);
 
     const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
+
+    const handleRefresh = useCallback(() => {
+        void fetchStories();
+        void fetchTimeline({ refresh: true });
+    }, [fetchStories, fetchTimeline]);
+
+    const handleLoadMore = useCallback(() => {
+        if (timelineLoading || timelineRefreshing || timelineLoadingMore) return;
+        if (!timelineHasMoreRef.current) return;
+        void fetchTimeline({ loadMore: true });
+    }, [fetchTimeline, timelineLoading, timelineLoadingMore, timelineRefreshing]);
     
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Custom Header - DISABLED as we use GlobalHeader */}
 
-            <ScrollView 
-                showsVerticalScrollIndicator={false} 
-                contentContainerStyle={{ 
-                    paddingTop: hideHeader ? 0 : (60 + insets.top), 
-                    paddingBottom: 100 
+            <FlatList
+                ref={(ref) => {
+                    timelineListRef.current = ref;
                 }}
-            >
-                {/* Stories Section */}
-                <View style={[styles.storiesWrapper, { borderBottomColor: borderColor }]}>
-                    <ScrollView 
-                        horizontal 
-                        showsHorizontalScrollIndicator={false} 
-                        contentContainerStyle={styles.storiesContainer}
-                    >
-                        <TouchableOpacity
-                            style={styles.storyItem}
-                            onPress={authUser ? handleAddStory : undefined}
-                            disabled={!authUser || uploadingStory}
+                data={timeline}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                    const { id, raw, ...card } = item;
+                    return <PostCard {...card} />;
+                }}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                    paddingTop: hideHeader ? 0 : (60 + insets.top),
+                    paddingBottom: 120,
+                }}
+                refreshing={timelineRefreshing}
+                onRefresh={handleRefresh}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                removeClippedSubviews
+                ListHeaderComponent={
+                    <View style={[styles.storiesWrapper, { borderBottomColor: borderColor }]}>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.storiesContainer}
                         >
-                            <View style={[styles.myStoryContainer, { backgroundColor: dark ? '#1A1A1A' : '#F5F5F5' }]}>
-                                {uploadingStory ? (
+                            <TouchableOpacity
+                                style={styles.storyItem}
+                                onPress={authUser ? handleAddStory : undefined}
+                                disabled={!authUser || uploadingStory}
+                            >
+                                <View
+                                    style={[
+                                        styles.myStoryContainer,
+                                        { backgroundColor: dark ? '#1A1A1A' : '#F5F5F5' },
+                                    ]}
+                                >
+                                    {uploadingStory ? (
+                                        <ActivityIndicator size="small" color={colors.text} />
+                                    ) : (
+                                        <MaterialCommunityIcons name="plus" size={24} color={colors.text} />
+                                    )}
+                                </View>
+                                <Text style={[styles.storyName, { color: colors.text }]}>Add Story</Text>
+                            </TouchableOpacity>
+
+                            {loadingStories && availableStories.length === 0 ? (
+                                <View style={styles.loadingStories}>
                                     <ActivityIndicator size="small" color={colors.text} />
-                                ) : (
-                                    <MaterialCommunityIcons name="plus" size={24} color={colors.text} />
-                                )}
-                            </View>
-                            <Text style={[styles.storyName, { color: colors.text }]}>Add Story</Text>
-                        </TouchableOpacity>
-
-                        {loadingStories && availableStories.length === 0 ? (
-                            <View style={styles.loadingStories}>
-                                <ActivityIndicator size="small" color={colors.text} />
-                            </View>
-                        ) : (
-                            availableStories.map((story: any, index: number) => (
-                                <TouchableOpacity key={story.id} style={styles.storyItem} onPress={() => openViewer(index)}>
-                                    <View style={[
-                                        styles.storyAvatarContainer, 
-                                        { borderColor: story.active ? colors.text : (dark ? '#333' : '#EEE') }
-                                    ]}>
-                                        {story.cover || story.avatar ? (
-                                            <Image source={{ uri: story.cover || story.avatar }} style={styles.storyAvatar} contentFit="cover" />
-                                        ) : (
-                                            <View style={[styles.storyAvatar, { backgroundColor: dark ? '#222' : '#DDD' }]} />
-                                        )}
-                                    </View>
-                                    <Text style={[styles.storyName, { color: colors.text }]} numberOfLines={1}>{story.name}</Text>
-                                </TouchableOpacity>
-                            ))
-                        )}
-                    </ScrollView>
-                </View>
-
-                {/* Posts Section */}
-                <View style={styles.postsContainer}>
-                    {POSTS.map(post => (
-                        <PostCard key={post.id} {...post} />
-                    ))}
-                </View>
-
-                {/* Bottom Padding */}
-                <View style={{ height: 120 }} />
-            </ScrollView>
+                                </View>
+                            ) : (
+                                availableStories.map((story: any, index: number) => (
+                                    <TouchableOpacity
+                                        key={story.id}
+                                        style={styles.storyItem}
+                                        onPress={() => openViewer(index)}
+                                    >
+                                        <View
+                                            style={[
+                                                styles.storyAvatarContainer,
+                                                { borderColor: story.active ? colors.text : (dark ? '#333' : '#EEE') },
+                                            ]}
+                                        >
+                                            {story.cover || story.avatar ? (
+                                                <Image
+                                                    source={{ uri: story.cover || story.avatar }}
+                                                    style={styles.storyAvatar}
+                                                    contentFit="cover"
+                                                />
+                                            ) : (
+                                                <View
+                                                    style={[
+                                                        styles.storyAvatar,
+                                                        { backgroundColor: dark ? '#222' : '#DDD' },
+                                                    ]}
+                                                />
+                                            )}
+                                        </View>
+                                        <Text
+                                            style={[styles.storyName, { color: colors.text }]}
+                                            numberOfLines={1}
+                                        >
+                                            {story.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))
+                            )}
+                        </ScrollView>
+                    </View>
+                }
+                ListEmptyComponent={
+                    timelineLoading ? (
+                        <View style={styles.loadingTimeline}>
+                            <ActivityIndicator size="small" color={colors.text} />
+                            <Text style={[styles.stateText, { color: dark ? '#777' : '#888' }]}>Loading timeline...</Text>
+                        </View>
+                    ) : timelineError ? (
+                        <View style={styles.loadingTimeline}>
+                            <Text style={[styles.stateText, { color: dark ? '#f87171' : '#dc2626' }]}>{timelineError}</Text>
+                        </View>
+                    ) : (
+                        <View style={styles.loadingTimeline}>
+                            <Text style={[styles.stateText, { color: dark ? '#777' : '#888' }]}>No posts yet.</Text>
+                        </View>
+                    )
+                }
+                ListFooterComponent={
+                    timelineLoadingMore ? (
+                        <View style={styles.loadingMore}>
+                            <ActivityIndicator size="small" color={colors.text} />
+                        </View>
+                    ) : null
+                }
+            />
 
             <Modal
                 visible={viewerOpen}
@@ -406,6 +655,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         width: 72,
+    },
+    loadingTimeline: {
+        paddingTop: 28,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+    },
+    stateText: {
+        fontSize: 13,
+        fontFamily: 'Inter-SemiBold',
+    },
+    loadingMore: {
+        paddingVertical: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     postsContainer: {
         width: '100%',

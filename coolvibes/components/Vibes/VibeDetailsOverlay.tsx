@@ -91,8 +91,9 @@ export function VibeDetailsOverlay({ vibe, bottomInset, onBurst }: VibeDetailsOv
         colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.78)']}
         locations={[0.5, 0.72, 1]}
         style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
       />
-      <View style={[styles.overlay, { paddingBottom: bottomInset }]}>
+      <View style={[styles.overlay, { paddingBottom: bottomInset }]} pointerEvents="box-none">
         <View style={styles.infoColumn} pointerEvents="box-none">
           {!!vibe.bioHtml ? (
             <RenderHTML
@@ -134,6 +135,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     paddingHorizontal: 16,
+    zIndex: 20,
   },
   infoColumn: {
     flex: 1,

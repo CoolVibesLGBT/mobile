@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
@@ -26,22 +26,11 @@ const TAB_LABELS: Record<string, string> = {
 
 // --- TabBar Components ---
 
-function TabItem({ route, isFocused, navigation, palette }: any) {
+function TabItem({ route, isFocused, navigation, isDark }: any) {
   const scale = useSharedValue(1);
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    // Only animate scale on focus change if needed, but we'll use it for tap feedback too
-    scale.value = withTiming(isFocused ? 1.15 : 1, { duration: 200 });
-  }, [isFocused]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-  }));
-
-  const bgStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ scale: withTiming(opacity.value > 0 ? 1 : 0.8) }],
   }));
 
   const onPress = () => {
@@ -55,12 +44,8 @@ function TabItem({ route, isFocused, navigation, palette }: any) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
       // Tap feedback animation
-      scale.value = withTiming(1.3, { duration: 100 }, () => {
-        scale.value = withTiming(isFocused ? 1.15 : 1, { duration: 150 });
-      });
-      
-      opacity.value = withTiming(1, { duration: 100 }, () => {
-        opacity.value = withTiming(0, { duration: 300 });
+      scale.value = withTiming(0.92, { duration: 90 }, () => {
+        scale.value = withTiming(1, { duration: 150 });
       });
 
       if (!isFocused) {
@@ -71,8 +56,10 @@ function TabItem({ route, isFocused, navigation, palette }: any) {
 
   const Icon = TAB_ICONS[route.name];
   const label = TAB_LABELS[route.name];
-  const activeColor = palette.tabIconSelected;
-  const inactiveColor = palette.tabIconDefault;
+  // Spec: default black icons/labels; active tab shows a black/white circular marker.
+  const inactiveFg = isDark ? '#FFFFFF' : '#000000';
+  const activeBg = isDark ? '#FFFFFF' : '#000000';
+  const activeFg = isDark ? '#000000' : '#FFFFFF';
 
   return (
     <TouchableOpacity
@@ -81,13 +68,18 @@ function TabItem({ route, isFocused, navigation, palette }: any) {
       style={styles.tabItem}
       activeOpacity={1}
     >
-      <Animated.View style={[styles.activeIndicatorBg, { backgroundColor: palette.tabIconSelected + '15' }, bgStyle]} />
-      <Animated.View style={[styles.iconWrapper, animatedStyle]}>
-        <Icon size={24} color={isFocused ? activeColor : inactiveColor} strokeWidth={isFocused ? 2.5 : 2} />
+      <Animated.View
+        style={[
+          styles.iconCircle,
+          { backgroundColor: isFocused ? activeBg : 'transparent' },
+          animatedStyle,
+        ]}
+      >
+        <Icon size={24} color={isFocused ? activeFg : inactiveFg} strokeWidth={isFocused ? 2.75 : 2.25} />
       </Animated.View>
       <Text style={[
         styles.tabLabel, 
-        { color: isFocused ? activeColor : inactiveColor, opacity: isFocused ? 1 : 0.7 },
+        { color: inactiveFg },
         isFocused && { fontFamily: 'Inter-Bold' }
       ]}>
         {label}
@@ -132,6 +124,7 @@ function CustomTabBar({ state, navigation }: any) {
   const insets = useSafeAreaInsets();
   const orderedRoutes = ['index', 'nearby', 'Match', 'chat'];
   const tabBarHeight = (Platform.OS === 'ios' ? 62 : 66) + Math.max(insets.bottom, 8);
+  const hairline = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
 
   const visibleRoutes = state.routes
     .filter((route: any) => orderedRoutes.includes(route.name))
@@ -148,7 +141,7 @@ function CustomTabBar({ state, navigation }: any) {
         route={route}
         isFocused={isFocused}
         navigation={navigation}
-        palette={palette}
+        isDark={isDark}
       />
     );
   };
@@ -156,21 +149,19 @@ function CustomTabBar({ state, navigation }: any) {
   return (
     <View style={[styles.tabBarContainer, { height: tabBarHeight }]}>
       <BlurView
-        intensity={isDark ? 58 : 86}
+        // Match GlobalHeader blur 1:1 (user prefers header blur)
+        intensity={isDark ? 45 : 90}
         style={StyleSheet.absoluteFill}
         tint={isDark ? 'dark' : 'light'}
-      />
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: isDark ? 'rgba(11,18,32,0.9)' : 'rgba(255,255,255,0.92)' },
-        ]}
+        pointerEvents="none"
+        blurReductionFactor={Platform.OS === 'android' ? 2 : 4}
+        experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : 'none'}
       />
       <View
         style={[
           styles.tabBarContent,
           {
-            borderTopColor: palette.borderSubtle,
+            borderTopColor: hairline,
             paddingBottom: Math.max(insets.bottom, 8),
           },
         ]}
@@ -232,7 +223,10 @@ const styles = StyleSheet.create({
     height: '100%',
     paddingTop: 6,
   },
-  iconWrapper: {
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
@@ -243,14 +237,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     marginTop: 2,
-  },
-  activeIndicatorBg: {
-    position: 'absolute',
-    top: '10%',
-    left: '20%',
-    right: '20%',
-    bottom: '25%',
-    borderRadius: 16,
   },
   checkInButtonWrapper: {
     width: 72,

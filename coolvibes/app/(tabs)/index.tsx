@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import { BlurView } from 'expo-blur';
 import Animated, { 
     FadeIn, 
     useAnimatedStyle, 
@@ -44,9 +45,31 @@ export default function HomeScreen() {
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
+
+            {/* Vibes should render full-screen behind header + tab bar so blur stays "live" while swiping. */}
+            {activeTab === 'vibes' ? (
+                <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+                    <VibesScreen />
+                </View>
+            ) : null}
             
             {/* Premium Header / Tab Switcher - Now integrated seamlessly below GlobalHeader */}
             <View style={[styles.header, { borderBottomColor: borderColor, marginTop: 60 + insets.top, borderBottomWidth: 1 }]}>
+                <BlurView
+                    intensity={dark ? 45 : 90}
+                    tint={dark ? 'dark' : 'light'}
+                    style={StyleSheet.absoluteFill}
+                    pointerEvents="none"
+                    blurReductionFactor={Platform.OS === 'android' ? 2 : 4}
+                    experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : 'none'}
+                />
+                <View
+                    pointerEvents="none"
+                    style={[
+                        StyleSheet.absoluteFill,
+                        { backgroundColor: dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.52)' },
+                    ]}
+                />
                 <View style={styles.tabSwitcher}>
                     <TouchableOpacity 
                         onPress={() => handleTabPress('flows')}
@@ -90,16 +113,19 @@ export default function HomeScreen() {
             </View>
 
             {/* Content Area */}
-            <View style={{ flex: 1, paddingBottom: Platform.OS === 'ios' ? 88 : 68 }}>
+            <View
+                style={{
+                    flex: 1,
+                    paddingBottom:
+                        activeTab === 'flows' ? (Platform.OS === 'ios' ? 88 : 68) : 0,
+                }}
+                pointerEvents={activeTab === 'flows' ? 'auto' : 'none'}
+            >
                 {activeTab === 'flows' ? (
                     <Animated.View entering={FadeIn} style={{ flex: 1 }}>
                          <DiscoverScreen hideHeader={true} />
                     </Animated.View>
-                ) : (
-                    <Animated.View entering={FadeIn} style={{ flex: 1 }}>
-                        <VibesScreen />
-                    </Animated.View>
-                )}
+                ) : null}
             </View>
         </View>
     );
@@ -114,6 +140,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
         borderBottomWidth: 1,
         zIndex: 10,
+        overflow: 'hidden',
     },
     tabSwitcher: {
         flexDirection: 'row',
