@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import Animated, { 
     useSharedValue, 
     useAnimatedStyle, 
@@ -16,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useAppSelector } from '@/store/hooks';
 
 interface PostCardProps {
+    postId?: string;
     user: {
         name: string;
         avatar: string;
@@ -37,12 +39,18 @@ interface PostCardProps {
 
 const { width } = Dimensions.get('window');
 
-const PostCard: React.FC<PostCardProps> = ({ user, image, caption, likes, comments, time, tags }) => {
+const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes, comments, time, tags }) => {
     const { colors, dark } = useTheme();
+    const router = useRouter();
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const [isLiked, setIsLiked] = useState(false);
     const likeScale = useSharedValue(1);
     const [likeCount, setLikeCount] = useState(likes);
+
+    const openPostDetail = () => {
+        if (!postId) return;
+        router.push({ pathname: '/PostDetail', params: { postId } });
+    };
 
     const handleLike = () => {
         const nextLiked = !isLiked;
@@ -177,7 +185,7 @@ const PostCard: React.FC<PostCardProps> = ({ user, image, caption, likes, commen
                             />
                         </Animated.View>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity style={styles.actionButton} onPress={openPostDetail}>
                         <MaterialCommunityIcons name="chat-outline" size={26} color={iconColor} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionButton}>
@@ -196,7 +204,7 @@ const PostCard: React.FC<PostCardProps> = ({ user, image, caption, likes, commen
                 </Text>
                 
                 {comments > 0 && (
-                    <TouchableOpacity style={styles.commentsButton}>
+                    <TouchableOpacity style={styles.commentsButton} onPress={openPostDetail}>
                         <Text style={[styles.commentsLink, { color: dark ? '#8E8E93' : '#666' }]}>
                             View all {comments} comments
                         </Text>

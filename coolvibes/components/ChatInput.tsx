@@ -70,7 +70,10 @@ interface User {
   name: string;
 }
 
+type ChatInputKind = 'chat' | 'comment';
+
 interface ChatInputProps {
+  kind?: ChatInputKind;
   currentUser: any;
   replyingTo: Message | null;
   editingMessage: Message | null;
@@ -167,6 +170,7 @@ const AudioPreview = ({ item }: { item: any }) => {
 };
 
 export default function ChatInput({
+  kind = 'chat',
   currentUser,
   replyingTo,
   editingMessage,
@@ -177,6 +181,8 @@ export default function ChatInput({
   onRemoveExtraMedia,
 }: ChatInputProps) {
   const insets = useSafeAreaInsets();
+  const isComment = kind === 'comment';
+  const inputPlaceholder = isComment ? 'Write a comment' : 'Type a message';
   const [inputText, setInputText] = useState("");
   const [inputHeight, setInputHeight] = useState(40);
   const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
@@ -342,7 +348,6 @@ export default function ChatInput({
   };
 
   const handleSendMessagePress = () => {
-    console.log("press1")
     const outgoingMedia = [
       ...(extraMedia ?? []),
       ...selectedMedia,
@@ -351,7 +356,6 @@ export default function ChatInput({
     if (!inputText.trim() && outgoingMedia.length === 0) return;
 
     onSendMessage(inputText.trim(), outgoingMedia, replyingTo?.id, editingMessage?.id);
-    console.log("press2")
 
     setInputText("");
     setInputHeight(40);
@@ -633,7 +637,7 @@ export default function ChatInput({
                         ref={inputRef}
                         style={[styles.textInput]}
                         multiline
-                        placeholder="Type a message"
+                        placeholder={inputPlaceholder}
                         placeholderTextColor="#999"
                         value={inputText}
                         onChangeText={setInputText}

@@ -415,7 +415,7 @@ export default function DiscoverScreen({ hideHeader = false }: { hideHeader?: bo
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => {
                     const { id, raw, ...card } = item;
-                    return <PostCard {...card} />;
+                    return <PostCard postId={id} {...card} />;
                 }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{

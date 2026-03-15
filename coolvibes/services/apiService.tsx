@@ -34,15 +34,51 @@ export class ApiService {
               if (Object.prototype.hasOwnProperty.call(options.body, key)) {
                 const val = (options.body as any)[key];
                 if (val !== undefined && val !== null) {
-                  if (val instanceof File || val instanceof Blob) {
+                  const isFile = (typeof File !== 'undefined') && (val instanceof File);
+                  const isBlob = (typeof Blob !== 'undefined') && (val instanceof Blob);
+                  if (isFile || isBlob) {
                     formData.append(key, val);
-                  } else if (typeof val === 'object' && val !== null && 'uri' in val) {
-                    formData.append(key, val as any);
-                  } else if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
-                    formData.append(key, JSON.stringify(val));
-                  } else {
-                    formData.append(key, val.toString());
+                    continue;
                   }
+
+                  if (Array.isArray(val)) {
+                    const items = val.filter((item: any) => item !== undefined && item !== null);
+                    const isFileLikeItem = (item: any) => {
+                      const itemIsFile = (typeof File !== 'undefined') && (item instanceof File);
+                      const itemIsBlob = (typeof Blob !== 'undefined') && (item instanceof Blob);
+                      return itemIsFile || itemIsBlob || (typeof item === 'object' && item !== null && 'uri' in item);
+                    };
+
+                    const isFileArray = items.length > 0 && items.every(isFileLikeItem);
+                    if (isFileArray) {
+                      items.forEach((item: any) => {
+                        const itemIsFile = (typeof File !== 'undefined') && (item instanceof File);
+                        const itemIsBlob = (typeof Blob !== 'undefined') && (item instanceof Blob);
+                        if (itemIsFile || itemIsBlob) {
+                          formData.append(key, item);
+                          return;
+                        }
+                        if (typeof item === 'object' && item !== null && 'uri' in item) {
+                          formData.append(key, item as any);
+                        }
+                      });
+                    } else {
+                      formData.append(key, JSON.stringify(val));
+                    }
+                    continue;
+                  }
+
+                  if (typeof val === 'object' && val !== null && 'uri' in val) {
+                    formData.append(key, val as any);
+                    continue;
+                  }
+
+                  if (typeof val === 'object' && val !== null) {
+                    formData.append(key, JSON.stringify(val));
+                    continue;
+                  }
+
+                  formData.append(key, val.toString());
                 }
               }
             }
@@ -136,6 +172,20 @@ async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {
     return this.call(Actions.POST_TIMELINE, {
       method: "POST",
       body: { limit, cursor }, // doğru değişkenler gönderiliyor
+    });
+  }
+
+  async fetchPost(postId: string) {
+    return this.call(Actions.POST_FETCH, {
+      method: 'POST',
+      body: { post_id: postId },
+    });
+  }
+
+  async createPost(payload: Record<string, any>) {
+    return this.call(Actions.POST_CREATE, {
+      method: 'POST',
+      body: payload,
     });
   }
 
