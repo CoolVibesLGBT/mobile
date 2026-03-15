@@ -8,13 +8,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { RefreshCcw, Trash2, Pin, Eraser, X, MessageSquare, CircleDot } from 'lucide-react-native';
 import { BottomSheetBackdrop, BottomSheetView, BottomSheetModal } from '@gorhom/bottom-sheet';
+import * as SecureStore from 'expo-secure-store';
 
 import { ThemedText } from '@/components/ThemedText';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchChats, resetChats } from '@/store/slice/chat';
+import { fetchChats, resetChats, upsertChat, markChatRead } from '@/store/slice/chat';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 import { getSafeImageURLEx } from '@/helpers/safeUrl';
 import { encodeProfileParam } from '@/helpers/profile';
+import { useSocket } from '@/contexts/SocketContext';
+import { Actions } from '@/services/actions';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -39,6 +42,9 @@ type ConversationItem = {
   status: string;
   profile?: any;
 };
+
+const resolveChatId = (chat: any) =>
+  String(chat?.id ?? chat?.chat_id ?? chat?.public_id ?? chat?.uuid ?? '');
 
 function getLocalizedText(value: any, language: string) {
   if (!value) return '';
@@ -111,6 +117,7 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const socket = useSocket();
   const { chats, loading, cursor } = useAppSelector((state) => state.chat);
   const authUserId = useAppSelector((state) => state.auth.user?.id ?? null);
   const authUser = useAppSelector((state) => state.auth.user);
@@ -119,6 +126,7 @@ export default function ChatScreen() {
   const lastConversationsRef = useRef<ConversationItem[]>([]);
   const initialLoadRef = useRef(false);
   const lastLoadMoreCursorRef = useRef<string | null>(null);
+  const socketRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [pinnedIds, setPinnedIds] = useState<Record<string, boolean>>({});
@@ -132,6 +140,155 @@ export default function ChatScreen() {
     initialLoadRef.current = true;
     dispatch(fetchChats({ limit: 20 }));
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const parseSocketPayload = (msg: any) => {
+      if (Array.isArray(msg)) {
+        if (msg.length > 1 && typeof msg[1] === 'string') {
+          try {
+            return JSON.parse(msg[1]);
+          } catch {
+            return msg;
+          }
+        }
+        return msg;
+      }
+      if (typeof msg === 'string') {
+        try {
+          return JSON.parse(msg);
+        } catch {
+          return msg;
+        }
+      }
+      return msg;
+    };
+
+    const scheduleRefresh = () => {
+      if (socketRefreshTimeoutRef.current) return;
+      socketRefreshTimeoutRef.current = setTimeout(() => {
+        socketRefreshTimeoutRef.current = null;
+        dispatch(fetchChats({ limit: 20 }));
+      }, 400);
+    };
+
+    const handleSocketMessage = (msg: any) => {
+      const messageData = parseSocketPayload(msg);
+      const action = messageData?.action;
+      const payload = messageData?.message || messageData?.data?.message || messageData?.data || messageData;
+      if (action === Actions.CMD_TYPING || messageData?.typing !== undefined) return;
+
+      const isMessageLike = Boolean(payload?.contentable_id || payload?.chat_id || payload?.content || payload?.text);
+      if (action === Actions.CMD_SEND_MESSAGE || (!action && isMessageLike)) {
+        const messageChatId =
+          payload?.contentable_id ||
+          payload?.chat_id ||
+          messageData?.chat_id ||
+          messageData?.chatID ||
+          messageData?.chatId;
+        if (messageChatId) {
+          const chatIdStr = String(messageChatId);
+          const hasChat = lastChatsRef.current.some((chat) => resolveChatId(chat) === chatIdStr);
+
+          if (!hasChat) {
+            const chatFromPayload = messageData?.chat || messageData?.data?.chat;
+            if (chatFromPayload) {
+              dispatch(upsertChat(chatFromPayload));
+            } else {
+              const author =
+                payload?.author ||
+                payload?.sender ||
+                payload?.user ||
+                messageData?.user ||
+                messageData?.sender ||
+                messageData?.author ||
+                {};
+              const authorId =
+                payload?.author_id ||
+                payload?.sender_id ||
+                payload?.user_id ||
+                author?.id ||
+                author?.public_id ||
+                null;
+              const isFromMe = Boolean(authUserId && authorId && String(authorId) === String(authUserId));
+              const other =
+                isFromMe
+                  ? payload?.receiver ||
+                    payload?.to_user ||
+                    payload?.toUser ||
+                    messageData?.receiver ||
+                    messageData?.to_user ||
+                    messageData?.toUser ||
+                    {}
+                  : author;
+              const otherId = other?.id || other?.public_id || authorId;
+              const participants: any[] = [];
+              if (authUserId) {
+                participants.push({ user_id: authUserId, user: authUser });
+              }
+              if (otherId) {
+                participants.push({ user_id: otherId, user: other });
+              }
+
+              const content =
+                getLocalizedText(payload?.content, language) ||
+                getLocalizedText(payload?.text, language) ||
+                getLocalizedText(payload?.body, language) ||
+                '';
+              const timestamp =
+                payload?.created_at ||
+                payload?.updated_at ||
+                messageData?.created_at ||
+                messageData?.timestamp ||
+                new Date().toISOString();
+
+              dispatch(
+                upsertChat({
+                  id: chatIdStr,
+                  chat_id: chatIdStr,
+                  participants,
+                  other_user: other,
+                  user: other,
+                  last_message: { content },
+                  last_message_timestamp: timestamp,
+                  updated_at: timestamp,
+                  unread_count: isFromMe ? 0 : 1,
+                })
+              );
+            }
+          }
+        }
+        scheduleRefresh();
+      }
+    };
+
+    const onConnect = async () => {
+      try {
+        const savedToken = await SecureStore.getItemAsync('authToken');
+        if (savedToken) {
+          socket.emit('auth', savedToken);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    onConnect();
+    socket.on('connect', onConnect);
+    socket.on('message', handleSocketMessage);
+    socket.on('chat', handleSocketMessage);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('message', handleSocketMessage);
+      socket.off('chat', handleSocketMessage);
+      if (socketRefreshTimeoutRef.current) {
+        clearTimeout(socketRefreshTimeoutRef.current);
+        socketRefreshTimeoutRef.current = null;
+      }
+    };
+  }, [socket, dispatch, authUserId, authUser, language]);
 
   useEffect(() => {
     if (chats.length > 0) {
@@ -238,6 +395,9 @@ export default function ChatScreen() {
   };
 
   const handleRowPress = (item: ConversationItem) => {
+    if (item?.id) {
+      dispatch(markChatRead({ chatId: item.id, userId: authUserId }));
+    }
     router.push({
       pathname: '/ChatDetail',
       params: {

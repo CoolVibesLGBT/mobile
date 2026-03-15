@@ -44,11 +44,12 @@ import {
 import ChatInput from "@/components/ChatInput";
 import BaseBottomSheetModal from "@/components/BaseBottomSheetModal";
 import { ThemedText } from "@/components/ThemedText";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { api } from "@/services/apiService";
 import { getSafeImageURL, getSafeImageURLEx } from "@/helpers/safeUrl";
 import { useSocket } from "@/contexts/SocketContext";
 import { Actions } from "@/services/actions";
+import { markChatRead } from "@/store/slice/chat";
 
 // --- Types ---
 interface Message {
@@ -79,6 +80,7 @@ export default function ChatDetail() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const language = useAppSelector((state) => state.system.language) || 'en';
   const authUser = useAppSelector((state) => state.auth.user);
   const authUserId = useAppSelector((state) => state.auth.user?.id ?? null);
@@ -126,9 +128,46 @@ export default function ChatDetail() {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const typingIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingParamRef = useRef<string | null>(null);
+  const pendingReadIdsRef = useRef<Set<string>>(new Set());
+  const readFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const chatId = (params.chatId as string) || "";
   const currentChatRoomRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (chatId) {
+      dispatch(markChatRead({ chatId, userId: authUserId }));
+    }
+  }, [chatId, authUserId, dispatch]);
+
+  const queueMarkRead = useCallback((ids: string[]) => {
+    if (!chatId || ids.length === 0) return;
+    ids.forEach((id) => {
+      if (id) pendingReadIdsRef.current.add(String(id));
+    });
+    if (readFlushTimeoutRef.current) return;
+    readFlushTimeoutRef.current = setTimeout(async () => {
+      const batch = Array.from(pendingReadIdsRef.current);
+      pendingReadIdsRef.current.clear();
+      readFlushTimeoutRef.current = null;
+      if (batch.length === 0) return;
+      try {
+        await api.markMessagesRead({ chat_id: chatId, message_ids: batch });
+      } catch {
+        // ignore mark read errors
+      }
+    }, 350);
+  }, [chatId]);
+
+  useEffect(() => {
+    return () => {
+      if (readFlushTimeoutRef.current) {
+        clearTimeout(readFlushTimeoutRef.current);
+        readFlushTimeoutRef.current = null;
+      }
+      pendingReadIdsRef.current.clear();
+    };
+  }, []);
 
   const getLocalizedText = (value: any) => {
     if (!value) return '';
@@ -222,8 +261,16 @@ export default function ChatDetail() {
           response?.messages ??
           response?.data?.messages ??
           [];
+        const unreadIds = rawMessages
+          .filter((msg: any) => msg?.author_id && authUserId && String(msg.author_id) !== String(authUserId))
+          .map((msg: any) => String(msg?.id ?? msg?.public_id ?? msg?.uuid ?? msg?.slug ?? ''))
+          .filter(Boolean);
         if (isActive) {
           setMessages(mapMessages(rawMessages));
+          if (unreadIds.length > 0) {
+            dispatch(markChatRead({ chatId, userId: authUserId }));
+            queueMarkRead(unreadIds);
+          }
         }
       } catch (error: any) {
         if (isActive) setMessagesError(error?.message || 'Failed to load messages');
@@ -235,7 +282,7 @@ export default function ChatDetail() {
     return () => {
       isActive = false;
     };
-  }, [chatId, mapMessages]);
+  }, [chatId, mapMessages, authUserId, dispatch, queueMarkRead]);
 
   useEffect(() => {
     if (!socket || !chatId) return;
@@ -326,6 +373,14 @@ export default function ChatDetail() {
 
           return [...prev, mapped];
         });
+
+        if (mapped.sender === 'them') {
+          const messageId = String(message?.id ?? message?.public_id ?? message?.uuid ?? message?.slug ?? '');
+          if (messageId) {
+            dispatch(markChatRead({ chatId, userId: authUserId }));
+            queueMarkRead([messageId]);
+          }
+        }
       }
     };
 
@@ -365,7 +420,7 @@ export default function ChatDetail() {
         typingIndicatorTimeoutRef.current = null;
       }
     };
-  }, [socket, chatId, toMessage, authUserId]);
+  }, [socket, chatId, toMessage, authUserId, dispatch, queueMarkRead]);
 
   useEffect(() => {
     const nextParam = isTyping ? '1' : '0';

@@ -10,6 +10,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '@/services/apiService';
 import { useAppSelector } from '@/store/hooks';
+import { reportAppError } from '@/helpers/errorReporter';
 
 type StoryItem = {
     id: string;
@@ -141,6 +142,7 @@ export default function DiscoverScreen({ hideHeader = false }: { hideHeader?: bo
             await fetchStories();
         } catch (error) {
             console.error('Failed to upload story', error);
+            reportAppError(error, { source: 'stories', action: 'user.upload_story' });
         } finally {
             setUploadingStory(false);
         }

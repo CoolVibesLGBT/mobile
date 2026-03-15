@@ -3,11 +3,13 @@ import { Modal, Share, StyleSheet, Text, TouchableOpacity, View, ScrollView } fr
 import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppErrorPayload, formatErrorDetails, getLastAppError, subscribeToAppErrors } from '@/helpers/errorReporter';
+import * as Clipboard from 'expo-clipboard';
 
 export default function AppErrorOverlay() {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
   const [error, setError] = useState<AppErrorPayload | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setError(getLastAppError());
@@ -27,6 +29,17 @@ export default function AppErrorOverlay() {
       });
     } catch {
       // ignore share errors
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!error) return;
+    try {
+      await Clipboard.setStringAsync(details);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore clipboard errors
     }
   };
 
@@ -67,6 +80,15 @@ export default function AppErrorOverlay() {
               onPress={handleSend}
             >
               <Text style={styles.primaryText}>Hata Detayı Gönder</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.secondaryBtn, { borderColor: dark ? '#2A2A2A' : '#E0E0E0' }]}
+              activeOpacity={0.8}
+              onPress={handleCopy}
+            >
+              <Text style={[styles.secondaryText, { color: colors.text }]}>
+                {copied ? 'Kopyalandı' : 'Kopyala'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.secondaryBtn, { borderColor: dark ? '#2A2A2A' : '#E0E0E0' }]}

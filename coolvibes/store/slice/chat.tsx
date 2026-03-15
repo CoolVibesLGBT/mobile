@@ -73,6 +73,31 @@ const chatSlice = createSlice({
       state.error = null;
       state.loading = false;
     },
+    upsertChat(state, action: PayloadAction<any | any[]>) {
+      const incoming = Array.isArray(action.payload) ? action.payload : [action.payload];
+      if (incoming.length === 0) return;
+      state.chats = mergeUniqueChats(state.chats, incoming.filter(Boolean));
+    },
+    markChatRead(state, action: PayloadAction<{ chatId: string; userId?: string | null }>) {
+      const { chatId, userId } = action.payload;
+      if (!chatId) return;
+      state.chats = state.chats.map((chat) => {
+        const id = getChatId(chat);
+        if (!id || String(id) !== String(chatId)) return chat;
+        const next = { ...chat, unread_count: 0, unread: 0 };
+        if (Array.isArray(next.participants)) {
+          next.participants = next.participants.map((participant: any) => {
+            if (!userId) return { ...participant, unread_count: 0, unread: 0 };
+            const participantId = participant?.user_id ?? participant?.user?.id;
+            if (participantId && String(participantId) === String(userId)) {
+              return { ...participant, unread_count: 0, unread: 0 };
+            }
+            return participant;
+          });
+        }
+        return next;
+      });
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -95,5 +120,5 @@ const chatSlice = createSlice({
   },
 });
 
-export const { resetChats } = chatSlice.actions;
+export const { resetChats, upsertChat, markChatRead } = chatSlice.actions;
 export default chatSlice.reducer;

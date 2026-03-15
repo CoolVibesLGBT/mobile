@@ -28,6 +28,7 @@ export const Actions = {
   CMD_DELETE_MESSAGE_FOR_ALL: "chat.delete_message_for_all",
   CMD_PIN_MESSAGE: "chat.pin_message",
   CMD_UNPIN_MESSAGE: "chat.unpin_message",
+	CMD_CHAT_MESSAGE_READ : "chat.message_read",
 
 
   // USER

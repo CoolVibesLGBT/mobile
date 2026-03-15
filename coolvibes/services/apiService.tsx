@@ -96,7 +96,15 @@ export class ApiService {
     return this.call(Actions.CMD_FETCH_MESSAGES, { method: 'POST', body: params });
   }
 
-    async fetchStories(payload: Record<string, any>) {
+async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {
+  return this.call(Actions.CMD_CHAT_MESSAGE_READ, {
+    method: 'POST',
+    body: params
+  });
+}
+
+
+  async fetchStories(payload: Record<string, any>) {
     return this.call(Actions.CMD_USER_FETCH_STORIES, {
       method: "POST",
       body: payload,
@@ -109,7 +117,7 @@ export class ApiService {
       body: payload,
     });
   }
-  
+
   async fetchProfile(username?: string) {
     return this.call(Actions.USER_FETCH_PROFILE, {
       method: 'GET',
