@@ -1,205 +1,436 @@
-import { StyleSheet, View, ScrollView, ImageBackground, TouchableOpacity, Linking, Platform, Text, StatusBar } from 'react-native';
-import { useRoute, useNavigation, useTheme } from '@react-navigation/native';
-import { LocalizedStringToString } from '@/utils/utils';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useTheme } from '@react-navigation/native';
+import { useLocalSearchParams } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Image } from 'expo-image';
 
-export default function PlaceDetail() {
-  const route = useRoute();
-  const navigation = useNavigation();
+import {
+  extractPlaceDetailResponse,
+  getPlaceAddress,
+  getPlaceCoordinates,
+  getPlaceDescription,
+  getPlaceEmail,
+  getPlaceImage,
+  getPlaceLocationText,
+  getPlacePrimaryTag,
+  getPlaceTelephone,
+  getPlaceTitle,
+  getPlaceWebsite,
+} from '@/helpers/places';
+import { api } from '@/services/apiService';
+
+function ensureAbsoluteUrl(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `https://${url}`;
+}
+
+export default function PlaceDetailScreen() {
   const { colors, dark } = useTheme();
-  const { item } = route.params as { item: any };
+  const params = useLocalSearchParams<{ publicId?: string; title?: string }>();
 
-  const title = LocalizedStringToString(item.title);
+  const publicId = Array.isArray(params.publicId) ? params.publicId[0] : params.publicId;
 
-  const handleGetDirections = () => {
-    const { address, town, country } = item.extras.place;
-    const fullAddress = `${address}, ${town}, ${country}`;
-    const scheme = Platform.OS === 'ios' ? 'maps:0,0?q=' : 'geo:0,0?q=';
-    const url = scheme + encodeURIComponent(fullAddress);
-    Linking.openURL(url);
-  };
+  const [place, setPlace] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const ActionButton = ({ icon, label, count }: { icon: any, label: string, count?: number }) => (
-    <TouchableOpacity style={styles.actionButton}>
-      <MaterialCommunityIcons name={icon} size={24} color={dark ? '#CCC' : '#475569'} />
-      <Text style={[styles.actionButtonLabel, { color: dark ? '#CCC' : '#475569' }]}>{label}</Text>
-      {count && <Text style={[styles.actionButtonCount, { color: colors.text }]}>{count}</Text>}
-    </TouchableOpacity>
-  );
+  const borderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)';
+  const mutedText = dark ? 'rgba(255,255,255,0.58)' : 'rgba(15,23,42,0.58)';
+  const cardBackground = dark ? 'rgba(255,255,255,0.04)' : '#FFFFFF';
+  const surfaceBackground = dark ? 'rgba(255,255,255,0.06)' : '#F8FAFC';
+
+  const fetchPlaceDetail = useCallback(async () => {
+    if (!publicId) {
+      setError('Place not found.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      const response = await api.fetchPlace(String(publicId));
+      const resolved = extractPlaceDetailResponse(response);
+      if (!resolved) {
+        setPlace(null);
+        setError('Place could not be loaded.');
+        return;
+      }
+
+      setPlace(resolved);
+    } catch {
+      setPlace(null);
+      setError('Place could not be loaded.');
+    } finally {
+      setLoading(false);
+    }
+  }, [publicId]);
+
+  useEffect(() => {
+    void fetchPlaceDetail();
+  }, [fetchPlaceDetail]);
+
+  const title = useMemo(() => {
+    const fallbackTitle = Array.isArray(params.title) ? params.title[0] : params.title;
+    return getPlaceTitle(place) || fallbackTitle || 'Place';
+  }, [params.title, place]);
+  const description = getPlaceDescription(place);
+  const locationText = getPlaceLocationText(place);
+  const address = getPlaceAddress(place);
+  const website = getPlaceWebsite(place);
+  const telephone = getPlaceTelephone(place);
+  const email = getPlaceEmail(place);
+  const tag = getPlacePrimaryTag(place);
+  const image = getPlaceImage(place);
+  const coordinates = getPlaceCoordinates(place);
+  const hashtags = Array.isArray(place?.hashtags) ? place.hashtags : [];
+
+  const handleDirections = useCallback(async () => {
+    const destination = address || title;
+    if (!destination) return;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+    await Linking.openURL(url);
+  }, [address, title]);
+
+  const handleOpenWebsite = useCallback(async () => {
+    const target = ensureAbsoluteUrl(website);
+    if (!target) return;
+    await Linking.openURL(target);
+  }, [website]);
+
+  const handleCall = useCallback(async () => {
+    if (!telephone) return;
+    await Linking.openURL(`tel:${telephone}`);
+  }, [telephone]);
+
+  const handleEmail = useCallback(async () => {
+    if (!email) return;
+    await Linking.openURL(`mailto:${email}`);
+  }, [email]);
+
+  if (loading) {
+    return (
+      <View style={[styles.centerState, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="small" color={colors.text} />
+        <Text style={[styles.stateText, { color: mutedText }]}>Loading place...</Text>
+      </View>
+    );
+  }
+
+  if (error || !place) {
+    return (
+      <View style={[styles.centerState, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: '#DC2626' }]}>{error || 'Place could not be loaded.'}</Text>
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['bottom', 'left', 'right']}>
-      <StatusBar barStyle="light-content" />
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <ImageBackground source={{ uri: item.image }} style={styles.headerImage}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
-          </TouchableOpacity>
-        </ImageBackground>
-
-        <View style={[styles.contentSheet, { backgroundColor: colors.background }]}>
-          <View style={styles.titleSection}>
-            {item.extras.place.tag && (
-              <View style={[styles.tag, { backgroundColor: dark ? '#222' : '#F1F1F1' }]}>
-                <Text style={[styles.tagText, { color: colors.text }]}>{item.extras.place.tag}</Text>
-              </View>
-            )}
-            <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-          </View>
-
-          <View style={[styles.card, { backgroundColor: dark ? '#1C1C1E' : '#FFFFFF', borderColor: dark ? '#333' : '#E2E8F0' }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Location Details</Text>
-            <View style={styles.infoRow}>
-              <MaterialCommunityIcons name="map-marker-outline" size={22} color={dark ? '#AAA' : "#64748B"} style={styles.infoIcon} />
-              <Text style={[styles.infoText, { color: dark ? '#CCC' : '#475569' }]}>{item.extras.place.address}, {item.extras.place.town}, {item.extras.place.country}</Text>
-            </View>
-            <TouchableOpacity style={[styles.directionsButton, { backgroundColor: colors.text }]} onPress={handleGetDirections}>
-              <Text style={[styles.directionsButtonText, { color: colors.background }]}>Get Directions</Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color={colors.background} />
-            </TouchableOpacity>
-          </View>
-
-          {item.note && (
-            <View style={[styles.card, { backgroundColor: dark ? '#1C1C1E' : '#FFFFFF', borderColor: dark ? '#333' : '#E2E8F0' }]}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>Notes</Text>
-              <Text style={[styles.noteText, { color: dark ? '#CCC' : '#475569' }]}>{item.note}</Text>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[styles.heroWrap, { backgroundColor: surfaceBackground }]}>
+        <Image source={{ uri: image }} style={styles.heroImage} contentFit="cover" transition={140} />
+        <View style={styles.heroOverlay} />
+        <View style={styles.heroContent}>
+          {!!tag && (
+            <View style={styles.heroTag}>
+              <Text style={styles.heroTagText}>#{tag}</Text>
             </View>
           )}
+          <Text style={styles.heroTitle}>{title}</Text>
+          {!!locationText && (
+            <View style={styles.heroLocationRow}>
+              <MaterialCommunityIcons name="map-marker-outline" size={16} color="rgba(255,255,255,0.82)" />
+              <Text style={styles.heroLocationText}>{locationText}</Text>
+            </View>
+          )}
+        </View>
+      </View>
 
-          <View style={[styles.card, { backgroundColor: dark ? '#1C1C1E' : '#FFFFFF', borderColor: dark ? '#333' : '#E2E8F0' }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Engagement</Text>
-            <View style={styles.actionsContainer}>
-              <ActionButton icon="heart-outline" label="Likes" count={123} />
-              <ActionButton icon="comment-text-outline" label="Comments" count={45} />
-              <ActionButton icon="share-variant-outline" label="Share" />
+      <View style={styles.contentWrap}>
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.primaryAction, { backgroundColor: colors.text }]}
+            activeOpacity={0.85}
+            onPress={handleDirections}
+          >
+            <MaterialCommunityIcons name="directions" size={18} color={colors.background} />
+            <Text style={[styles.primaryActionText, { color: colors.background }]}>Directions</Text>
+          </TouchableOpacity>
+
+          {website ? (
+            <TouchableOpacity
+              style={[styles.secondaryAction, { backgroundColor: cardBackground, borderColor }]}
+              activeOpacity={0.85}
+              onPress={handleOpenWebsite}
+            >
+              <MaterialCommunityIcons name="web" size={18} color={colors.text} />
+              <Text style={[styles.secondaryActionText, { color: colors.text }]}>Website</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {!!description && (
+          <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>About</Text>
+            <Text style={[styles.cardText, { color: mutedText }]}>{description}</Text>
+          </View>
+        )}
+
+        <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Location</Text>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="map-marker-outline" size={18} color={mutedText} />
+            <Text style={[styles.cardText, { color: mutedText }]}>
+              {address || locationText || 'Location details are unavailable.'}
+            </Text>
+          </View>
+
+          {coordinates ? (
+            <View style={[styles.mapPreviewWrap, { borderColor }]}>
+              <MapView
+                provider={PROVIDER_GOOGLE}
+                style={styles.mapPreview}
+                initialRegion={{
+                  latitude: coordinates.latitude,
+                  longitude: coordinates.longitude,
+                  latitudeDelta: 0.02,
+                  longitudeDelta: 0.02,
+                }}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                rotateEnabled={false}
+                pitchEnabled={false}
+              >
+                <Marker coordinate={coordinates} title={title} />
+              </MapView>
+            </View>
+          ) : null}
+        </View>
+
+        {(telephone || email || website) && (
+          <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Contact</Text>
+            {!!telephone && (
+              <TouchableOpacity style={styles.contactRow} activeOpacity={0.82} onPress={handleCall}>
+                <MaterialCommunityIcons name="phone-outline" size={18} color={colors.text} />
+                <Text style={[styles.contactLabel, { color: colors.text }]}>{telephone}</Text>
+              </TouchableOpacity>
+            )}
+            {!!email && (
+              <TouchableOpacity style={styles.contactRow} activeOpacity={0.82} onPress={handleEmail}>
+                <MaterialCommunityIcons name="email-outline" size={18} color={colors.text} />
+                <Text style={[styles.contactLabel, { color: colors.text }]}>{email}</Text>
+              </TouchableOpacity>
+            )}
+            {!!website && (
+              <TouchableOpacity style={styles.contactRow} activeOpacity={0.82} onPress={handleOpenWebsite}>
+                <MaterialCommunityIcons name="web" size={18} color={colors.text} />
+                <Text style={[styles.contactLabel, { color: colors.text }]} numberOfLines={1}>
+                  {website}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {hashtags.length > 0 && (
+          <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Tags</Text>
+            <View style={styles.hashtagRow}>
+              {hashtags.map((item: any, index: number) => {
+                const value = typeof item?.tag === 'string' ? item.tag.trim() : '';
+                if (!value) return null;
+
+                return (
+                  <View
+                    key={`${value}-${index}`}
+                    style={[styles.hashtagChip, { backgroundColor: surfaceBackground, borderColor }]}
+                  >
+                    <Text style={[styles.hashtagChipText, { color: colors.text }]}>#{value}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
-  scrollContainer: {
-    paddingBottom: 40,
+  scrollContent: {
+    paddingBottom: 32,
   },
-  headerImage: {
-    width: '100%',
-    height: 320,
-    backgroundColor: '#E2E8F0',
-    justifyContent: 'flex-end',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50, // Adjust for status bar
-    left: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+  centerState: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    gap: 12,
   },
-  contentSheet: {
-    backgroundColor: '#F8FAFC',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop: -24,
-    paddingTop: 24,
-    paddingHorizontal: 16,
-    gap: 16,
+  stateText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
   },
-  titleSection: {
-    marginBottom: 0,
+  errorText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    textAlign: 'center',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1E293B',
+  heroWrap: {
+    height: 280,
   },
-  tag: {
-    backgroundColor: '#E0E7FF',
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(2,6,23,0.32)',
+  },
+  heroContent: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 20,
+    gap: 8,
+  },
+  heroTag: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-    marginBottom: 8,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(15,23,42,0.78)',
   },
-  tagText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4338CA',
+  heroTagText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 30,
+    lineHeight: 34,
+    fontFamily: 'Outfit-Black',
+  },
+  heroLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroLocationText: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+  },
+  contentWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    gap: 14,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  primaryAction: {
+    flex: 1,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  primaryActionText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+  },
+  secondaryAction: {
+    minWidth: 118,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+  },
+  secondaryActionText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
   },
   card: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderRadius: 22,
+    padding: 16,
+    gap: 12,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 12,
+    fontFamily: 'Outfit-Bold',
+  },
+  cardText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter-Regular',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    gap: 10,
   },
-  infoIcon: {
-    marginRight: 12,
-    marginTop: 2,
+  mapPreviewWrap: {
+    height: 180,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
   },
-  infoText: {
-    fontSize: 16,
-    color: '#475569',
-    lineHeight: 24,
+  mapPreview: {
     flex: 1,
   },
-  directionsButton: {
+  contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 8,
+    gap: 10,
   },
-  directionsButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  noteText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#475569',
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 8,
-  },
-  actionButton: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  actionButtonLabel: {
+  contactLabel: {
+    flex: 1,
     fontSize: 14,
-    color: '#475569',
-    fontWeight: '500',
+    fontFamily: 'Inter-SemiBold',
   },
-  actionButtonCount: {
-    fontSize: 16,
-    color: '#1E293B',
-    fontWeight: '600',
+  hashtagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  hashtagChip: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  hashtagChipText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
   },
 });

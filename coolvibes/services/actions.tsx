@@ -65,7 +65,8 @@ export const Actions = {
 
   CMD_FETCH_JOB_OFFERS: "classifieds.offers",
   CMD_FETCH_JOB_SEARCH: "classifieds.search",
-	CMD_CLASSIFIEDS_CREATE : "classifieds.create",
+  CMD_CLASSIFIEDS_CREATE: "classifieds.create",
+  CMD_CLASSIFIEDS_FETCH: "classifieds.get",
 
   CMD_POST_LIKE: "post.like",
   CMD_POST_DISLIKE: "post.dislike",

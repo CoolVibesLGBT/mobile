@@ -1,17 +1,16 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { SplashScreen, Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Icon, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { store } from "../store"
 import { Provider } from 'react-redux';
 import { fetchInitialSync } from '@/store/slice/system';
 import { autoLoginThunk } from '@/store/slice/auth';
 import * as SecureStore from 'expo-secure-store';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Platform, View } from 'react-native';
+import { Image, Platform, StyleSheet, View } from 'react-native';
 import { 
   useFonts, 
   Inter_400Regular, 
@@ -30,7 +29,6 @@ import { useEffect, useRef } from 'react';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { useRouter, useSegments } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 
 import GlobalHeader from '@/components/GlobalHeader';
@@ -44,8 +42,17 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+function AppBootScreen({ dark }: { dark: boolean }) {
+  return (
+    <View style={[styles.bootScreen, { backgroundColor: dark ? '#000000' : '#ffffff' }]}>
+      <Image
+        source={require('@/assets/images/splash-icon.png')}
+        style={styles.bootLogo}
+        resizeMode="contain"
+      />
+    </View>
+  );
+}
 
 function AuthGuard() {
   const { token, initialized } = useAppSelector(state => state.auth);
@@ -73,13 +80,14 @@ function AuthGuard() {
         setTimeout(() => { navigatingRef.current = false; }, 500);
       }
     }
-  }, [token, initialized, segments]);
+  }, [token, initialized, segments, router]);
 
   return null;
 }
 
 function ThemedApp() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector(state => state.system);
   const { initialized, token } = useAppSelector(state => state.auth);
@@ -115,31 +123,11 @@ function ThemedApp() {
       dispatch(autoLoginThunk());
     };
     init();
-  }, []);
+  }, [dispatch]);
 
   const isReady = initialized && fontsLoaded && !loading;
-
-  useEffect(() => {
-    if (isReady) {
-      const inAuthGroup = segments[0] === '(auth)';
-      const needsRedirect = (!token && !inAuthGroup) || (token && inAuthGroup);
-      
-      if (!needsRedirect) {
-        const t = setTimeout(() => {
-          SplashScreen.hideAsync().catch(() => {});
-        }, 100);
-        return () => clearTimeout(t);
-      }
-    }
-    
-    const hider = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-    }, 5000);
-    return () => clearTimeout(hider);
-  }, [isReady, token, segments]);
-
-  if (!isReady) return null;
-
+  const inAuthGroup = segments[0] === '(auth)';
+  const needsRedirect = initialized && ((!token && !inAuthGroup) || (token && inAuthGroup));
 
   const CustomDarkTheme = {
     ...DarkTheme,
@@ -167,10 +155,18 @@ function ThemedApp() {
     },
   };
 
-  if (!fontsLoaded) return null;
+  if (!isReady || needsRedirect) {
+    return (
+      <ThemeProvider value={isDark ? CustomDarkTheme : CustomLightTheme}>
+        <AuthGuard />
+        <AppBootScreen dark={isDark} />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+      </ThemeProvider>
+    );
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme}>
+    <ThemeProvider value={isDark ? CustomDarkTheme : CustomLightTheme}>
       <AuthGuard />
       <View style={{ flex: 1 }}>
         <GlobalHeader />
@@ -189,12 +185,21 @@ function ThemedApp() {
           <Stack.Screen name="CheckInCreate" options={{ headerShown: false }} />
           <Stack.Screen name="CreatePost" options={{ headerShown: false }} />
           <Stack.Screen name="PostDetail" options={{ headerShown: false }} />
+          <Stack.Screen name="PendingTasks" options={{ headerShown: false }} />
+          <Stack.Screen name="Classifieds" options={{ headerShown: false }} />
+          <Stack.Screen name="ClassifiedCreate" options={{ headerShown: false }} />
+          <Stack.Screen name="ClassifiedDetail" options={{ headerShown: false }} />
+          <Stack.Screen name="PlaceDetail" options={{ headerShown: false }} />
+          <Stack.Screen name="places" options={{ headerShown: false }} />
+          <Stack.Screen name="place-detail" options={{ headerShown: false }} />
+          <Stack.Screen name="legal/index" options={{ headerShown: false }} />
+          <Stack.Screen name="legal/[page]" options={{ headerShown: false }} />
           <Stack.Screen name="Settings" options={{ headerShown: false }} />
           <Stack.Screen name="ProfileEdit" options={{ headerShown: false }} />
           <Stack.Screen name="ProfileMetricDetail" options={{ headerShown: false }} />
         </Stack>
       </View>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 }
@@ -214,3 +219,15 @@ export default function RootLayout() {
     </Provider>
   );
 }
+
+const styles = StyleSheet.create({
+  bootScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bootLogo: {
+    width: 200,
+    height: 200,
+  },
+});

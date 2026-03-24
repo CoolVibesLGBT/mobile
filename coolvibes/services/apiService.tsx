@@ -6,6 +6,8 @@ interface ApiRequestOptions {
   method?: 'GET' | 'POST';
   params?: Record<string, any>;
   body?: Record<string, any> | FormData; // FormData desteği eklendi
+  timeout?: number;
+  suppressGlobalError?: boolean;
 }
 
 const shouldReportApiError = (action: ActionType, error: any) => {
@@ -32,11 +34,14 @@ export class ApiService {
       if (method === 'GET') {
         response = await httpClient.get('/', {
           params: { action, ...options.params },
+          timeout: options.timeout,
         });
       } else {
         // POST
         if (options.body instanceof FormData) {
-          response = await httpClient.post('/', options.body);
+          response = await httpClient.post('/', options.body, {
+            timeout: options.timeout,
+          });
         } else {
           const formData = new FormData();
           formData.append('action', action);
@@ -95,14 +100,16 @@ export class ApiService {
               }
             }
           }
-          response = await httpClient.post('/', formData);
+          response = await httpClient.post('/', formData, {
+            timeout: options.timeout,
+          });
         }
       }
 
       console.log(`[API RESPONSE] Action: ${action}`, response.data);
       return response.data as T;
     } catch (error: any) {
-      if (shouldReportApiError(action, error)) {
+      if (!options.suppressGlobalError && shouldReportApiError(action, error)) {
         reportAppError(error, {
           source: 'api',
           action,
@@ -147,10 +154,33 @@ export class ApiService {
   }
 
 async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {
-  return this.call(Actions.CMD_CHAT_MESSAGE_READ, {
-    method: 'POST',
-    body: params
-  });
+  const uniqueMessageIds = Array.from(
+    new Set((params.message_ids || []).map((messageId) => String(messageId || '')).filter(Boolean))
+  );
+
+  if (!params.chat_id || uniqueMessageIds.length === 0) {
+    return { success: true };
+  }
+
+  const results = await Promise.allSettled(
+    uniqueMessageIds.map((messageId) =>
+      this.call(Actions.CMD_CHAT_MESSAGE_READ, {
+        method: 'POST',
+        body: {
+          chat_id: params.chat_id,
+          message_id: messageId,
+        },
+        suppressGlobalError: true,
+      })
+    )
+  );
+
+  const rejected = results.filter((result) => result.status === 'rejected');
+  if (rejected.length === uniqueMessageIds.length) {
+    throw (rejected[0] as PromiseRejectedResult).reason;
+  }
+
+  return { success: true };
 }
 
 
@@ -196,10 +226,37 @@ async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {
     });
   }
 
+  async fetchJobOffers({ limit = 20, cursor }: { limit?: number; cursor?: string | null }) {
+    const body: Record<string, any> = { limit };
+    if (cursor) body.cursor = cursor;
+    return this.call(Actions.CMD_FETCH_JOB_OFFERS, {
+      method: 'POST',
+      body,
+    });
+  }
+
+  async fetchJobSearches({ limit = 20, cursor }: { limit?: number; cursor?: string | null }) {
+    const body: Record<string, any> = { limit };
+    if (cursor) body.cursor = cursor;
+    return this.call(Actions.CMD_FETCH_JOB_SEARCH, {
+      method: 'POST',
+      body,
+    });
+  }
+
+  async fetchClassified(postId: string) {
+    return this.call(Actions.CMD_CLASSIFIEDS_FETCH, {
+      method: 'POST',
+      body: { post_id: postId },
+    });
+  }
+
   async createPost(payload: Record<string, any>) {
     return this.call(Actions.POST_CREATE, {
       method: 'POST',
       body: payload,
+      timeout: 0,
+      suppressGlobalError: true,
     });
   }
 
@@ -356,17 +413,55 @@ async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {
 
   // Diğer metodlar da benzer şekilde
 
-  async fetchNearbyPlaces(latitude: number | null, longitude: number | null, cursor: string | null = null, limit: number | null = null) {
+  async fetchPlace(publicId: string) {
     return this.call(Actions.CMD_PLACE_FETCH, {
       method: 'POST',
-      body: { latitude: latitude, longitude: longitude, cursor: cursor, limit: limit },
+      body: { public_id: publicId },
     });
   }
 
-  async fetchNearbyUsers(latitude: number | null, longitude: number | null, cursor: string | null = null, limit: number | null = null) {
+  async fetchNearbyPlaces(latitude: number | null, longitude: number | null, cursor: string | null = null, distance: string | null = null, limit: number | null = null) {
+    return this.call(Actions.CMD_PLACE_FETCH, {
+      method: 'POST',
+      body: { latitude, longitude, cursor, distance, limit },
+    });
+  }
+
+  async fetchNearbyUsers(latitude: number | null, longitude: number | null, cursor: any = null, limit: number | null = null) {
+    const nextCursor =
+      cursor && typeof cursor === 'object'
+        ? cursor.next ?? cursor.next_cursor ?? cursor.nextCursor ?? cursor.cursor ?? null
+        : cursor;
+    const distance =
+      cursor && typeof cursor === 'object'
+        ? cursor.distance ?? null
+        : null;
+
+    const body: Record<string, any> = {};
+
+    if (typeof latitude === 'number' && Number.isFinite(latitude)) {
+      body.latitude = latitude;
+    }
+
+    if (typeof longitude === 'number' && Number.isFinite(longitude)) {
+      body.longitude = longitude;
+    }
+
+    if (nextCursor !== null && nextCursor !== undefined && nextCursor !== '') {
+      body.cursor = nextCursor;
+    }
+
+    if (distance !== null && distance !== undefined && distance !== '') {
+      body.distance = distance;
+    }
+
+    if (typeof limit === 'number' && Number.isFinite(limit)) {
+      body.limit = limit;
+    }
+
     return this.call(Actions.CMD_USER_FETCH_NEARBY_USERS, {
       method: 'POST',
-      body: { latitude: latitude, longitude: longitude, cursor: cursor, limit: limit },
+      body,
     });
   }
 

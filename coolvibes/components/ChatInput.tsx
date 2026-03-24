@@ -47,6 +47,7 @@ interface Media {
   uri?: string;
   type: "image" | "video" | "document" | "audio" | "location" | "live_location" | "tag";
   name?: string;
+  mimeType?: string;
   data?: any;
   icon?: string;
   gradient?: { colors: string[]; textColor?: string };
@@ -70,7 +71,7 @@ interface User {
   name: string;
 }
 
-type ChatInputKind = 'chat' | 'comment' | 'post';
+type ChatInputKind = 'chat' | 'comment' | 'post' | 'classified';
 
 interface ChatInputProps {
   kind?: ChatInputKind;
@@ -185,7 +186,14 @@ export default function ChatInput({
   const insets = useSafeAreaInsets();
   const isComment = kind === 'comment';
   const isPost = kind === 'post';
-  const inputPlaceholder = isComment ? 'Write a comment' : isPost ? 'Write a post' : 'Type a message';
+  const isClassified = kind === 'classified';
+  const inputPlaceholder = isComment
+    ? 'Write a comment'
+    : isPost
+      ? 'Write a post'
+      : isClassified
+        ? 'Write your listing'
+        : 'Type a message';
   const [inputText, setInputText] = useState("");
   const [inputHeight, setInputHeight] = useState(40);
   const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
@@ -398,6 +406,8 @@ export default function ChatInput({
         {
           uri: result.assets[0].uri,
           type: result.assets[0].type === "video" ? "video" : "image",
+          name: result.assets[0].fileName ?? undefined,
+          mimeType: result.assets[0].mimeType ?? undefined,
         },
       ]);
       bottomSheetModalRef.current?.dismiss();
@@ -433,7 +443,12 @@ export default function ChatInput({
       quality: 1,
     });
     if (!result.canceled) {
-      const newItems = result.assets.map((a) => ({ uri: a.uri, type: "image" as const }));
+      const newItems = result.assets.map((a) => ({
+        uri: a.uri,
+        type: "image" as const,
+        name: a.fileName ?? undefined,
+        mimeType: a.mimeType ?? undefined,
+      }));
       setSelectedMedia((prev) => [...prev, ...newItems]);
       bottomSheetModalRef.current?.dismiss();
     }
@@ -448,7 +463,12 @@ export default function ChatInput({
       quality: 1,
     });
     if (!result.canceled) {
-      const newItems = result.assets.map((a) => ({ uri: a.uri, type: "video" as const }));
+      const newItems = result.assets.map((a) => ({
+        uri: a.uri,
+        type: "video" as const,
+        name: a.fileName ?? undefined,
+        mimeType: a.mimeType ?? undefined,
+      }));
       setSelectedMedia((prev) => [...prev, ...newItems]);
       bottomSheetModalRef.current?.dismiss();
     }

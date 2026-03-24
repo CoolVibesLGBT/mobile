@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Platform, Modal, Pressable, Animated, Easing, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 import FullProfileView from '@/components/FullProfileView';
+import { getLegalPage } from '@/helpers/legal';
 import { getSafeImageURLEx } from '@/helpers/safeUrl';
 import { decodeProfileParam, normalizeProfileUser } from '@/helpers/profile';
 import { api } from '@/services/apiService';
@@ -24,16 +25,43 @@ export default function GlobalHeader() {
 
     // Read logged-in user from Redux store
     const authUser = useAppSelector(state => state.auth.user);
+    const backgroundTasks = useAppSelector(state => state.postUploads.tasks);
     const profileSheetRef = useRef<BottomSheetModal>(null);
     const [fetchedUser, setFetchedUser] = useState<any | null>(null);
     const lastFetchKeyRef = useRef<string | null>(null);
 
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const sidebarTranslateX = useRef(new Animated.Value(-304)).current;
 
     const handleOpenProfile = useCallback(() => {
         setIsSheetOpen(true);
         profileSheetRef.current?.present();
     }, []);
+
+    const handleOpenMenu = useCallback(() => {
+        setIsSidebarOpen(true);
+        Animated.timing(sidebarTranslateX, {
+            toValue: 0,
+            duration: 240,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+        }).start();
+    }, [sidebarTranslateX]);
+
+    const handleCloseMenu = useCallback((onClosed?: () => void) => {
+        Animated.timing(sidebarTranslateX, {
+            toValue: -304,
+            duration: 220,
+            easing: Easing.in(Easing.cubic),
+            useNativeDriver: true,
+        }).start(({ finished }) => {
+            if (finished) {
+                setIsSidebarOpen(false);
+                onClosed?.();
+            }
+        });
+    }, [sidebarTranslateX]);
 
     const renderBackdrop = useCallback(
         (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
@@ -47,6 +75,14 @@ export default function GlobalHeader() {
     const isSettings = (segments as any[]).includes('Settings');
     const isActivity = (segments as any[]).includes('Activity');
     const isMatch = (segments as any[]).includes('Match') || (segments as any[]).includes('MatchScreen');
+    const isPendingTasks = (segments as any[]).includes('PendingTasks');
+    const isClassifiedsRoot = (segments as any[]).includes('Classifieds');
+    const isClassifiedDetail = (segments as any[]).includes('ClassifiedDetail');
+    const isClassifiedCreate = (segments as any[]).includes('ClassifiedCreate');
+    const isClassifiedsRoute = isClassifiedsRoot || isClassifiedDetail || isClassifiedCreate;
+    const isPlacesRoot = (segments as any[]).includes('Places') || (segments as any[]).includes('places');
+    const isPlaceDetail = (segments as any[]).includes('PlaceDetail') || (segments as any[]).includes('place-detail');
+    const isPlacesRoute = isPlacesRoot || isPlaceDetail;
     const isProfileEdit = (segments as any[]).includes('ProfileEdit');
     const isCreatePost = (segments as any[]).includes('CreatePost');
     const isProfileMetricDetail = (segments as any[]).includes('ProfileMetricDetail');
@@ -54,10 +90,13 @@ export default function GlobalHeader() {
 
     const rootSubSegments = ['index', 'chat', 'Profile', 'Discover', 'nearby', 'Activity'];
     const segs = segments as string[];
+    const isLegalIndex = segs[0] === 'legal' && segs.length === 1;
+    const isLegalDetail = segs[0] === 'legal' && segs.includes('[page]');
+    const isLegalRoute = isLegalIndex || isLegalDetail;
     const currentTab = segs[segs.length - 1] ?? '';
     const isProfileRoute = currentTab.toLowerCase() === 'profile';
     const isCheckInRoute = isCheckIn || isCheckInCreate;
-    const isRoot = !isChatDetail && !isCheckInRoute && !isSettings && !isProfileEdit && !isCreatePost && !isProfileMetricDetail && (
+    const isRoot = !isChatDetail && !isCheckInRoute && !isSettings && !isPendingTasks && !isClassifiedsRoute && !isPlacesRoute && !isLegalRoute && !isProfileEdit && !isCreatePost && !isProfileMetricDetail && (
         segs.length === 0 ||
         (segs.length === 1 && segs[0] === '(tabs)') ||
         (segs.length === 2 && segs[0] === '(tabs)' && rootSubSegments.some(s => s.toLowerCase() === segs[1].toLowerCase()))
@@ -67,12 +106,32 @@ export default function GlobalHeader() {
         typeof settingsReturnToParam === 'string' && settingsReturnToParam.startsWith('/')
             ? settingsReturnToParam
             : null;
+    const legalPageParam = Array.isArray(params?.page) ? params.page[0] : params?.page;
+    const currentLegalPage = getLegalPage(typeof legalPageParam === 'string' ? legalPageParam : null);
     const rootRoutePath = useMemo(() => {
         if (segs[0] !== '(tabs)') return '/(tabs)';
         if (!segs[1] || segs[1] === 'index') return '/(tabs)';
         return `/(tabs)/${segs[1]}`;
     }, [segs]);
-
+    const sortedBackgroundTasks = useMemo(
+        () => [...backgroundTasks].sort((a, b) => b.updatedAt - a.updatedAt),
+        [backgroundTasks]
+    );
+    const pendingTaskCount = sortedBackgroundTasks.filter((task) => task.status === 'uploading').length;
+    const recentTaskCount = sortedBackgroundTasks.filter((task) => task.status !== 'uploading').length;
+    const sidebarAvatarUri = getSafeImageURLEx(authUser?.id ?? authUser?.public_id, authUser?.avatar, 'medium')
+        || getSafeImageURLEx(authUser?.id ?? authUser?.public_id, authUser?.avatar_url || authUser?.avatarUrl, 'medium');
+    const sidebarDisplayName = authUser?.displayname || authUser?.name || authUser?.username || 'CoolVibes';
+    const sidebarHandle = authUser?.username ? `@${authUser.username}` : 'Open your spaces faster';
+    const sidebarTaskLabel = pendingTaskCount > 0
+        ? `${pendingTaskCount} active task${pendingTaskCount === 1 ? '' : 's'}`
+        : recentTaskCount > 0
+            ? `${recentTaskCount} recent task${recentTaskCount === 1 ? '' : 's'}`
+            : 'No background tasks';
+    const sidebarCardBackground = dark ? 'rgba(255,255,255,0.05)' : '#FFFFFF';
+    const sidebarMutedText = dark ? 'rgba(255,255,255,0.58)' : 'rgba(17,24,39,0.58)';
+    const sidebarIconBackground = dark ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.06)';
+    const sidebarPillBackground = dark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)';
     // Resolve chat user from route params
     const chatUserNameRaw = (params?.name as string) || (params?.chatId as string) || 'Chat';
     const chatUserName = chatUserNameRaw === 'Chat' ? 'Chat' : chatUserNameRaw;
@@ -173,7 +232,7 @@ export default function GlobalHeader() {
         [fetchedUser, chatProfilePayload, profileFallback]
     );
 
-    const isOverlayHeader = !isSettings && !isProfileRoute && !isProfileEdit && !isCreatePost && !isProfileMetricDetail;
+    const isOverlayHeader = !isSettings && !isPendingTasks && !isClassifiedsRoute && !isPlacesRoute && !isLegalRoute && !isProfileRoute && !isProfileEdit && !isCreatePost && !isProfileMetricDetail;
     const containerStyle: ViewStyle = {
         height: 60 + insets.top,
         paddingTop: insets.top,
@@ -233,6 +292,43 @@ export default function GlobalHeader() {
             return (
                 <View style={styles.brandContainer}>
                     <Text style={brandText}>SETTINGS</Text>
+                </View>
+            );
+        }
+        if (isPendingTasks) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>PENDING TASKS</Text>
+                </View>
+            );
+        }
+        if (isClassifiedsRoot || isClassifiedDetail) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>CLASSIFIEDS</Text>
+                </View>
+            );
+        }
+        if (isClassifiedCreate) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>NEW LISTING</Text>
+                </View>
+            );
+        }
+        if (isPlacesRoute) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>PLACES</Text>
+                </View>
+            );
+        }
+        if (isLegalRoute) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText} numberOfLines={1}>
+                        {(currentLegalPage?.title ?? 'Legal & Privacy').toUpperCase()}
+                    </Text>
                 </View>
             );
         }
@@ -328,6 +424,31 @@ export default function GlobalHeader() {
         if (isSettings) {
             return <View style={styles.avatarBtn} />;
         }
+        if (isPendingTasks) {
+            return <View style={styles.avatarBtn} />;
+        }
+        if (isClassifiedsRoot) {
+            return (
+                <View style={styles.rightButtons}>
+                    <TouchableOpacity
+                        onPress={() => router.push('/ClassifiedCreate')}
+                        style={styles.headerBtn}
+                        activeOpacity={0.7}
+                    >
+                        <MaterialCommunityIcons name="plus" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+        if (isClassifiedDetail || isClassifiedCreate) {
+            return <View style={styles.avatarBtn} />;
+        }
+        if (isPlacesRoute) {
+            return <View style={styles.avatarBtn} />;
+        }
+        if (isLegalRoute) {
+            return <View style={styles.avatarBtn} />;
+        }
         if (isProfileEdit) {
             return <View style={styles.avatarBtn} />;
         }
@@ -337,7 +458,6 @@ export default function GlobalHeader() {
         if (isProfileMetricDetail) {
             return <View style={styles.avatarBtn} />;
         }
-        const avatarUri = getSafeImageURLEx(authUser?.id, authUser?.avatar, 'medium') || getSafeImageURLEx(authUser?.id, authUser?.avatar_url || authUser?.avatarUrl, 'medium');
         return (
             <View style={styles.rightButtons}>
                 {!isActivity && (
@@ -355,13 +475,66 @@ export default function GlobalHeader() {
                     style={styles.avatarBtn}
                     activeOpacity={0.7}
                 >
-                    {avatarUri ? (
-                        <Image source={{ uri: avatarUri }} style={styles.headerAvatar} contentFit="cover" />
+                    {sidebarAvatarUri ? (
+                        <Image source={{ uri: sidebarAvatarUri }} style={styles.headerAvatar} contentFit="cover" />
                     ) : (
                         <MaterialCommunityIcons name="account-circle-outline" size={28} color={colors.text} />
                     )}
                 </TouchableOpacity>
             </View>
+        );
+    };
+
+    const handleSettingsPress = useCallback(() => {
+        router.push({
+            pathname: '/Settings',
+            params: { returnTo: isRoot ? rootRoutePath : '/(tabs)' },
+        });
+    }, [isRoot, rootRoutePath, router]);
+
+    const handleSidebarNavigate = useCallback((pathname: string) => {
+        handleCloseMenu(() => {
+            router.navigate(pathname as any);
+        });
+    }, [handleCloseMenu, router]);
+
+    const renderLeft = () => {
+        if (isRoot) {
+            return (
+                <View style={styles.leftButtons}>
+                    <TouchableOpacity
+                        onPress={handleOpenMenu}
+                        style={styles.iconBtn}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                        <MaterialCommunityIcons name="menu" size={28} color={colors.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={handleSettingsPress}
+                        style={styles.iconBtn}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                        <MaterialCommunityIcons name="tune-vertical" size={22} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        return (
+            <TouchableOpacity
+                onPress={handleLeftPress}
+                style={styles.iconBtn}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+                <MaterialCommunityIcons
+                    name="chevron-left"
+                    size={isCheckInRoute ? 30 : (isSettings ? 30 : 30)}
+                    color={colors.text}
+                />
+            </TouchableOpacity>
         );
     };
 
@@ -385,20 +558,20 @@ export default function GlobalHeader() {
             return;
         }
 
-        if (isCheckInRoute || isChatDetail) {
+        if (isPendingTasks || isClassifiedsRoute || isPlacesRoute || isLegalRoute || isCheckInRoute || isChatDetail) {
             if (router.canGoBack()) {
                 router.back();
             } else {
-                router.replace('/(tabs)');
+                if (isPendingTasks) {
+                    router.replace('/(tabs)');
+                } else if (isPlacesRoute) {
+                    router.replace('/places');
+                } else if (isLegalRoute) {
+                    router.replace('/legal');
+                } else {
+                    router.replace(isClassifiedDetail || isClassifiedCreate ? '/Classifieds' : '/(tabs)');
+                }
             }
-            return;
-        }
-
-        if (isRoot) {
-            router.push({
-                pathname: '/Settings',
-                params: { returnTo: rootRoutePath },
-            });
             return;
         }
 
@@ -408,7 +581,7 @@ export default function GlobalHeader() {
         }
 
         router.replace('/(tabs)');
-    }, [isCheckIn, params?.checkin_mode, isSettings, settingsReturnTo, router, isChatDetail, isRoot, rootRoutePath, isCheckInRoute]);
+    }, [isCheckIn, params?.checkin_mode, isSettings, settingsReturnTo, router, isChatDetail, isCheckInRoute, isClassifiedCreate, isClassifiedDetail, isClassifiedsRoute, isPendingTasks, isPlacesRoute, isLegalRoute]);
 
     if (shouldHide) return null;
 
@@ -423,18 +596,7 @@ export default function GlobalHeader() {
             />
             <View style={contentStyle}>
                 {/* Left */}
-                <TouchableOpacity
-                    onPress={handleLeftPress}
-                    style={styles.iconBtn}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                    <MaterialCommunityIcons
-                        name={isCheckInRoute ? 'chevron-left' : (isSettings ? 'chevron-left' : (isRoot ? 'tune-vertical' : 'chevron-left'))}
-                        size={isCheckInRoute ? 30 : (isSettings ? 30 : (isRoot ? 22 : 30))}
-                        color={colors.text}
-                    />
-                </TouchableOpacity>
+                {renderLeft()}
 
                 {/* Center */}
                 {renderCenter()}
@@ -442,6 +604,201 @@ export default function GlobalHeader() {
                 {/* Right */}
                 {renderRight()}
             </View>
+
+            <Modal
+                visible={isSidebarOpen}
+                transparent
+                animationType="none"
+                statusBarTranslucent
+                onRequestClose={() => handleCloseMenu()}
+            >
+                <View style={styles.sidebarRoot}>
+                    <Pressable style={styles.sidebarBackdrop} onPress={() => handleCloseMenu()} />
+                    <Animated.View
+                        style={[
+                            styles.sidebarPanel,
+                            {
+                                paddingTop: insets.top + 18,
+                                backgroundColor: dark ? '#0B0B0B' : '#FFFFFF',
+                                borderRightColor: borderColor,
+                                transform: [{ translateX: sidebarTranslateX }],
+                            },
+                        ]}
+                    >
+                        <View style={styles.sidebarHeader}>
+                            <Text style={[styles.sidebarTitle, { color: colors.text }]}>Menu</Text>
+                            <TouchableOpacity
+                                onPress={() => handleCloseMenu()}
+                                style={[styles.sidebarCloseBtn, { backgroundColor: sidebarIconBackground }]}
+                                activeOpacity={0.8}
+                            >
+                                <MaterialCommunityIcons name="close" size={22} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView
+                            style={styles.sidebarScroll}
+                            contentContainerStyle={styles.sidebarContent}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <TouchableOpacity
+                                style={[styles.sidebarHeroCard, { backgroundColor: sidebarCardBackground, borderColor }]}
+                                activeOpacity={0.86}
+                                onPress={() => handleSidebarNavigate('/(tabs)/Profile')}
+                            >
+                                <View style={[styles.sidebarHeroAvatarWrap, { backgroundColor: sidebarIconBackground, borderColor }]}>
+                                    {sidebarAvatarUri ? (
+                                        <Image source={{ uri: sidebarAvatarUri }} style={styles.sidebarHeroAvatar} contentFit="cover" />
+                                    ) : (
+                                        <MaterialCommunityIcons name="account-circle-outline" size={34} color={colors.text} />
+                                    )}
+                                </View>
+                                <View style={styles.sidebarHeroBody}>
+                                    <Text style={[styles.sidebarHeroTitle, { color: colors.text }]} numberOfLines={1}>
+                                        {sidebarDisplayName}
+                                    </Text>
+                                    <Text style={[styles.sidebarHeroSubtitle, { color: sidebarMutedText }]} numberOfLines={1}>
+                                        {sidebarHandle}
+                                    </Text>
+                                    <View style={styles.sidebarHeroMetaRow}>
+                                        <View style={[styles.sidebarPill, { backgroundColor: sidebarPillBackground }]}>
+                                            <Text style={[styles.sidebarPillText, { color: colors.text }]}>
+                                                {sidebarTaskLabel}
+                                            </Text>
+                                        </View>
+                                        <View style={[styles.sidebarPill, { backgroundColor: sidebarPillBackground }]}>
+                                            <Text style={[styles.sidebarPillText, { color: colors.text }]}>
+                                                Quick access
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+                                <View style={[styles.menuItemChevronWrap, { backgroundColor: sidebarIconBackground }]}>
+                                    <MaterialCommunityIcons name="chevron-right" size={18} color={colors.text} />
+                                </View>
+                            </TouchableOpacity>
+
+                            <View style={styles.sidebarSection}>
+                                <Text style={[styles.sidebarSectionLabel, { color: sidebarMutedText }]}>Workspace</Text>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.menuItem,
+                                        {
+                                            borderColor,
+                                            backgroundColor: isPendingTasks ? sidebarCardBackground : 'transparent',
+                                        },
+                                    ]}
+                                    activeOpacity={0.82}
+                                    onPress={() => handleSidebarNavigate('/PendingTasks')}
+                                >
+                                    <View style={[styles.menuItemIcon, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="clipboard-text-clock-outline" size={20} color={colors.text} />
+                                    </View>
+                                    <View style={styles.menuItemBody}>
+                                        <Text style={[styles.menuItemTitle, { color: colors.text }]}>Pending Tasks</Text>
+                                        <Text style={[styles.menuItemSubtitle, { color: sidebarMutedText }]}>
+                                            {sidebarTaskLabel}
+                                        </Text>
+                                    </View>
+                                    {pendingTaskCount > 0 ? (
+                                        <View style={[styles.menuItemBadge, { backgroundColor: colors.text }]}>
+                                            <Text style={[styles.menuItemBadgeText, { color: dark ? '#0B0B0B' : '#FFFFFF' }]}>
+                                                {pendingTaskCount}
+                                            </Text>
+                                        </View>
+                                    ) : null}
+                                    <View style={[styles.menuItemChevronWrap, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="chevron-right" size={18} color={colors.text} />
+                                    </View>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.menuItem,
+                                        {
+                                            borderColor,
+                                            backgroundColor: isClassifiedsRoute ? sidebarCardBackground : 'transparent',
+                                        },
+                                    ]}
+                                    activeOpacity={0.82}
+                                    onPress={() => handleSidebarNavigate('/Classifieds')}
+                                >
+                                    <View style={[styles.menuItemIcon, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="briefcase-outline" size={20} color={colors.text} />
+                                    </View>
+                                    <View style={styles.menuItemBody}>
+                                        <Text style={[styles.menuItemTitle, { color: colors.text }]}>Classifieds</Text>
+                                        <Text style={[styles.menuItemSubtitle, { color: sidebarMutedText }]}>
+                                            Offers, listings and community needs
+                                        </Text>
+                                    </View>
+                                    <View style={[styles.menuItemChevronWrap, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="chevron-right" size={18} color={colors.text} />
+                                    </View>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.menuItem,
+                                        {
+                                            borderColor,
+                                            backgroundColor: isPlacesRoute ? sidebarCardBackground : 'transparent',
+                                        },
+                                    ]}
+                                    activeOpacity={0.82}
+                                    onPress={() => handleSidebarNavigate('/places')}
+                                >
+                                    <View style={[styles.menuItemIcon, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="map-marker-outline" size={20} color={colors.text} />
+                                    </View>
+                                    <View style={styles.menuItemBody}>
+                                        <Text style={[styles.menuItemTitle, { color: colors.text }]}>Places</Text>
+                                        <Text style={[styles.menuItemSubtitle, { color: sidebarMutedText }]}>
+                                            LGBTQ+ friendly venues nearby
+                                        </Text>
+                                    </View>
+                                    <View style={[styles.menuItemChevronWrap, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="chevron-right" size={18} color={colors.text} />
+                                    </View>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.menuItem,
+                                        {
+                                            borderColor,
+                                            backgroundColor: isLegalRoute ? sidebarCardBackground : 'transparent',
+                                        },
+                                    ]}
+                                    activeOpacity={0.82}
+                                    onPress={() => handleSidebarNavigate('/legal')}
+                                >
+                                    <View style={[styles.menuItemIcon, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="shield-outline" size={20} color={colors.text} />
+                                    </View>
+                                    <View style={styles.menuItemBody}>
+                                        <Text style={[styles.menuItemTitle, { color: colors.text }]}>Legal</Text>
+                                        <Text style={[styles.menuItemSubtitle, { color: sidebarMutedText }]}>
+                                            Privacy, terms and guidelines
+                                        </Text>
+                                    </View>
+                                    <View style={[styles.menuItemChevronWrap, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="chevron-right" size={18} color={colors.text} />
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={[styles.sidebarFooterCard, { backgroundColor: sidebarCardBackground, borderColor }]}>
+                                <Text style={[styles.sidebarFooterTitle, { color: colors.text }]}>CoolVibes</Text>
+                                <Text style={[styles.sidebarFooterText, { color: sidebarMutedText }]}>
+                                    Quick access to community tools, discovery and policy screens.
+                                </Text>
+                            </View>
+                        </ScrollView>
+                    </Animated.View>
+                </View>
+            </Modal>
 
             {/* Profile Preview Sheet */}
             <BaseBottomSheetModal
@@ -525,6 +882,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    leftButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+        minWidth: 88,
+    },
     rightButtons: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -535,6 +898,177 @@ const styles = StyleSheet.create({
         height: 40,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    sidebarRoot: {
+        flex: 1,
+        flexDirection: 'row',
+    },
+    sidebarBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(2,6,23,0.42)',
+    },
+    sidebarPanel: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 324,
+        borderRightWidth: StyleSheet.hairlineWidth,
+        borderTopRightRadius: 28,
+        borderBottomRightRadius: 28,
+        paddingHorizontal: 16,
+        paddingBottom: 18,
+        shadowColor: '#000',
+        shadowOpacity: 0.18,
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 14 },
+        elevation: 18,
+    },
+    sidebarHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    sidebarTitle: {
+        fontSize: 22,
+        fontFamily: 'Outfit-Bold',
+        letterSpacing: 0.6,
+        textTransform: 'uppercase',
+    },
+    sidebarCloseBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    sidebarScroll: {
+        flex: 1,
+    },
+    sidebarContent: {
+        gap: 16,
+        paddingBottom: 12,
+    },
+    sidebarHeroCard: {
+        borderWidth: 1,
+        borderRadius: 24,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+    },
+    sidebarHeroAvatarWrap: {
+        width: 62,
+        height: 62,
+        borderRadius: 22,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    sidebarHeroAvatar: {
+        width: '100%',
+        height: '100%',
+    },
+    sidebarHeroBody: {
+        flex: 1,
+        gap: 4,
+    },
+    sidebarHeroTitle: {
+        fontSize: 17,
+        fontFamily: 'Outfit-Bold',
+    },
+    sidebarHeroSubtitle: {
+        fontSize: 13,
+        fontFamily: 'Inter-Regular',
+    },
+    sidebarHeroMetaRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 6,
+    },
+    sidebarPill: {
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    sidebarPillText: {
+        fontSize: 11,
+        fontFamily: 'Inter-Bold',
+    },
+    sidebarSection: {
+        gap: 10,
+    },
+    sidebarSectionLabel: {
+        fontSize: 11,
+        fontFamily: 'Inter-Bold',
+        letterSpacing: 1.4,
+        textTransform: 'uppercase',
+    },
+    menuItem: {
+        borderWidth: 1,
+        borderRadius: 22,
+        padding: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    menuItemIcon: {
+        width: 42,
+        height: 42,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    menuItemBody: {
+        flex: 1,
+        gap: 3,
+    },
+    menuItemTitle: {
+        fontSize: 15,
+        fontFamily: 'Inter-Bold',
+    },
+    menuItemSubtitle: {
+        fontSize: 12,
+        lineHeight: 18,
+        fontFamily: 'Inter-Regular',
+    },
+    menuItemBadge: {
+        minWidth: 24,
+        height: 24,
+        borderRadius: 12,
+        paddingHorizontal: 7,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    menuItemBadgeText: {
+        fontSize: 11,
+        fontFamily: 'Inter-Bold',
+    },
+    menuItemChevronWrap: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    sidebarFooterCard: {
+        borderWidth: 1,
+        borderRadius: 22,
+        paddingHorizontal: 14,
+        paddingVertical: 16,
+    },
+    sidebarFooterTitle: {
+        fontSize: 15,
+        fontFamily: 'Outfit-Bold',
+    },
+    sidebarFooterText: {
+        marginTop: 6,
+        fontSize: 13,
+        lineHeight: 18,
+        fontFamily: 'Inter-Regular',
     },
     sheetBannerContainer: {
         height: 180,

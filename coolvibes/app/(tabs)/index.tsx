@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -7,6 +7,7 @@ import {
     Dimensions,
     StatusBar,
     Platform,
+    ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
@@ -22,6 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DiscoverScreen from './Discover';
 import VibesScreen from '@/components/Vibes/VibesScreen';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { clearPostUploadNotice } from '@/store/slice/postUploads';
 
 const { width } = Dimensions.get('window');
 
@@ -30,8 +33,16 @@ export default function HomeScreen() {
     const [activeTab, setActiveTab] = useState<'flows' | 'vibes'>('flows');
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const dispatch = useAppDispatch();
     const params = useLocalSearchParams<{ refresh_cool?: string }>();
+    const postUploadNotice = useAppSelector((state) => state.postUploads.notice);
+    const postUploadCompletedVersion = useAppSelector((state) => state.postUploads.completedVersion);
     const refreshToken = Array.isArray(params.refresh_cool) ? params.refresh_cool[0] : params.refresh_cool;
+    const effectiveRefreshToken = refreshToken
+        ? `${refreshToken}:${postUploadCompletedVersion}`
+        : postUploadCompletedVersion > 0
+            ? `post:${postUploadCompletedVersion}`
+            : undefined;
     const indicatorPosition = useSharedValue(0);
 
     const handleTabPress = (tab: 'flows' | 'vibes') => {
@@ -46,6 +57,14 @@ export default function HomeScreen() {
     const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
     const tabColor = dark ? '#FFFFFF' : '#000000';
     const inactiveTabColor = dark ? '#666666' : '#999999';
+
+    useEffect(() => {
+        if (!postUploadNotice || postUploadNotice.kind === 'uploading') return;
+        const timer = setTimeout(() => {
+            dispatch(clearPostUploadNotice());
+        }, 4200);
+        return () => clearTimeout(timer);
+    }, [dispatch, postUploadNotice]);
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -128,7 +147,7 @@ export default function HomeScreen() {
             >
                 {activeTab === 'flows' ? (
                     <Animated.View entering={FadeIn} style={{ flex: 1 }}>
-                         <DiscoverScreen hideHeader={true} refreshToken={refreshToken} />
+                         <DiscoverScreen hideHeader={true} refreshToken={effectiveRefreshToken} />
                     </Animated.View>
                 ) : null}
             </View>
@@ -142,6 +161,42 @@ export default function HomeScreen() {
                     <MaterialCommunityIcons name="pencil-plus-outline" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
             )}
+
+            {postUploadNotice ? (
+                <View
+                    pointerEvents="none"
+                    style={[
+                        styles.uploadNoticeWrap,
+                        {
+                            bottom: (Platform.OS === 'ios' ? 84 : 74) + Math.max(insets.bottom, 8),
+                            right: activeTab === 'flows' ? 92 : 16,
+                        },
+                    ]}
+                >
+                    <Animated.View
+                        entering={FadeIn.duration(180)}
+                        style={[
+                            styles.uploadNoticeCard,
+                            postUploadNotice.kind === 'error'
+                                ? styles.uploadNoticeError
+                                : styles.uploadNoticeDefault,
+                        ]}
+                    >
+                        {postUploadNotice.kind === 'uploading' ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                            <MaterialCommunityIcons
+                                name={postUploadNotice.kind === 'success' ? 'check-circle-outline' : 'alert-circle-outline'}
+                                size={18}
+                                color="#FFFFFF"
+                            />
+                        )}
+                        <Text style={styles.uploadNoticeText} numberOfLines={2}>
+                            {postUploadNotice.text}
+                        </Text>
+                    </Animated.View>
+                </View>
+            ) : null}
         </View>
     );
 }
@@ -203,5 +258,37 @@ const styles = StyleSheet.create({
         shadowRadius: 14,
         elevation: 10,
         zIndex: 20,
+    },
+    uploadNoticeWrap: {
+        position: 'absolute',
+        left: 16,
+        zIndex: 18,
+    },
+    uploadNoticeCard: {
+        minHeight: 48,
+        borderRadius: 18,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.14,
+        shadowRadius: 16,
+        elevation: 8,
+    },
+    uploadNoticeDefault: {
+        backgroundColor: 'rgba(17,24,39,0.96)',
+    },
+    uploadNoticeError: {
+        backgroundColor: 'rgba(127,29,29,0.96)',
+    },
+    uploadNoticeText: {
+        flex: 1,
+        color: '#FFFFFF',
+        fontSize: 13,
+        lineHeight: 18,
+        fontFamily: 'Inter-SemiBold',
     },
 });

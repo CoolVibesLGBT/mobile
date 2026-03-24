@@ -36,6 +36,7 @@ export const fetchNearbyPlaces = createAsyncThunk<
         latitude,
         longitude,
         nextCursor,
+        null,
         limit
       );
 

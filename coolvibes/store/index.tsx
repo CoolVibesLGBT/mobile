@@ -4,6 +4,7 @@ import systemReducer from './slice/system';
 import authReducer from './slice/auth';
 import placesReducer from './slice/places';
 import nearbyUsersReducer from './slice/nearbyUsers';
+import postUploadsReducer from './slice/postUploads';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     system: systemReducer,
     nearbyPlaces: placesReducer,
     nearbyUsers: nearbyUsersReducer,
+    postUploads: postUploadsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

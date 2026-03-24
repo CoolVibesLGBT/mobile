@@ -75,6 +75,12 @@ interface User {
   avatarUrl: string;
 }
 
+const getReadMessageId = (message: any) => {
+  const rawId = message?.id ?? message?.message_id ?? null;
+  if (rawId === null || rawId === undefined || rawId === '') return '';
+  return String(rawId);
+};
+
 export default function ChatDetail() {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -263,7 +269,7 @@ export default function ChatDetail() {
           [];
         const unreadIds = rawMessages
           .filter((msg: any) => msg?.author_id && authUserId && String(msg.author_id) !== String(authUserId))
-          .map((msg: any) => String(msg?.id ?? msg?.public_id ?? msg?.uuid ?? msg?.slug ?? ''))
+          .map((msg: any) => getReadMessageId(msg))
           .filter(Boolean);
         if (isActive) {
           setMessages(mapMessages(rawMessages));
@@ -375,7 +381,7 @@ export default function ChatDetail() {
         });
 
         if (mapped.sender === 'them') {
-          const messageId = String(message?.id ?? message?.public_id ?? message?.uuid ?? message?.slug ?? '');
+          const messageId = getReadMessageId(message);
           if (messageId) {
             dispatch(markChatRead({ chatId, userId: authUserId }));
             queueMarkRead([messageId]);

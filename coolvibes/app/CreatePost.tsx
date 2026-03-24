@@ -1,11 +1,12 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { View, Text, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
+import React, { useCallback, useRef } from 'react';
+import { View, StyleSheet, StatusBar } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 
 import ChatInput from '@/components/ChatInput';
 import { api } from '@/services/apiService';
-import { useAppSelector } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { completePostUpload, enqueuePostUpload, failPostUpload } from '@/store/slice/postUploads';
 
 function plainTextToLexicalState(text: string): string {
   const safe = String(text ?? '').replace(/\r\n/g, '\n');
@@ -49,19 +50,20 @@ function plainTextToLexicalState(text: string): string {
 export default function CreatePostScreen() {
   const { colors, dark } = useTheme();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
   const sendingRef = useRef(false);
-  const [sending, setSending] = useState(false);
 
   const handleSendPost = useCallback(
-    async (text: string, media: any[] = []) => {
+    (text: string, media: any[] = []) => {
       const trimmed = String(text ?? '').trim();
       const outgoingMedia = Array.isArray(media) ? media : [];
       if (!trimmed && outgoingMedia.length === 0) return;
       if (sendingRef.current) return;
 
       sendingRef.current = true;
-      setSending(true);
+      const uploadId = `post-${Date.now()}`;
+      let queued = false;
 
       try {
         const payload: Record<string, any> = {
@@ -86,20 +88,47 @@ export default function CreatePostScreen() {
 
         if (imageFiles.length > 0) payload['images[]'] = imageFiles;
 
-        await api.createPost(payload);
+        const descriptionParts: string[] = [];
+        if (trimmed) descriptionParts.push(trimmed.slice(0, 80));
+        if (imageFiles.length > 0) {
+          descriptionParts.push(imageFiles.length === 1 ? '1 gorsel' : `${imageFiles.length} gorsel`);
+        }
 
-        router.replace({
-          pathname: '/(tabs)',
-          params: { refresh_cool: String(Date.now()) },
-        });
-      } catch {
-        // apiService already reports the error globally.
-      } finally {
+        dispatch(enqueuePostUpload({
+          id: uploadId,
+          title: 'Cool post gonderiliyor',
+          description: descriptionParts.join(' • '),
+        }));
+        queued = true;
+
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(tabs)');
+        }
+
+        void api.createPost(payload)
+          .then(() => {
+            dispatch(completePostUpload({ id: uploadId }));
+          })
+          .catch((error: any) => {
+            const message = typeof error?.response?.data?.message === 'string'
+              ? error.response.data.message
+              : typeof error?.message === 'string'
+                ? error.message
+                : 'Post gonderilemedi';
+            dispatch(failPostUpload({ id: uploadId, message }));
+          })
+          .finally(() => {
+            sendingRef.current = false;
+          });
+      } catch (error: any) {
         sendingRef.current = false;
-        setSending(false);
+        const message = typeof error?.message === 'string' ? error.message : 'Post gonderilemedi';
+        dispatch(failPostUpload({ id: queued ? uploadId : `post-failed-${Date.now()}`, message }));
       }
     },
-    [router]
+    [dispatch, router]
   );
 
   return (
@@ -120,15 +149,6 @@ export default function CreatePostScreen() {
           onSendMessage={handleSendPost}
         />
       </View>
-
-      {sending && (
-        <View style={[styles.loadingOverlay, { backgroundColor: dark ? 'rgba(0,0,0,0.32)' : 'rgba(255,255,255,0.42)' }]}>
-          <View style={[styles.loadingCard, { backgroundColor: dark ? '#0F0F0F' : '#FFFFFF' }]}>
-            <ActivityIndicator size="small" color={colors.text} />
-            <Text style={[styles.loadingText, { color: colors.text }]}>Posting...</Text>
-          </View>
-        </View>
-      )}
     </View>
   );
 }
@@ -142,28 +162,5 @@ const styles = StyleSheet.create({
   },
   inputWrap: {
     width: '100%',
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingCard: {
-    minWidth: 120,
-    borderRadius: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  loadingText: {
-    fontSize: 13,
-    fontFamily: 'Inter-SemiBold',
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState, memo, useCallback, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions, Image, ActivityIndicator, TouchableOpacity, Platform, LayoutChangeEvent } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions, ActivityIndicator, TouchableOpacity, Platform, LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image as ExpoImage } from 'expo-image';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
@@ -35,6 +36,7 @@ const ACTION_BUTTON_SIZE = 70;
 const EXPANDED_AVATAR_SIZE = 110;
 const NAME_AGE_HEIGHT_ESTIMATE = 70;
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
 const DEFAULT_RADAR_COLOR = { r: 52, g: 199, b: 89 };
 
 const parseHexColor = (value?: string) => {
@@ -113,7 +115,7 @@ const HexItem = memo(({ item, panX, panY, centerX, centerY, onSelect }: any) => 
           pressed && styles.pressedBtn
         ]}
       >
-        <Image source={{ uri: user.imageUrl }} style={styles.bubbleImage} />
+        <ExpoImage source={{ uri: user.imageUrl }} style={styles.bubbleImage} contentFit="cover" transition={150} />
         {/* Active dot */}
         <View style={styles.activeDot} />
       </Pressable>
@@ -306,9 +308,11 @@ const RadarUserCard = memo(({ radarUser, profileUser, blurPhotos, onDismiss, onL
                     onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
                     style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
                 >
-                    <Animated.Image 
+                    <AnimatedExpoImage
                         source={{ uri: imageUrl }} 
                         style={[styles.cardImage, { borderColor: dark ? '#222' : '#EEE' }, animatedImageStyle]} 
+                        contentFit="cover"
+                        transition={200}
                         blurRadius={blurPhotos ? 20 : 0}
                     />
                     <Animated.View style={[styles.cardOverlay, animatedImageStyle, animatedOverlayStyle]} />
@@ -562,7 +566,8 @@ export default function MatchScreen() {
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
         const distanceKm = calcDistanceKm(coords.lat, coords.lng, lat, lng);
         const ageValue = typeof raw?.date_of_birth === 'string' ? calculateAge(raw.date_of_birth) : '-';
-        const imageUrl = getSafeImageURLEx(raw?.public_id ?? raw?.id, raw?.avatar, 'medium') || '';
+        const imageUrl =
+            getSafeImageURLEx(raw?.public_id ?? raw?.id, raw?.avatar ?? raw?.avatar_url ?? raw?.avatarUrl, 'medium') || '';
         const id = String(raw?.id ?? raw?.public_id ?? '');
         return {
             ...raw,
