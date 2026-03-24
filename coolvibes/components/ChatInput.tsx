@@ -84,6 +84,7 @@ interface ChatInputProps {
   onSendMessage: (text: string, media: Media[], replyToId?: string, editingId?: string) => void;
   extraMedia?: Media[];
   onRemoveExtraMedia?: (media: Media, index: number) => void;
+  textTemplate?: { id: string; text: string } | null;
 }
 
 const VideoPreview = ({ uri }: { uri: string }) => {
@@ -182,6 +183,7 @@ export default function ChatInput({
   onSendMessage,
   extraMedia,
   onRemoveExtraMedia,
+  textTemplate,
 }: ChatInputProps) {
   const insets = useSafeAreaInsets();
   const isComment = kind === 'comment';
@@ -190,7 +192,7 @@ export default function ChatInput({
   const inputPlaceholder = isComment
     ? 'Write a comment'
     : isPost
-      ? 'Write a post'
+      ? 'Share a thought, win, question or vibe...'
       : isClassified
         ? 'Write your listing'
         : 'Type a message';
@@ -246,6 +248,14 @@ export default function ChatInput({
     }, 150);
     return () => clearTimeout(timer);
   }, [autoFocus]);
+
+  useEffect(() => {
+    if (!textTemplate?.id || !textTemplate.text) return;
+    setInputText(textTemplate.text);
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+  }, [textTemplate]);
 
   useEffect(() => {
     if (isRecording) {

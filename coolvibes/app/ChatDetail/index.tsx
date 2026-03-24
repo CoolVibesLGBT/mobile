@@ -46,6 +46,7 @@ import BaseBottomSheetModal from "@/components/BaseBottomSheetModal";
 import { ThemedText } from "@/components/ThemedText";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { api } from "@/services/apiService";
+import { decodeProfileParam } from "@/helpers/profile";
 import { getSafeImageURL, getSafeImageURLEx } from "@/helpers/safeUrl";
 import { useSocket } from "@/contexts/SocketContext";
 import { Actions } from "@/services/actions";
@@ -81,6 +82,12 @@ const getReadMessageId = (message: any) => {
   return String(rawId);
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const asSingleParam = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] || '' : value || '';
+
+const isUuid = (value?: string | null) => Boolean(value && UUID_REGEX.test(String(value)));
+
 export default function ChatDetail() {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -90,6 +97,7 @@ export default function ChatDetail() {
   const language = useAppSelector((state) => state.system.language) || 'en';
   const authUser = useAppSelector((state) => state.auth.user);
   const authUserId = useAppSelector((state) => state.auth.user?.id ?? null);
+  const chats = useAppSelector((state) => state.chat.chats);
   const socket = useSocket();
 
   // Colors
@@ -136,18 +144,89 @@ export default function ChatDetail() {
   const lastTypingParamRef = useRef<string | null>(null);
   const pendingReadIdsRef = useRef<Set<string>>(new Set());
   const readFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const routeChatId = asSingleParam(params.chatId as string | string[] | undefined);
+  const routeRealChatId = asSingleParam(params.realChatId as string | string[] | undefined);
+  const rawProfileParam = asSingleParam(params.profile as string | string[] | undefined);
+  const chatProfile = useMemo(() => decodeProfileParam(rawProfileParam), [rawProfileParam]);
+  const recipientId = useMemo(() => {
+    const directUserId = asSingleParam(params.userId as string | string[] | undefined);
+    const profileId =
+      chatProfile?.id ||
+      chatProfile?.raw?.id ||
+      chatProfile?.user_id ||
+      chatProfile?.user?.id ||
+      '';
+    if (directUserId) return String(directUserId);
+    if (profileId) return String(profileId);
+    return isUuid(routeChatId) ? '' : routeChatId;
+  }, [params.userId, chatProfile, routeChatId]);
+  const storedChatId = useMemo(() => {
+    const candidates = new Set(
+      [routeRealChatId, routeChatId, recipientId]
+        .map((value) => String(value || '').trim())
+        .filter(Boolean)
+    );
+    if (candidates.size === 0) return '';
+    const matchedChat = chats.find((chat: any) => {
+      const chatIds = [chat?.id, chat?.chat_id, chat?.public_id, chat?.uuid]
+        .map((value) => String(value || '').trim())
+        .filter(Boolean);
+      if (chatIds.some((value) => candidates.has(value))) return true;
 
-  const chatId = (params.chatId as string) || "";
+      const participantIds = (Array.isArray(chat?.participants) ? chat.participants : [])
+        .flatMap((participant: any) => [
+          participant?.user_id,
+          participant?.user?.id,
+          participant?.user?.public_id,
+        ])
+        .map((value) => String(value || '').trim())
+        .filter(Boolean);
+      if (participantIds.some((value) => candidates.has(value))) return true;
+
+      const counterpartIds = [
+        chat?.other_user?.id,
+        chat?.other_user?.public_id,
+        chat?.user?.id,
+        chat?.user?.public_id,
+        chat?.participant?.id,
+        chat?.participant?.public_id,
+      ]
+        .map((value) => String(value || '').trim())
+        .filter(Boolean);
+      return counterpartIds.some((value) => candidates.has(value));
+    });
+    const resolvedId = String(
+      matchedChat?.id ??
+      matchedChat?.chat_id ??
+      matchedChat?.public_id ??
+      matchedChat?.uuid ??
+      ''
+    );
+    return isUuid(resolvedId) ? resolvedId : '';
+  }, [chats, routeRealChatId, routeChatId, recipientId]);
+  const initialChatId = useMemo(() => {
+    if (isUuid(routeRealChatId)) return routeRealChatId;
+    if (isUuid(routeChatId)) return routeChatId;
+    if (isUuid(storedChatId)) return storedChatId;
+    return '';
+  }, [routeRealChatId, routeChatId, storedChatId]);
+  const [activeChatId, setActiveChatId] = useState(initialChatId);
   const currentChatRoomRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (chatId) {
-      dispatch(markChatRead({ chatId, userId: authUserId }));
+    if (initialChatId && initialChatId !== activeChatId) {
+      setActiveChatId(initialChatId);
     }
-  }, [chatId, authUserId, dispatch]);
+  }, [initialChatId, activeChatId]);
+
+  useEffect(() => {
+    if (isUuid(activeChatId)) {
+      dispatch(markChatRead({ chatId: activeChatId, userId: authUserId }));
+    }
+  }, [activeChatId, authUserId, dispatch]);
 
   const queueMarkRead = useCallback((ids: string[]) => {
-    if (!chatId || ids.length === 0) return;
+    if (!isUuid(activeChatId) || ids.length === 0) return;
     ids.forEach((id) => {
       if (id) pendingReadIdsRef.current.add(String(id));
     });
@@ -158,12 +237,12 @@ export default function ChatDetail() {
       readFlushTimeoutRef.current = null;
       if (batch.length === 0) return;
       try {
-        await api.markMessagesRead({ chat_id: chatId, message_ids: batch });
+        await api.markMessagesRead({ chat_id: activeChatId, message_ids: batch });
       } catch {
         // ignore mark read errors
       }
     }, 350);
-  }, [chatId]);
+  }, [activeChatId]);
 
   useEffect(() => {
     return () => {
@@ -254,12 +333,17 @@ export default function ChatDetail() {
 
   useEffect(() => {
     let isActive = true;
-    if (!chatId) return;
+    if (!isUuid(activeChatId)) {
+      setMessages([]);
+      setMessagesLoading(false);
+      setMessagesError(null);
+      return;
+    }
     const fetchMessages = async () => {
       setMessagesLoading(true);
       setMessagesError(null);
       try {
-        const response = await api.fetchMessages({ chat_id: chatId, limit: 50 });
+        const response = await api.fetchMessages(activeChatId);
         const payload = response?.data ?? response;
         const rawMessages =
           payload?.messages ??
@@ -274,7 +358,7 @@ export default function ChatDetail() {
         if (isActive) {
           setMessages(mapMessages(rawMessages));
           if (unreadIds.length > 0) {
-            dispatch(markChatRead({ chatId, userId: authUserId }));
+            dispatch(markChatRead({ chatId: activeChatId, userId: authUserId }));
             queueMarkRead(unreadIds);
           }
         }
@@ -288,10 +372,10 @@ export default function ChatDetail() {
     return () => {
       isActive = false;
     };
-  }, [chatId, mapMessages, authUserId, dispatch, queueMarkRead]);
+  }, [activeChatId, mapMessages, authUserId, dispatch, queueMarkRead]);
 
   useEffect(() => {
-    if (!socket || !chatId) return;
+    if (!socket || !isUuid(activeChatId)) return;
 
     const parseSocketPayload = (msg: any) => {
       if (Array.isArray(msg)) {
@@ -326,7 +410,7 @@ export default function ChatDetail() {
 
         if (
           typingChatId &&
-          String(typingChatId) === String(chatId) &&
+          String(typingChatId) === String(activeChatId) &&
           typingUserId &&
           String(typingUserId) !== String(authUserId)
         ) {
@@ -352,7 +436,7 @@ export default function ChatDetail() {
 
       if ((action === Actions.CMD_SEND_MESSAGE || (!action && isMessageLike)) && message) {
         const messageChatId = message.contentable_id || message.chat_id || messageData?.chat_id || messageData?.chatID;
-        if (messageChatId && chatId && String(messageChatId) !== String(chatId)) {
+        if (messageChatId && activeChatId && String(messageChatId) !== String(activeChatId)) {
           return;
         }
         const mapped = toMessage(message);
@@ -383,7 +467,7 @@ export default function ChatDetail() {
         if (mapped.sender === 'them') {
           const messageId = getReadMessageId(message);
           if (messageId) {
-            dispatch(markChatRead({ chatId, userId: authUserId }));
+            dispatch(markChatRead({ chatId: activeChatId, userId: authUserId }));
             queueMarkRead([messageId]);
           }
         }
@@ -400,9 +484,9 @@ export default function ChatDetail() {
         // ignore
       }
 
-      if (currentChatRoomRef.current !== chatId) {
-        socket.emit('join', JSON.stringify({ chat_id: chatId }));
-        currentChatRoomRef.current = chatId;
+      if (currentChatRoomRef.current !== activeChatId) {
+        socket.emit('join', JSON.stringify({ chat_id: activeChatId }));
+        currentChatRoomRef.current = activeChatId;
       }
     };
 
@@ -426,7 +510,7 @@ export default function ChatDetail() {
         typingIndicatorTimeoutRef.current = null;
       }
     };
-  }, [socket, chatId, toMessage, authUserId, dispatch, queueMarkRead]);
+  }, [socket, activeChatId, toMessage, authUserId, dispatch, queueMarkRead]);
 
   useEffect(() => {
     const nextParam = isTyping ? '1' : '0';
@@ -436,9 +520,35 @@ export default function ChatDetail() {
     }
   }, [isTyping, router]);
 
+  const ensureActiveChatId = useCallback(async () => {
+    if (isUuid(activeChatId)) return activeChatId;
+    if (!recipientId) return '';
+
+    try {
+      const response = await api.createChat([recipientId]);
+      const createdChatId = String(
+        (response as any)?.chat?.id ??
+        (response as any)?.data?.chat?.id ??
+        (response as any)?.chat_id ??
+        (response as any)?.data?.chat_id ??
+        (response as any)?.id ??
+        (response as any)?.data?.id ??
+        ''
+      );
+
+      if (!isUuid(createdChatId)) return '';
+
+      setActiveChatId(createdChatId);
+      router.setParams({ chatId: createdChatId, realChatId: createdChatId });
+      return createdChatId;
+    } catch {
+      return '';
+    }
+  }, [activeChatId, recipientId, router]);
+
   // Chat Partner Data
   const chatPartner: User = {
-    id: chatId || "user_1",
+    id: activeChatId || recipientId || routeChatId || "user_1",
     name: (params.name as string) || "Alex Rivera",
     status: (params.status as string) || "online",
     avatarUrl: (params.avatar as string) || `https://i.pravatar.cc/150?u=${params.name || "Alex"}`,
@@ -473,9 +583,13 @@ export default function ChatDetail() {
 
       setMessages((prev) => [...prev, newMessage]);
 
-      api.sendMessage(chatId, text).catch(() => {
-        // keep optimistic message; errors will be visible when server doesn't echo
-      });
+      void (async () => {
+        const targetChatId = await ensureActiveChatId();
+        if (!targetChatId) return;
+        api.sendMessage(targetChatId, text).catch(() => {
+          // keep optimistic message; errors will be visible when server doesn't echo
+        });
+      })();
     }
   };
 

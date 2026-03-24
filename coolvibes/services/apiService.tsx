@@ -149,8 +149,11 @@ export class ApiService {
     return this.call(Actions.CMD_FETCH_CHATS, { method: 'POST', body: params });
   }
 
-  async fetchMessages(params: { chat_id: string; limit?: number; cursor?: string }) {
-    return this.call(Actions.CMD_FETCH_MESSAGES, { method: 'POST', body: params });
+  async fetchMessages(chatId: string) {
+    return this.call(Actions.CMD_FETCH_MESSAGES, {
+      method: 'POST',
+      body: { chat_id: chatId },
+    });
   }
 
 async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {

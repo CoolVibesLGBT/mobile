@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, AppState, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
@@ -9,7 +9,16 @@ import * as Localization from 'expo-localization';
 import ChatInput from '@/components/ChatInput';
 import { api } from '@/services/apiService';
 import { lexicalToPlainText } from '@/helpers/lexicalPlainText';
-import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
+import { getSafeImageURLEx } from '@/helpers/safeUrl';
+import {
+  getAttachmentUrl,
+  getFirstImageAttachment,
+  getPostAttachments,
+  getProcessingAttachmentCount,
+  isAttachmentFailed,
+  isAttachmentProcessing,
+  normalizePostFetchResponse,
+} from '@/helpers/postMedia';
 import { useAppSelector } from '@/store/hooks';
 
 type CommentItem = {
@@ -48,29 +57,6 @@ function coerceLocalizedText(value: unknown): string {
   }
 
   return '';
-}
-
-function normalizePostFetchResponse(response: any): any | null {
-  const payload = response?.data ?? response ?? null;
-  if (!payload) return null;
-
-  const data = payload?.data ?? payload ?? null;
-  const postCandidate =
-    data?.post ??
-    payload?.post ??
-    data?.item ??
-    payload?.item ??
-    data?.data?.post ??
-    payload?.data?.post ??
-    null;
-
-  const pick = (value: any) => {
-    if (!value || typeof value !== 'object') return null;
-    if ('public_id' in value || 'id' in value) return value;
-    return null;
-  };
-
-  return pick(postCandidate) || pick(data) || pick(payload);
 }
 
 function formatRelativeTime(value: unknown): string {
@@ -191,7 +177,7 @@ export default function PostDetailScreen() {
           return;
         }
         setPost(normalized);
-      } catch (e) {
+      } catch {
         setPost(null);
         setError('Failed to load post');
       } finally {
@@ -206,19 +192,68 @@ export default function PostDetailScreen() {
     void fetchPost();
   }, [fetchPost]);
 
+  const attachments = useMemo(() => getPostAttachments(post), [post]);
+  const processingAttachmentCount = useMemo(
+    () => getProcessingAttachmentCount(attachments),
+    [attachments]
+  );
+
+  useEffect(() => {
+    if (!postId || processingAttachmentCount === 0) return;
+
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleRefresh = (delay: number) => {
+      if (cancelled) return;
+      timeoutId = setTimeout(() => {
+        void refreshProcessingMedia();
+      }, delay);
+    };
+
+    const refreshProcessingMedia = async () => {
+      if (cancelled) return;
+
+      if (AppState.currentState !== 'active') {
+        scheduleRefresh(4000);
+        return;
+      }
+
+      try {
+        const response: any = await api.fetchPost(String(postId));
+        if (cancelled) return;
+        const normalized = normalizePostFetchResponse(response);
+        if (!normalized) {
+          scheduleRefresh(5000);
+          return;
+        }
+
+        setPost(normalized);
+
+        const nextAttachments = getPostAttachments(normalized);
+        if (getProcessingAttachmentCount(nextAttachments) > 0) {
+          scheduleRefresh(2500);
+        }
+      } catch {
+        scheduleRefresh(5000);
+      }
+    };
+
+    scheduleRefresh(2000);
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [postId, processingAttachmentCount]);
+
   const header = useMemo(() => {
     if (!post) return null;
     const author = post?.author ?? post?.user ?? {};
     const seed = author?.public_id || author?.id || post?.author_id || post?.public_id || post?.id;
     const avatar = getSafeImageURLEx(seed, author?.avatar, 'small') || '';
-    const attachments = Array.isArray(post?.attachments) ? post.attachments : [];
-    const firstAttachment = attachments[0];
-    const image =
-      getSafeImageURL(firstAttachment, 'original') ||
-      getSafeImageURL(firstAttachment, 'large') ||
-      getSafeImageURL(firstAttachment, 'medium') ||
-      getSafeImageURL(firstAttachment, 'small') ||
-      undefined;
+    const firstAttachment = getFirstImageAttachment(getPostAttachments(post)) || getPostAttachments(post)[0];
+    const image = getAttachmentUrl(firstAttachment, ['original', 'large', 'medium', 'small']) || undefined;
 
     const content = coerceLocalizedText(post?.content);
     const plain = lexicalToPlainText(content);
@@ -233,6 +268,8 @@ export default function PostDetailScreen() {
         avatar,
       },
       image,
+      isMediaProcessing: Boolean(firstAttachment && isAttachmentProcessing(firstAttachment)),
+      isMediaFailed: Boolean(firstAttachment && isAttachmentFailed(firstAttachment)),
       caption,
       time: formatRelativeTime(post?.created_at),
       raw: post,
@@ -379,6 +416,27 @@ export default function PostDetailScreen() {
                   contentFit="cover"
                   transition={250}
                 />
+              ) : header.isMediaProcessing || header.isMediaFailed ? (
+                <View
+                  style={[
+                    styles.mediaPlaceholder,
+                    {
+                      backgroundColor: dark ? '#16181D' : '#F4F6F8',
+                      borderColor: divider,
+                    },
+                  ]}
+                >
+                  <View style={[styles.mediaBadge, { backgroundColor: dark ? 'rgba(0,0,0,0.32)' : 'rgba(255,255,255,0.9)' }]}>
+                    {header.isMediaProcessing ? (
+                      <ActivityIndicator size="small" color={colors.text} />
+                    ) : (
+                      <Text style={[styles.mediaBadgeIcon, { color: colors.text }]}>!</Text>
+                    )}
+                    <Text style={[styles.mediaBadgeText, { color: colors.text }]}>
+                      {header.isMediaProcessing ? 'Image is being prepared' : 'Image unavailable'}
+                    </Text>
+                  </View>
+                </View>
               ) : null}
 
               <View style={[styles.commentsHeaderRow, { borderTopColor: divider }]}>
@@ -466,6 +524,31 @@ const styles = StyleSheet.create({
   time: { fontSize: 11, fontFamily: 'Inter-Bold', textTransform: 'uppercase', letterSpacing: 0.4 },
   caption: { fontSize: 15, fontFamily: 'Inter-Regular', lineHeight: 20, paddingBottom: 10 },
   postImage: { width: '100%', aspectRatio: 1, borderRadius: 14, overflow: 'hidden' },
+  mediaPlaceholder: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mediaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  mediaBadgeIcon: {
+    fontSize: 14,
+    fontFamily: 'Inter-Bold',
+  },
+  mediaBadgeText: {
+    fontSize: 13,
+    fontFamily: 'Inter-Bold',
+  },
   commentsHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',

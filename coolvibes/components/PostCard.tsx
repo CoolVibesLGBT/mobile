@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Pressable, ScrollView } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Pressable, ScrollView, ActivityIndicator, AppState } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,11 +10,19 @@ import Animated, {
     useAnimatedStyle, 
     withSpring, 
     withSequence,
-    withTiming,
-    interpolate,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useAppSelector } from '@/store/hooks';
+import { api } from '@/services/apiService';
+import {
+    getAttachmentUrl,
+    getFirstImageAttachment,
+    getPostAttachments,
+    getProcessingAttachmentCount,
+    isAttachmentFailed,
+    isAttachmentProcessing,
+    normalizePostFetchResponse,
+} from '@/helpers/postMedia';
 
 interface PostCardProps {
     postId?: string;
@@ -29,23 +37,95 @@ interface PostCardProps {
     likes: number;
     comments: number;
     time: string;
-    tags?: Array<{
+    raw?: any;
+    tags?: {
         key: string;
         label: string;
         icon?: string;
         gradient?: { colors: [string, string]; textColor: string };
-    }>;
+    }[];
 }
 
 const { width } = Dimensions.get('window');
 
-const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes, comments, time, tags }) => {
+const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes, comments, time, raw, tags }) => {
     const { colors, dark } = useTheme();
     const router = useRouter();
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const [isLiked, setIsLiked] = useState(false);
     const likeScale = useSharedValue(1);
     const [likeCount, setLikeCount] = useState(likes);
+    const [resolvedPost, setResolvedPost] = useState<any | null>(raw ?? null);
+
+    useEffect(() => {
+        setResolvedPost(raw ?? null);
+    }, [raw]);
+
+    const attachments = useMemo(() => getPostAttachments(resolvedPost), [resolvedPost]);
+    const imageAttachment = useMemo(
+        () => getFirstImageAttachment(attachments) || attachments[0] || null,
+        [attachments]
+    );
+    const processingAttachmentCount = useMemo(
+        () => getProcessingAttachmentCount(attachments),
+        [attachments]
+    );
+    const resolvedImage = useMemo(() => {
+        if (imageAttachment) {
+            return getAttachmentUrl(imageAttachment, ['large', 'medium', 'small', 'original']) || undefined;
+        }
+        return image;
+    }, [imageAttachment, image]);
+    const isMediaProcessing = Boolean(imageAttachment && isAttachmentProcessing(imageAttachment));
+    const isMediaFailed = Boolean(imageAttachment && isAttachmentFailed(imageAttachment));
+
+    useEffect(() => {
+        if (!postId || processingAttachmentCount === 0) return;
+
+        let cancelled = false;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        const scheduleRefresh = (delay: number) => {
+            if (cancelled) return;
+            timeoutId = setTimeout(() => {
+                void refreshProcessingPost();
+            }, delay);
+        };
+
+        const refreshProcessingPost = async () => {
+            if (cancelled) return;
+
+            if (AppState.currentState !== 'active') {
+                scheduleRefresh(4000);
+                return;
+            }
+
+            try {
+                const response = await api.fetchPost(String(postId));
+                if (cancelled) return;
+                const normalized = normalizePostFetchResponse(response);
+                if (!normalized) {
+                    scheduleRefresh(5000);
+                    return;
+                }
+
+                setResolvedPost(normalized);
+
+                if (getProcessingAttachmentCount(getPostAttachments(normalized)) > 0) {
+                    scheduleRefresh(2500);
+                }
+            } catch {
+                scheduleRefresh(5000);
+            }
+        };
+
+        scheduleRefresh(2000);
+
+        return () => {
+            cancelled = true;
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [postId, processingAttachmentCount]);
 
     const openPostDetail = () => {
         if (!postId) return;
@@ -161,16 +241,37 @@ const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes
             </View>
 
             {/* Post Image with Subtle Rounded Corners */}
-            {image ? (
+            {resolvedImage ? (
                 <Pressable onPress={handleLike}>
                     <Image 
-                        source={{ uri: image }} 
+                        source={{ uri: resolvedImage }} 
                         style={[styles.postImage, { backgroundColor: dark ? '#1C1C1E' : '#F2F2F7' }]} 
                         contentFit="cover" 
                         transition={300}
                         blurRadius={blurPhotos ? 25 : 0}
                     />
                 </Pressable>
+            ) : isMediaProcessing || isMediaFailed ? (
+                <View
+                    style={[
+                        styles.mediaPlaceholder,
+                        {
+                            backgroundColor: dark ? '#17181C' : '#F5F7FA',
+                            borderColor: borderColor,
+                        },
+                    ]}
+                >
+                    <View style={[styles.mediaBadge, { backgroundColor: dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.92)' }]}>
+                        {isMediaProcessing ? (
+                            <ActivityIndicator size="small" color={iconColor} />
+                        ) : (
+                            <Text style={[styles.mediaBadgeIcon, { color: iconColor }]}>!</Text>
+                        )}
+                        <Text style={[styles.mediaBadgeText, { color: iconColor }]}>
+                            {isMediaProcessing ? 'Image is being prepared' : 'Image unavailable'}
+                        </Text>
+                    </View>
+                </View>
             ) : null}
 
             {/* Actions Bar */}
@@ -269,6 +370,30 @@ const styles = StyleSheet.create({
     postImage: {
         width: width,
         height: width,
+    },
+    mediaPlaceholder: {
+        width: width,
+        height: width,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    mediaBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
+    mediaBadgeIcon: {
+        fontSize: 14,
+        fontFamily: 'Inter-Bold',
+    },
+    mediaBadgeText: {
+        fontSize: 13,
+        fontFamily: 'Inter-Bold',
     },
     actions: {
         flexDirection: 'row',

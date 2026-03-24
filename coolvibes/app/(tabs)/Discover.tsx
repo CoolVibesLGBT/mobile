@@ -420,7 +420,7 @@ export default function DiscoverScreen({ hideHeader = false, refreshToken }: { h
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => {
                     const { id, raw, ...card } = item;
-                    return <PostCard postId={id} {...card} />;
+                    return <PostCard postId={id} raw={raw} {...card} />;
                 }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{

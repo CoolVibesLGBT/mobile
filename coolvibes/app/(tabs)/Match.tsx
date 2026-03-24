@@ -35,6 +35,7 @@ const CARD_DIAMETER = SCREEN_WIDTH * 0.8;
 const ACTION_BUTTON_SIZE = 70;
 const EXPANDED_AVATAR_SIZE = 110;
 const NAME_AGE_HEIGHT_ESTIMATE = 70;
+const PROFILE_BANNER_HEIGHT = 200;
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
 const DEFAULT_RADAR_COLOR = { r: 52, g: 199, b: 89 };
@@ -52,6 +53,30 @@ const parseHexColor = (value?: string) => {
   const b = parseInt(normalized.slice(5, 7), 16);
   return { r, g, b };
 };
+
+const normalizeNearbyDistance = (value: unknown): string => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value < 1) return value.toFixed(1);
+    if (value < 10) return value.toFixed(1);
+    return value.toFixed(0);
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase().replace(/km/g, '').trim();
+    const parsed = Number(normalized);
+    if (Number.isFinite(parsed)) {
+      if (parsed < 1) return parsed.toFixed(1);
+      if (parsed < 10) return parsed.toFixed(1);
+      return parsed.toFixed(0);
+    }
+  }
+
+  return '-';
+};
+
+const formatNearbyDistanceLabel = (distance: string) => (
+  distance && distance !== '-' ? `${distance} km` : null
+);
 
 
 const axialToPixel = (q: number, r: number) => {
@@ -273,10 +298,22 @@ const RadarUserCard = memo(({ radarUser, profileUser, blurPhotos, onDismiss, onL
         };
     });
 
+    const profileContentTopInset = Math.max(
+        0,
+        expandedY +
+            EXPANDED_AVATAR_SIZE +
+            15 +
+            NAME_AGE_HEIGHT_ESTIMATE +
+            25 +
+            (ACTION_BUTTON_SIZE + 10) -
+            PROFILE_BANNER_HEIGHT +
+            20
+    );
+
     const iconColor = dark ? '#FFFFFF' : '#000000';
     const premiumAccent = '#7C4DFF';
     const displayName = radarUser?.displayname || radarUser?.name || radarUser?.username || 'User';
-    const distanceText = radarUser?.distance ? `${radarUser.distance} km` : '';
+    const distanceText = formatNearbyDistanceLabel(radarUser?.distance ?? '');
     const ageText = radarUser?.age ? `${radarUser.age}` : '';
     const imageUrl =
         getSafeImageURLEx(radarUser?.public_id ?? radarUser?.id, radarUser?.avatar ?? radarUser?.avatar_url ?? radarUser?.imageUrl, 'large') ||
@@ -299,6 +336,7 @@ const RadarUserCard = memo(({ radarUser, profileUser, blurPhotos, onDismiss, onL
                     hideTabs
                     defaultTab="about"
                     showCover
+                    contentTopInset={profileContentTopInset}
                 />
             </Animated.View>
 
@@ -559,12 +597,45 @@ export default function MatchScreen() {
     }, [location]);
 
     const mapRadarUser = useCallback((raw: any, coords: { lat: number; lng: number }) => {
-        const latRaw = raw?.location?.latitude ?? raw?.location?.location_point?.lat;
-        const lngRaw = raw?.location?.longitude ?? raw?.location?.location_point?.lng;
+        const latRaw =
+            raw?.lat ??
+            raw?.latitude ??
+            raw?.location_point?.lat ??
+            raw?.location_point?.latitude ??
+            raw?.location?.lat ??
+            raw?.location?.latitude ??
+            raw?.location?.location_point?.lat ??
+            raw?.location_data?.lat ??
+            raw?.location_data?.latitude ??
+            raw?.location_data?.location_point?.lat;
+        const lngRaw =
+            raw?.lng ??
+            raw?.lon ??
+            raw?.longitude ??
+            raw?.location_point?.lng ??
+            raw?.location_point?.lon ??
+            raw?.location_point?.longitude ??
+            raw?.location?.lng ??
+            raw?.location?.lon ??
+            raw?.location?.longitude ??
+            raw?.location?.location_point?.lng ??
+            raw?.location_data?.lng ??
+            raw?.location_data?.lon ??
+            raw?.location_data?.longitude ??
+            raw?.location_data?.location_point?.lng;
         const lat = typeof latRaw === 'string' ? parseFloat(latRaw) : latRaw;
         const lng = typeof lngRaw === 'string' ? parseFloat(lngRaw) : lngRaw;
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-        const distanceKm = calcDistanceKm(coords.lat, coords.lng, lat, lng);
+        const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng);
+        const fallbackDistanceRaw =
+            raw?.distance ??
+            raw?.distance_km ??
+            raw?.distanceKm ??
+            raw?.location?.distance ??
+            raw?.location_data?.distance ??
+            null;
+        const distanceText = hasCoordinates
+            ? formatDistance(calcDistanceKm(coords.lat, coords.lng, lat as number, lng as number))
+            : normalizeNearbyDistance(fallbackDistanceRaw);
         const ageValue = typeof raw?.date_of_birth === 'string' ? calculateAge(raw.date_of_birth) : '-';
         const imageUrl =
             getSafeImageURLEx(raw?.public_id ?? raw?.id, raw?.avatar ?? raw?.avatar_url ?? raw?.avatarUrl, 'medium') || '';
@@ -577,7 +648,7 @@ export default function MatchScreen() {
             username: raw?.username ?? '',
             age: typeof ageValue === 'number' ? ageValue : '-',
             imageUrl,
-            distance: formatDistance(distanceKm),
+            distance: distanceText,
         };
     }, [calcDistanceKm, formatDistance]);
 

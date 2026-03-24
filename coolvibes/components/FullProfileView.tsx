@@ -46,6 +46,7 @@ type FullProfileViewProps = {
     defaultTab?: string;
     showCover?: boolean;
     layoutVariant?: 'default' | 'profile-page';
+    contentTopInset?: number;
 };
 
 const TABS = [
@@ -55,7 +56,7 @@ const TABS = [
   { key: 'likes', title: 'Likes' },
 ];
 
-export default function FullProfileView({ user, isMe, showActions = true, onMessage, onFollow, onBlock, onEdit, onWallet, refreshControl, useBottomSheetScroll, hideHeader = false, hideTabs = false, defaultTab, showCover = true, layoutVariant = 'default' }: FullProfileViewProps) {
+export default function FullProfileView({ user, isMe, showActions = true, onMessage, onFollow, onBlock, onEdit, onWallet, refreshControl, useBottomSheetScroll, hideHeader = false, hideTabs = false, defaultTab, showCover = true, layoutVariant = 'default', contentTopInset = 0 }: FullProfileViewProps) {
   const { dark } = useTheme();
   const router = useRouter();
   const systemData = useAppSelector(state => state.system.data);
@@ -833,6 +834,8 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
         </View>
         </>
         )}
+
+        {contentTopInset > 0 && <View style={{ height: contentTopInset }} />}
 
         {/* Tab Content */}
         <View style={styles.contentArea}>

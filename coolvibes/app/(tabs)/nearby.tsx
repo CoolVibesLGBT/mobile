@@ -43,19 +43,123 @@ const DEFAULT_COORDS = { lat: 41.0082, lng: 28.9784 };
 
 type ViewModeType = 'grid' | 'list' | 'map';
 type GridColsType = 2 | 3 | 4;
+type NearbyCursor = {
+    next?: string | number | null;
+    distance?: string | number | null;
+} | null;
 
 interface NearbyUser {
     id: string;
     username: string;
     displayname: string;
-    lat: number;
-    lng: number;
+    lat: number | null;
+    lng: number | null;
     imageUrl: string;
     age: number | string;
     distance: string;
     online: boolean;
     raw?: any;
 }
+
+const DEFAULT_NEARBY_LIMIT = 50;
+const MIN_INITIAL_NEARBY_RESULTS = 9;
+
+const isValidNearbyCursorValue = (value: unknown): value is string | number => (
+    value !== null &&
+    value !== undefined &&
+    value !== '' &&
+    value !== '0' &&
+    value !== 'null' &&
+    value !== 'undefined'
+);
+
+const extractNearbyUsers = (response: unknown): any[] => {
+    const payload = response as any;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.users)) return payload.users;
+    if (Array.isArray(payload?.data?.users)) return payload.data.users;
+    if (Array.isArray(payload?.data?.data?.users)) return payload.data.data.users;
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.data?.items)) return payload.data.items;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+};
+
+const normalizeNearbyCursor = (response: unknown): NearbyCursor => {
+    const payload = response as any;
+    const rawCursor =
+        payload?.cursor ??
+        payload?.data?.cursor ??
+        payload?.data?.data?.cursor ??
+        null;
+
+    const fallbackDistance =
+        payload?.distance ??
+        payload?.data?.distance ??
+        payload?.data?.data?.distance ??
+        null;
+
+    if (rawCursor && typeof rawCursor === 'object' && !Array.isArray(rawCursor)) {
+        const nextValue =
+            rawCursor.next ??
+            rawCursor.next_cursor ??
+            rawCursor.nextCursor ??
+            rawCursor.cursor ??
+            rawCursor.value ??
+            null;
+
+        return isValidNearbyCursorValue(nextValue)
+            ? {
+                next: nextValue,
+                distance: rawCursor.distance ?? fallbackDistance ?? null,
+            }
+            : null;
+    }
+
+    const nextValue =
+        rawCursor ??
+        payload?.next_cursor ??
+        payload?.nextCursor ??
+        payload?.next ??
+        payload?.data?.next_cursor ??
+        payload?.data?.nextCursor ??
+        payload?.data?.next ??
+        payload?.data?.data?.next_cursor ??
+        payload?.data?.data?.nextCursor ??
+        payload?.data?.data?.next ??
+        null;
+
+    return isValidNearbyCursorValue(nextValue)
+        ? {
+            next: nextValue,
+            distance: fallbackDistance,
+        }
+        : null;
+};
+
+const normalizeNearbyDistance = (value: unknown): string => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        if (value < 1) return value.toFixed(1);
+        if (value < 10) return value.toFixed(1);
+        return value.toFixed(0);
+    }
+
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase().replace(/km/g, '').trim();
+        const parsed = Number(normalized);
+        if (Number.isFinite(parsed)) {
+            if (parsed < 1) return parsed.toFixed(1);
+            if (parsed < 10) return parsed.toFixed(1);
+            return parsed.toFixed(0);
+        }
+    }
+
+    return '-';
+};
+
+const formatNearbyDistanceLabel = (distance: string) => (
+    distance && distance !== '-' ? `${distance} km` : null
+);
 
 /* ── GRID CARD (adapts size + detail based on column count) ── */
 const GridCard = React.memo(({
@@ -68,6 +172,7 @@ const GridCard = React.memo(({
     const nameSize = cols === 2 ? 13 : cols === 3 ? 11 : 9;
     const metaSize = cols === 2 ? 11 : 9;
     const ageLabel = user.age !== '-' ? `, ${user.age}` : '';
+    const distanceLabel = formatNearbyDistanceLabel(user.distance);
 
     return (
         <TouchableOpacity
@@ -89,10 +194,10 @@ const GridCard = React.memo(({
                 <Text style={[styles.gridName, { fontSize: nameSize }]} numberOfLines={1}>
                     {user.displayname}{cols < 4 ? ageLabel : ''}
                 </Text>
-                {cols <= 3 && (
+                {cols <= 3 && distanceLabel && (
                     <View style={styles.gridDistRow}>
                         <MaterialCommunityIcons name="map-marker" size={9} color="rgba(255,255,255,0.7)" />
-                        <Text style={[styles.gridDistText, { fontSize: metaSize }]}>{user.distance} km</Text>
+                        <Text style={[styles.gridDistText, { fontSize: metaSize }]}>{distanceLabel}</Text>
                     </View>
                 )}
             </LinearGradient>
@@ -112,6 +217,7 @@ const ListRow = React.memo(({
     const sub = dark ? '#666' : '#AAA';
     const btnBg = dark ? '#1C1C1C' : '#F0F0F0';
     const ageLabel = user.age !== '-' ? `, ${user.age}` : '';
+    const distanceLabel = formatNearbyDistanceLabel(user.distance);
 
     return (
         <View style={[styles.listRow, { borderBottomColor: divider }]}>
@@ -127,8 +233,12 @@ const ListRow = React.memo(({
                     {user.displayname}{ageLabel}
                 </Text>
                 <View style={styles.listMeta}>
-                    <MaterialCommunityIcons name="map-marker-outline" size={12} color={sub} />
-                    <Text style={[styles.listMetaText, { color: sub }]}>{user.distance} km</Text>
+                    {distanceLabel && (
+                        <>
+                            <MaterialCommunityIcons name="map-marker-outline" size={12} color={sub} />
+                            <Text style={[styles.listMetaText, { color: sub }]}>{distanceLabel}</Text>
+                        </>
+                    )}
                     {user.online && <Text style={[styles.listMetaText, { color: sub }]}>• Online</Text>}
                 </View>
             </TouchableOpacity>
@@ -213,8 +323,10 @@ export default function NearbyScreen() {
     const navigation = useNavigation();
     const mapRef = useRef<MapView>(null);
     const requestRef = useRef(false);
-    const cursorRef = useRef<string | null>(null);
+    const cursorRef = useRef<NearbyCursor>(null);
     const usersRef = useRef<NearbyUser[]>([]);
+    const hasMoreRef = useRef(true);
+    const lastLoadMoreCursorRef = useRef<string | number | null>(null);
     const didInitialFetch = useRef(false);
     const profileSheetRef = useRef<BottomSheetModal>(null);
     const teleportSheetRef = useRef<BottomSheetModal>(null);
@@ -227,7 +339,7 @@ export default function NearbyScreen() {
     const [viewMode, setViewMode] = useState<ViewModeType>('grid');
     const [gridCols, setGridCols] = useState<GridColsType>(2);
     const [users, setUsers] = useState<NearbyUser[]>([]);
-    const [cursor, setCursor] = useState<string | null>(null);
+    const [cursor, setCursor] = useState<NearbyCursor>(null);
     const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -414,23 +526,56 @@ export default function NearbyScreen() {
     }, [location]);
 
     const mapUser = useCallback((raw: any, coords: { lat: number; lng: number }) => {
-        const latRaw = raw?.location?.latitude ?? raw?.location?.location_point?.lat;
-        const lngRaw = raw?.location?.longitude ?? raw?.location?.location_point?.lng;
+        const latRaw =
+            raw?.lat ??
+            raw?.latitude ??
+            raw?.location_point?.lat ??
+            raw?.location_point?.latitude ??
+            raw?.location?.lat ??
+            raw?.location?.latitude ??
+            raw?.location?.location_point?.lat ??
+            raw?.location_data?.lat ??
+            raw?.location_data?.latitude ??
+            raw?.location_data?.location_point?.lat;
+        const lngRaw =
+            raw?.lng ??
+            raw?.lon ??
+            raw?.longitude ??
+            raw?.location_point?.lng ??
+            raw?.location_point?.lon ??
+            raw?.location_point?.longitude ??
+            raw?.location?.lng ??
+            raw?.location?.lon ??
+            raw?.location?.longitude ??
+            raw?.location?.location_point?.lng ??
+            raw?.location_data?.lng ??
+            raw?.location_data?.lon ??
+            raw?.location_data?.longitude ??
+            raw?.location_data?.location_point?.lng;
         const lat = typeof latRaw === 'string' ? parseFloat(latRaw) : latRaw;
         const lng = typeof lngRaw === 'string' ? parseFloat(lngRaw) : lngRaw;
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-        const distanceKm = calcDistanceKm(coords.lat, coords.lng, lat, lng);
+        const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng);
+        const fallbackDistanceRaw =
+            raw?.distance ??
+            raw?.distance_km ??
+            raw?.distanceKm ??
+            raw?.location?.distance ??
+            raw?.location_data?.distance ??
+            null;
+        const distanceText = hasCoordinates
+            ? formatDistance(calcDistanceKm(coords.lat, coords.lng, lat as number, lng as number))
+            : normalizeNearbyDistance(fallbackDistanceRaw);
         const ageValue = typeof raw?.date_of_birth === 'string' ? calculateAge(raw.date_of_birth) : '-';
         const imageUrl = getSafeImageURLEx(raw?.public_id ?? raw?.id, raw?.avatar, 'medium') || '';
         return {
             id: String(raw?.id ?? raw?.public_id ?? ''),
             username: String(raw?.username ?? raw?.displayname ?? 'user'),
             displayname: String(raw?.displayname ?? raw?.username ?? 'User'),
-            lat,
-            lng,
+            lat: hasCoordinates ? Number(lat) : null,
+            lng: hasCoordinates ? Number(lng) : null,
             imageUrl,
             age: typeof ageValue === 'number' ? ageValue : '-',
-            distance: formatDistance(distanceKm),
+            distance: distanceText,
             online: Boolean(raw?.is_online ?? raw?.online),
             raw,
         } as NearbyUser;
@@ -438,13 +583,18 @@ export default function NearbyScreen() {
 
     const spreadMarkers = useCallback((items: NearbyUser[]) => {
         const groups = new Map<string, NearbyUser[]>();
+        const unpositioned: NearbyUser[] = [];
         for (const item of items) {
+            if (!Number.isFinite(item.lat) || !Number.isFinite(item.lng)) {
+                unpositioned.push(item);
+                continue;
+            }
             const key = `${item.lat.toFixed(4)}:${item.lng.toFixed(4)}`;
             const group = groups.get(key);
             if (group) group.push(item);
             else groups.set(key, [item]);
         }
-        const output: NearbyUser[] = [];
+        const output: NearbyUser[] = [...unpositioned];
         for (const group of groups.values()) {
             if (group.length === 1) {
                 output.push(group[0]);
@@ -469,47 +619,88 @@ export default function NearbyScreen() {
         const refresh = opts?.refresh === true;
         const currentCursor = cursorRef.current;
         const hasUsers = usersRef.current.length > 0;
-        if (!refresh && !currentCursor && hasUsers) return;
+        const requestCursor = refresh ? null : currentCursor?.next ?? null;
+        if (!refresh && !hasMoreRef.current && hasUsers) return;
+        if (
+            !refresh &&
+            isValidNearbyCursorValue(requestCursor) &&
+            lastLoadMoreCursorRef.current !== null &&
+            String(lastLoadMoreCursorRef.current) === String(requestCursor)
+        ) {
+            return;
+        }
+
+        let shouldAutoContinue = false;
         requestRef.current = true;
-        refresh ? setRefreshing(true) : (currentCursor ? setLoadingMore(true) : setLoading(true));
+        if (refresh) {
+            setRefreshing(true);
+        } else if (requestCursor) {
+            setLoadingMore(true);
+        } else {
+            setLoading(true);
+        }
         try {
             if (refresh) {
                 cursorRef.current = null;
                 setCursor(null);
+                hasMoreRef.current = true;
+                lastLoadMoreCursorRef.current = null;
+            } else if (isValidNearbyCursorValue(requestCursor)) {
+                lastLoadMoreCursorRef.current = requestCursor;
             }
             const coords = opts?.coords ?? await resolveLocation();
-            const response: any = await api.fetchNearbyUsers(coords.lat, coords.lng, refresh ? null : currentCursor, 100);
-            const payload = response?.data ?? response;
+            const response: any = await api.fetchNearbyUsers(coords.lat, coords.lng, refresh ? null : currentCursor, DEFAULT_NEARBY_LIMIT);
+            const payload = response as any;
             if (response?.success === false || payload?.success === false) {
                 throw new Error(response?.message || payload?.message || 'Failed to fetch nearby users');
             }
-            const rawUsers = payload?.users ?? response?.users ?? [];
-            const nextCursor = payload?.cursor ?? response?.cursor ?? null;
+            const rawUsers = extractNearbyUsers(response);
+            const responseCursor = normalizeNearbyCursor(response);
             const mapped = rawUsers
                 .map((raw: any) => mapUser(raw, coords))
                 .filter((item: NearbyUser | null): item is NearbyUser => item !== null && item.id !== '');
-
             const resolved = spreadMarkers(mapped);
-            setUsers(prev => {
-                if (refresh) return resolved;
-                const existingIds = new Set(prev.map(u => u.id));
-                const merged = [...prev];
-                for (const item of resolved) {
-                    if (!existingIds.has(item.id)) merged.push(item);
-                }
-                return merged;
-            });
+            const existingUsers = refresh ? [] : usersRef.current;
+            const existingIds = new Set(existingUsers.map(user => user.id));
+            const newUsers = resolved.filter(item => !existingIds.has(item.id));
+            const nextUsers = refresh ? resolved : [...existingUsers, ...newUsers];
+            const nextCursorValue = responseCursor?.next ?? null;
+            const cursorAdvanced =
+                !isValidNearbyCursorValue(requestCursor) ||
+                !isValidNearbyCursorValue(nextCursorValue) ||
+                String(nextCursorValue) !== String(requestCursor);
+            const nextHasMore =
+                isValidNearbyCursorValue(nextCursorValue) &&
+                rawUsers.length > 0 &&
+                (refresh || newUsers.length > 0) &&
+                cursorAdvanced;
+            const nextCursor = nextHasMore ? responseCursor : null;
+
+            usersRef.current = nextUsers;
+            cursorRef.current = nextCursor;
+            hasMoreRef.current = nextHasMore;
+            setUsers(nextUsers);
             setCursor(nextCursor);
+            shouldAutoContinue = nextHasMore && nextUsers.length < MIN_INITIAL_NEARBY_RESULTS;
             lastFetchTimeRef.current = Date.now();
         } catch (error) {
+            lastLoadMoreCursorRef.current = null;
             console.error('Failed to fetch nearby users', error);
         } finally {
             setLoading(false);
             setLoadingMore(false);
             setRefreshing(false);
             requestRef.current = false;
+
+            if (shouldAutoContinue && hasMoreRef.current) {
+                setTimeout(() => {
+                    if (!requestRef.current && hasMoreRef.current) {
+                        fetchNearby();
+                    }
+                }, 100);
+            }
         }
-    }, [resolveLocation, mapUser]);
+    }, [resolveLocation, mapUser, spreadMarkers]);
 
     useEffect(() => {
         if (didInitialFetch.current) return;
@@ -682,12 +873,18 @@ export default function NearbyScreen() {
 
     const goToChat = useCallback((user: NearbyUser) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        const distanceLabel = formatNearbyDistanceLabel(user.distance);
+        const status = user.online
+            ? 'online'
+            : distanceLabel
+                ? `${distanceLabel} away`
+                : 'recently active';
         (navigation as any).navigate('ChatDetail', {
             chatId: user.id,
             name: user.displayname || user.username,
             username: user.username,
             avatar: user.imageUrl,
-            status: user.online ? 'online' : `${user.distance} km away`,
+            status,
             profile: encodeProfileParam(user.raw ?? user),
         });
     }, [navigation]);
@@ -921,10 +1118,10 @@ export default function NearbyScreen() {
                             onRegionChange={handleMapRegionStart}
                             onRegionChangeComplete={handleMapRegionChange}
                         >
-                            {users.map(u => (
+                            {users.filter(u => Number.isFinite(u.lat) && Number.isFinite(u.lng)).map(u => (
                                 <Marker
                                     key={u.id}
-                                    coordinate={{ latitude: u.lat, longitude: u.lng }}
+                                    coordinate={{ latitude: u.lat as number, longitude: u.lng as number }}
                                     onPress={() => openProfile(u)}
                                     tracksViewChanges={false}
                                 >
