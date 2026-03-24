@@ -3,6 +3,8 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Dimensions,
   Animated,
@@ -17,10 +19,12 @@ import { MapPin, Calendar, MessageSquare, Plus, Edit2, Wallet } from 'lucide-rea
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import RenderHTML from 'react-native-render-html';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useRouter } from 'expo-router';
 import { api } from '@/services/apiService';
 import { useAppSelector } from '@/store/hooks';
 import { USER_ATTRIBUTES } from '@/constants/profile-data';
 import { parsePreferencesFlags, isBitSet } from '@/helpers/bitfield';
+import { buildProfileMetrics, formatCompactMetricCount } from '@/helpers/profile-metrics';
 
 const { width } = Dimensions.get('window');
 const POST_ITEM_SIZE = (width - 2) / 3;
@@ -41,6 +45,7 @@ type FullProfileViewProps = {
     hideTabs?: boolean;
     defaultTab?: string;
     showCover?: boolean;
+    layoutVariant?: 'default' | 'profile-page';
 };
 
 const TABS = [
@@ -50,8 +55,9 @@ const TABS = [
   { key: 'likes', title: 'Likes' },
 ];
 
-export default function FullProfileView({ user, isMe, showActions = true, onMessage, onFollow, onBlock, onEdit, onWallet, refreshControl, useBottomSheetScroll, hideHeader = false, hideTabs = false, defaultTab, showCover = true }: FullProfileViewProps) {
+export default function FullProfileView({ user, isMe, showActions = true, onMessage, onFollow, onBlock, onEdit, onWallet, refreshControl, useBottomSheetScroll, hideHeader = false, hideTabs = false, defaultTab, showCover = true, layoutVariant = 'default' }: FullProfileViewProps) {
   const { dark } = useTheme();
+  const router = useRouter();
   const systemData = useAppSelector(state => state.system.data);
   const language = useAppSelector(state => state.system.language) || 'en';
   const fontSize = useAppSelector(state => state.system.fontSize);
@@ -68,6 +74,7 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
   const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
   const cardColor = dark ? '#0F0F0F' : '#F9F9F9';
   const dangerColor = '#EF4444';
+  const isProfilePageLayout = layoutVariant === 'profile-page';
   const flags = parsePreferencesFlags(user?.preferences_flags);
   const fontScale = fontSize === 'small' ? 0.9 : fontSize === 'large' ? 1.15 : 1;
   const baseSizes = {
@@ -83,6 +90,7 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
   const bioHtml = typeof user?.bioHtml === 'string' ? user.bioHtml : '';
   const bioHtmlText = bioHtml ? bioHtml.replace(/<[^>]*>/g, '').trim() : '';
   const showBioHtml = !!bioHtmlText;
+  const profileStats = useMemo(() => buildProfileMetrics(user), [user]);
 
   const getJoinedDate = () => {
     if (!user.created_at) return 'Recently';
@@ -110,6 +118,13 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
     if (entity.name) return getLocalizedText(entity.name);
     if (entity.title) return getLocalizedText(entity.title);
     return '';
+  };
+
+  const openProfileMetricPage = (metricKey: string, metricLabel: string) => {
+    router.push({
+      pathname: '/ProfileMetricDetail',
+      params: { metricKey, metricLabel },
+    });
   };
 
   const renderAboutTab = () => {
@@ -546,6 +561,62 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
     }
   };
 
+  const renderActions = () => {
+    if (!showActions) return null;
+
+    return (
+      <View style={styles.actionButtons}>
+        {isMe ? (
+          <View style={styles.btnRow}>
+            <TouchableOpacity onPress={onWallet} style={[styles.circleBtn, { borderColor, backgroundColor: cardColor }]}>
+              <Wallet size={18} color={textColor} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onEdit} style={[styles.actionBtn, { borderColor, backgroundColor: cardColor }]}>
+              <Edit2 size={16} color={textColor} />
+              <Text style={[styles.btnText, { color: textColor }]}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.btnRow}>
+            <TouchableOpacity
+              onPress={onMessage}
+              disabled={!onMessage}
+              style={[styles.circleBtn, { borderColor, backgroundColor: cardColor, opacity: onMessage ? 1 : 0.5 }]}
+            >
+              <MessageSquare size={18} color={textColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onFollow}
+              disabled={!onFollow}
+              style={[styles.actionBtn, styles.followBtn, { backgroundColor: textColor, borderColor: textColor, opacity: onFollow ? 1 : 0.6 }]}
+            >
+              <Plus size={16} color={backgroundColor} />
+              <Text style={[styles.btnText, { color: backgroundColor }]}>Follow</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleBlockPress}
+              disabled={blockLoading}
+              style={[
+                styles.actionBtn,
+                styles.blockBtn,
+                { borderColor: `${dangerColor}55`, backgroundColor: dark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)' },
+              ]}
+            >
+              {blockLoading ? (
+                <ActivityIndicator size="small" color={dangerColor} />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="block-helper" size={16} color={dangerColor} />
+                  <Text style={[styles.btnText, styles.blockText, { color: dangerColor }]}>Block</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'about':
@@ -613,58 +684,8 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
               <Image source={{ uri: user.avatar_url }} style={styles.avatar} contentFit="cover" />
             </View>
           </View>
-          
-          {showActions && (
-            <View style={styles.actionButtons}>
-              {isMe ? (
-                <View style={styles.btnRow}>
-                  <TouchableOpacity onPress={onWallet} style={[styles.circleBtn, { borderColor, backgroundColor: cardColor }]}>
-                    <Wallet size={18} color={textColor} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={onEdit} style={[styles.actionBtn, { borderColor, backgroundColor: cardColor }]}>
-                    <Edit2 size={16} color={textColor} />
-                    <Text style={[styles.btnText, { color: textColor }]}>Edit</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.btnRow}>
-                  <TouchableOpacity
-                    onPress={onMessage}
-                    disabled={!onMessage}
-                    style={[styles.circleBtn, { borderColor, backgroundColor: cardColor, opacity: onMessage ? 1 : 0.5 }]}
-                  >
-                    <MessageSquare size={18} color={textColor} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={onFollow}
-                    disabled={!onFollow}
-                    style={[styles.actionBtn, styles.followBtn, { backgroundColor: textColor, borderColor: textColor, opacity: onFollow ? 1 : 0.6 }]}
-                  >
-                    <Plus size={16} color={backgroundColor} />
-                    <Text style={[styles.btnText, { color: backgroundColor }]}>Follow</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleBlockPress}
-                    disabled={blockLoading}
-                    style={[
-                      styles.actionBtn,
-                      styles.blockBtn,
-                      { borderColor: `${dangerColor}55`, backgroundColor: dark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)' },
-                    ]}
-                  >
-                    {blockLoading ? (
-                      <ActivityIndicator size="small" color={dangerColor} />
-                    ) : (
-                      <>
-                        <MaterialCommunityIcons name="block-helper" size={16} color={dangerColor} />
-                        <Text style={[styles.btnText, styles.blockText, { color: dangerColor }]}>Block</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          )}
+
+          {renderActions()}
 
           <View style={styles.userInfo}>
             <View style={styles.nameRow}>
@@ -674,7 +695,7 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
                 )}
             </View>
             <Text style={[styles.username, { color: secondaryText }]}>@{user.username || user.displayname?.toLowerCase().replace(/\s+/g, '')}</Text>
-            
+
             {showBioHtml ? (
               <RenderHTML
                 contentWidth={Math.max(0, windowWidth - 32)}
@@ -699,22 +720,87 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
               </View>
             </View>
 
-            <View style={styles.statsRow}>
-              <TouchableOpacity style={styles.statItem}>
-                <Text style={[styles.statValue, { color: textColor }]}>{user.followers_count || 0}</Text>
-                <Text style={[styles.statLabel, { color: secondaryText }]}>Followers</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.statItem, { marginLeft: 24 }]}>
-                <Text style={[styles.statValue, { color: textColor }]}>{user.following_count || 0}</Text>
-                <Text style={[styles.statLabel, { color: secondaryText }]}>Following</Text>
-              </TouchableOpacity>
-              {user.posts_count > 0 && (
-                <TouchableOpacity style={[styles.statItem, { marginLeft: 24 }]}>
-                    <Text style={[styles.statValue, { color: textColor }]}>{user.posts_count}</Text>
-                    <Text style={[styles.statLabel, { color: secondaryText }]}>Posts</Text>
+            {isProfilePageLayout ? (
+              <>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.profileStatsScroller}
+                >
+                  {profileStats.map((item) => {
+                    const hasValue = item.value > 0;
+                    const ringBorderColor = hasValue
+                      ? (dark ? 'rgba(255,255,255,0.22)' : 'rgba(17,17,17,0.14)')
+                      : (dark ? 'rgba(255,255,255,0.10)' : 'rgba(17,17,17,0.08)');
+                    return (
+                      <Pressable
+                        key={item.key}
+                        onPress={() => openProfileMetricPage(item.key, item.label)}
+                        style={({ pressed }) => [
+                          styles.profileStatCard,
+                          pressed && styles.profileStatCardPressed,
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.profileStatRing,
+                            {
+                              borderColor: ringBorderColor,
+                              backgroundColor: dark ? 'rgba(255,255,255,0.02)' : '#FCFCFC',
+                            },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.profileStatRingInner,
+                              {
+                                backgroundColor: cardColor,
+                                borderColor: dark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.88)',
+                              },
+                            ]}
+                          >
+                            <Text style={[styles.profileStatValue, { color: textColor }]}>
+                              {formatCompactMetricCount(item.value)}
+                            </Text>
+                          </View>
+                          <View
+                            style={[
+                              styles.profileStatBadge,
+                              {
+                                backgroundColor: dark ? 'rgba(17,17,17,0.96)' : 'rgba(255,255,255,0.96)',
+                                borderColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(17,17,17,0.06)',
+                              },
+                            ]}
+                          >
+                            <MaterialCommunityIcons name="chevron-right" size={12} color={textColor} />
+                          </View>
+                        </View>
+                        <Text style={[styles.profileStatLabel, { color: textColor }]} numberOfLines={2}>
+                          {item.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            ) : (
+              <View style={styles.statsRow}>
+                <TouchableOpacity style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: textColor }]}>{user.followers_count || 0}</Text>
+                  <Text style={[styles.statLabel, { color: secondaryText }]}>Followers</Text>
                 </TouchableOpacity>
-              )}
-            </View>
+                <TouchableOpacity style={[styles.statItem, { marginLeft: 24 }]}>
+                  <Text style={[styles.statValue, { color: textColor }]}>{user.following_count || 0}</Text>
+                  <Text style={[styles.statLabel, { color: secondaryText }]}>Following</Text>
+                </TouchableOpacity>
+                {user.posts_count > 0 && (
+                  <TouchableOpacity style={[styles.statItem, { marginLeft: 24 }]}>
+                      <Text style={[styles.statValue, { color: textColor }]}>{user.posts_count}</Text>
+                      <Text style={[styles.statLabel, { color: secondaryText }]}>Posts</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
         </View>
         </>
@@ -849,6 +935,67 @@ const styles = StyleSheet.create({
   btnText: { fontFamily: 'Inter-SemiBold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.4 },
   blockText: { letterSpacing: 0.2 },
   userInfo: { marginTop: 4 },
+  profileStatsScroller: {
+    marginTop: 14,
+    paddingRight: 16,
+    gap: 16,
+  },
+  profileStatCard: {
+    width: 86,
+    alignItems: 'center',
+  },
+  profileStatCardPressed: {
+    transform: [{ scale: 0.95 }],
+    opacity: 0.82,
+  },
+  profileStatRing: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    borderWidth: 1.5,
+    padding: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
+  },
+  profileStatRingInner: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileStatBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileStatLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    lineHeight: 15,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+    minHeight: 30,
+  },
+  profileStatValue: {
+    fontSize: 18,
+    fontFamily: 'Outfit-Black',
+    letterSpacing: -0.35,
+  },
   nameRow: { flexDirection: 'row', alignItems: 'center' },
   displayName: { fontSize: 28, fontFamily: 'Outfit-Black', letterSpacing: -0.5, textTransform: 'uppercase' },
   username: { fontSize: 15, fontFamily: 'Inter-Medium', marginTop: -2 },

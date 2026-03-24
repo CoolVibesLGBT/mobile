@@ -45,7 +45,13 @@ export default function ProfileScreen() {
       ...authUser,
       ...normalizedUser,
       avatar_url: getSafeImageURLEx(authUser.id, authUser.avatar, 'large') || normalizedUser?.avatar_url,
-      banner_url: getSafeImageURL(authUser.banner, 'large') || normalizedUser?.banner_url || `https://picsum.photos/seed/${authUser.id}banner/1500/500`,
+      banner_url:
+        normalizedUser?.banner_url ||
+        getSafeImageURL(authUser.cover, 'large') ||
+        getSafeImageURL(authUser.cover_image, 'large') ||
+        getSafeImageURL(authUser.cover_image_url, 'large') ||
+        getSafeImageURL(authUser.banner, 'large') ||
+        `https://picsum.photos/seed/${authUser.id}banner/1500/500`,
   };
 
   return (
@@ -55,6 +61,7 @@ export default function ProfileScreen() {
             <FullProfileView 
               user={mappedUser} 
               isMe={true} 
+              layoutVariant="profile-page"
               onEdit={() => router.push('/ProfileEdit')}
               onWallet={() => console.log('Wallet')}
               refreshControl={

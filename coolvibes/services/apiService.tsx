@@ -8,6 +8,18 @@ interface ApiRequestOptions {
   body?: Record<string, any> | FormData; // FormData desteği eklendi
 }
 
+const shouldReportApiError = (action: ActionType, error: any) => {
+  const hasResponse = Boolean(error?.response);
+  const message = String(error?.message || '');
+  const isNetworkError = !hasResponse && message.toLowerCase().includes('network error');
+
+  if (action === Actions.CMD_AUTH_USER_INFO && isNetworkError) {
+    return false;
+  }
+
+  return true;
+};
+
 export class ApiService {
 
   async call<T = any>(action: ActionType, options: ApiRequestOptions = {}): Promise<T> {
@@ -90,15 +102,17 @@ export class ApiService {
       console.log(`[API RESPONSE] Action: ${action}`, response.data);
       return response.data as T;
     } catch (error: any) {
-      reportAppError(error, {
-        source: 'api',
-        action,
-        extra: {
-          status: error?.response?.status,
-          data: error?.response?.data,
-          message: error?.message,
-        },
-      });
+      if (shouldReportApiError(action, error)) {
+        reportAppError(error, {
+          source: 'api',
+          action,
+          extra: {
+            status: error?.response?.status,
+            data: error?.response?.data,
+            message: error?.message,
+          },
+        });
+      }
       console.error(`[API ERROR] Action: ${action}`, error.response?.data || error.message);
       throw error;
     }
@@ -195,6 +209,13 @@ async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {
 
   async fetchCheckIns(params: { limit?: number; cursor?: string }) {
     return this.call(Actions.CMD_USER_CHECK_IN_FETCH, { method: 'POST', body: params });
+  }
+
+  async fetchUserEngagements(payload: Record<string, any> = {}) {
+    return this.call(Actions.CMD_USER_FETCH_ENGAGEMENTS, {
+      method: 'POST',
+      body: payload,
+    });
   }
 
   async sendMessage(chatId: string, content: string) {

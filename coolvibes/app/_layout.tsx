@@ -189,6 +189,7 @@ function ThemedApp() {
           <Stack.Screen name="PostDetail" options={{ headerShown: false }} />
           <Stack.Screen name="Settings" options={{ headerShown: false }} />
           <Stack.Screen name="ProfileEdit" options={{ headerShown: false }} />
+          <Stack.Screen name="ProfileMetricDetail" options={{ headerShown: false }} />
         </Stack>
       </View>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />

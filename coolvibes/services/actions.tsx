@@ -28,7 +28,7 @@ export const Actions = {
   CMD_DELETE_MESSAGE_FOR_ALL: "chat.delete_message_for_all",
   CMD_PIN_MESSAGE: "chat.pin_message",
   CMD_UNPIN_MESSAGE: "chat.unpin_message",
-	CMD_CHAT_MESSAGE_READ : "chat.message_read",
+  CMD_CHAT_MESSAGE_READ: "chat.message_read",
 
 
   // USER
@@ -62,6 +62,10 @@ export const Actions = {
   POST_FETCH: "post.fetch",
   POST_TIMELINE: "post.timeline",
   POST_VIBES: "post.vibes",
+
+  CMD_FETCH_JOB_OFFERS: "classifieds.offers",
+  CMD_FETCH_JOB_SEARCH: "classifieds.search",
+	CMD_CLASSIFIEDS_CREATE : "classifieds.create",
 
   CMD_POST_LIKE: "post.like",
   CMD_POST_DISLIKE: "post.dislike",

@@ -200,9 +200,9 @@ export default function ChatInput({
   const [selectedLocationMap, setSelectedLocationMap] = useState<any>(null);
   const [places, setPlaces] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
+  const hasSearchQuery = searchQuery.trim().length > 0;
 
   const inputRef = useRef<TextInput>(null);
   const bottomSheetModalRef = useRef<GorhomBottomSheetModal>(null);
@@ -725,9 +725,9 @@ export default function ChatInput({
             </BottomSheetView>
           ) : (
             <BottomSheetFlatList
-              contentContainerStyle={{ flexGrow: 1 }}
+              contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 12 }}
               ref={bottomSheetFlatListRef}
-              style={{ flex: 1 }}
+              style={{ flex: 1, backgroundColor: "#F7F7FA" }}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               data={places}
@@ -755,75 +755,113 @@ export default function ChatInput({
                       <Text style={styles.placeName} numberOfLines={1}>{item.name}</Text>
                       <Text style={styles.placeAddr} numberOfLines={1}>{item.address}</Text>
                     </View>
+                    <Ionicons name="chevron-forward" size={18} color="#C7C7CC" style={styles.placeChevron} />
                   </TouchableOpacity>
                 );
               }}
               ListHeaderComponent={
-                <View style={{ backgroundColor: "white" }}>
+                <View style={styles.locHeaderWrapper}>
                   <View style={styles.locHeader}>
-                    {isSearching ? (
-                      <View style={styles.searchHeaderContainer}>
-                        <TouchableOpacity onPress={() => { setIsSearching(false); setSearchQuery(""); }}>
-                          <Ionicons name="arrow-back" size={24} color="black" />
-                        </TouchableOpacity>
-                        <TextInput autoFocus style={styles.searchBarInput} placeholder="Search places..." value={searchQuery} onChangeText={setSearchQuery} />
-                        {isLoadingPlaces && <ActivityIndicator size="small" color="#999" style={{ marginRight: 5 }} />}
-                        {searchQuery.length > 0 && (
-                          <TouchableOpacity onPress={() => setSearchQuery("")}>
-                            <Ionicons name="close-circle" size={20} color="#888" />
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    ) : (
-                      <>
-                        <TouchableOpacity onPress={() => setShowLocationPicker(false)}>
-                          <Ionicons name="close" size={28} color="black" />
-                        </TouchableOpacity>
-                        <Text style={styles.locTitle}>Location</Text>
-                        <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          {isLoadingPlaces && <ActivityIndicator size="small" color="#999" style={{ marginRight: 10 }} />}
-                          <TouchableOpacity onPress={() => setIsSearching(true)}>
-                            <Ionicons name="search" size={24} color="black" />
-                          </TouchableOpacity>
-                        </View>
-                      </>
+                    <TouchableOpacity style={styles.locHeaderButton} onPress={() => setShowLocationPicker(false)}>
+                      <Ionicons name="close" size={24} color="#111" />
+                    </TouchableOpacity>
+                    <Text style={styles.locTitle}>Share location</Text>
+                    <View style={styles.locHeaderRight}>
+                      {isLoadingPlaces && <ActivityIndicator size="small" color="#8e8e93" />}
+                    </View>
+                  </View>
+                  <View style={styles.locSearchBar}>
+                    <Ionicons name="search" size={18} color="#8e8e93" />
+                    <TextInput
+                      style={styles.locSearchInput}
+                      placeholder="Search for a place"
+                      placeholderTextColor="#8e8e93"
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                      returnKeyType="search"
+                    />
+                    {searchQuery.length > 0 && (
+                      <TouchableOpacity style={styles.locSearchClear} onPress={() => setSearchQuery("")}>
+                        <Ionicons name="close-circle" size={18} color="#8e8e93" />
+                      </TouchableOpacity>
                     )}
                   </View>
-                  <View style={styles.locMapContainer}>
+                  <View style={styles.locMapCard}>
                     {currentLocation ? (
-                      <MapView provider={PROVIDER_GOOGLE} style={{ flex: 1 }} initialRegion={{ latitude: currentLocation.latitude, longitude: currentLocation.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01, }} showsUserLocation={true} showsMyLocationButton={true} onRegionChangeComplete={(r) => { setSelectedLocationMap(r); fetchNearbyPlaces(r.latitude, r.longitude, searchQuery); }}>
-                        <Marker coordinate={{ latitude: currentLocation.latitude, longitude: currentLocation.longitude, }} />
+                      <MapView
+                        provider={PROVIDER_GOOGLE}
+                        style={{ flex: 1 }}
+                        initialRegion={{
+                          latitude: currentLocation.latitude,
+                          longitude: currentLocation.longitude,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01,
+                        }}
+                        showsUserLocation={true}
+                        showsMyLocationButton={true}
+                        onRegionChangeComplete={(r) => {
+                          setSelectedLocationMap(r);
+                          fetchNearbyPlaces(r.latitude, r.longitude, searchQuery);
+                        }}
+                      >
+                        <Marker
+                          coordinate={{
+                            latitude: currentLocation.latitude,
+                            longitude: currentLocation.longitude,
+                          }}
+                        />
                       </MapView>
-                    ) : (<ActivityIndicator style={{ flex: 1 }} />)}
+                    ) : (
+                      <ActivityIndicator style={{ flex: 1 }} />
+                    )}
                     <View style={styles.mapMarkerFixed}>
                       <View style={styles.markerCircle} />
                       <View style={styles.markerDot} />
                     </View>
                   </View>
-                  {!isSearching && (
-                    <>
-                      <TouchableOpacity style={styles.locActionRow} onPress={() => { if (currentLocation) { setSelectedMedia(prev => [...prev, { type: 'live_location', name: "Live Location", data: currentLocation }]); setShowLocationPicker(false); bottomSheetModalRef.current?.dismiss(); } }}>
-                        <View style={[styles.locActionIcon, { backgroundColor: "#25D366" },]}>
-                          <MaterialCommunityIcons name="radio-tower" size={26} color="white" />
-                        </View>
-                        <View style={styles.locActionTextCol}>
-                          <Text style={styles.locActionTitle}>Share Live Location...</Text>
-                          <Text style={styles.locActionSub}>Updates in real-time while you move</Text>
-                        </View>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity onPress={() => { if (currentLocation) { setSelectedMedia(prev => [...prev, { type: 'location', name: "Current Location", data: currentLocation }]); setShowLocationPicker(false); bottomSheetModalRef.current?.dismiss(); } }} style={styles.locActionRow}>
-                        <View style={[styles.locActionIcon, { backgroundColor: "white", borderWidth: 2, borderColor: "#007AFF", },]}>
-                          <MaterialCommunityIcons name="map-marker-radius" size={22} color="#007AFF" />
-                        </View>
-                        <View style={styles.locActionTextCol}>
-                          <Text style={styles.locActionTitle}>Send Current Location</Text>
-                          <Text style={styles.locActionSub}>Accurate to 15 metres</Text>
-                        </View>
-                      </TouchableOpacity>
-                    </>
-                  )}
-                  <View style={styles.locDivider}><Text style={styles.locDividerText}>OR CHOOSE A PLACE</Text></View>
+                  <View style={styles.locActionCard}>
+                    <TouchableOpacity
+                      style={[styles.locActionRow, styles.locActionRowTop]}
+                      onPress={() => {
+                        if (currentLocation) {
+                          setSelectedMedia(prev => [...prev, { type: 'live_location', name: "Live Location", data: currentLocation }]);
+                          setShowLocationPicker(false);
+                          bottomSheetModalRef.current?.dismiss();
+                        }
+                      }}
+                    >
+                      <View style={[styles.locActionIcon, { backgroundColor: "#25D366" }]}>
+                        <MaterialCommunityIcons name="radio-tower" size={24} color="white" />
+                      </View>
+                      <View style={styles.locActionTextCol}>
+                        <Text style={styles.locActionTitle}>Share Live Location</Text>
+                        <Text style={styles.locActionSub}>Updates in real-time while you move</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (currentLocation) {
+                          setSelectedMedia(prev => [...prev, { type: 'location', name: "Current Location", data: currentLocation }]);
+                          setShowLocationPicker(false);
+                          bottomSheetModalRef.current?.dismiss();
+                        }
+                      }}
+                      style={[styles.locActionRow, styles.locActionRowBottom]}
+                    >
+                      <View style={[styles.locActionIcon, { backgroundColor: "white", borderWidth: 2, borderColor: "#007AFF" }]}>
+                        <MaterialCommunityIcons name="map-marker-radius" size={22} color="#007AFF" />
+                      </View>
+                      <View style={styles.locActionTextCol}>
+                        <Text style={styles.locActionTitle}>Send Current Location</Text>
+                        <Text style={styles.locActionSub}>Accurate to 15 metres</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.locDivider}>
+                    <Text style={styles.locDividerText}>
+                      {hasSearchQuery ? "SEARCH RESULTS" : "NEARBY PLACES"}
+                    </Text>
+                  </View>
                 </View>
               }
               ListEmptyComponent={
@@ -832,7 +870,6 @@ export default function ChatInput({
               ListFooterComponent={
                 isLoadingPlaces && places.length > 0 ? (<View style={{ padding: 20, alignItems: "center" }}><ActivityIndicator size="small" color="#999" /></View>) : null
               }
-              stickyHeaderIndices={[0]}
             />
           )
           }
@@ -1021,24 +1058,55 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sheetLabel: { fontSize: 12, color: "#444", textAlign: 'center' },
+  locHeaderWrapper: {
+    backgroundColor: "#F7F7FA",
+    paddingBottom: 8,
+  },
   locHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    height: 50,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#eee",
+    paddingTop: 8,
+    paddingBottom: 6,
     backgroundColor: "#fff",
   },
-  locTitle: { fontSize: 17, fontWeight: "700" },
-  searchHeaderContainer: {
-    flex: 1,
+  locHeaderButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F1F2F6",
+  },
+  locHeaderRight: {
+    width: 32,
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  locTitle: { fontSize: 17, fontWeight: "700", color: "#111" },
+  locSearchBar: {
     flexDirection: "row",
     alignItems: "center",
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    paddingHorizontal: 10,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#F1F2F6",
   },
-  searchBarInput: { flex: 1, height: 40, marginHorizontal: 10, fontSize: 16 },
-  locMapContainer: { height: 280, width: "100%", position: "relative" },
+  locSearchInput: { flex: 1, fontSize: 15, color: "#111", marginLeft: 6 },
+  locSearchClear: { paddingLeft: 6 },
+  locMapCard: {
+    height: 190,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#eaeaea",
+    borderWidth: 1,
+    borderColor: "#f0f0f2",
+  },
   mapMarkerFixed: {
     position: "absolute",
     top: "50%",
@@ -1069,56 +1137,76 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
   },
 
+  locActionCard: {
+    marginTop: 12,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#f0f0f2",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
   locActionRow: {
     flexDirection: "row",
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: "center",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#f0f0f0",
   },
+  locActionRowTop: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f2",
+  },
+  locActionRowBottom: {},
   locActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 15,
+    marginRight: 14,
   },
   locActionTextCol: { flex: 1 },
-  locActionTitle: { fontSize: 16, fontWeight: "600", color: "#000" },
-  locActionSub: { fontSize: 13, color: "#888", marginTop: 2 },
+  locActionTitle: { fontSize: 16, fontWeight: "600", color: "#111" },
+  locActionSub: { fontSize: 13, color: "#7c7c82", marginTop: 2 },
 
   locDivider: {
-    backgroundColor: "#F8F8F8",
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderTopWidth: 0.5,
-    borderBottomWidth: 0.5,
-    borderColor: "#eee",
+    paddingTop: 12,
+    paddingBottom: 6,
   },
   locDividerText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#999",
-    letterSpacing: 0.5,
+    color: "#8e8e93",
+    letterSpacing: 0.6,
   },
 
   placeItem: {
     flexDirection: "row",
     padding: 12,
     alignItems: "center",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#f5f5f5",
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#f0f0f2",
   },
   placeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  placeText: { flex: 1 },
-  placeName: { fontSize: 15, fontWeight: "600", color: "#333" },
-  placeAddr: { fontSize: 12, color: "#888", marginTop: 2 },
+  placeText: { flex: 1, marginRight: 6 },
+  placeName: { fontSize: 15, fontWeight: "600", color: "#111" },
+  placeAddr: { fontSize: 12, color: "#7c7c82", marginTop: 2 },
+  placeChevron: { marginLeft: 4 },
 });

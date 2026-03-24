@@ -9,17 +9,11 @@ import { Image } from 'expo-image';
 import { useAppSelector } from '@/store/hooks';
 import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { Dimensions } from 'react-native';
-import { MessageSquare, MapPin, Calendar, Users, Star, ScrollText } from 'lucide-react-native';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
 import FullProfileView from '@/components/FullProfileView';
-import { ScrollView } from 'react-native-gesture-handler';
-import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
+import { getSafeImageURLEx } from '@/helpers/safeUrl';
 import { decodeProfileParam, normalizeProfileUser } from '@/helpers/profile';
 import { api } from '@/services/apiService';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const secondaryText = '#888';
 
 export default function GlobalHeader() {
     const insets = useSafeAreaInsets();
@@ -53,11 +47,14 @@ export default function GlobalHeader() {
     const isActivity = (segments as any[]).includes('Activity');
     const isMatch = (segments as any[]).includes('Match') || (segments as any[]).includes('MatchScreen');
     const isProfileEdit = (segments as any[]).includes('ProfileEdit');
+    const isProfileMetricDetail = (segments as any[]).includes('ProfileMetricDetail');
     const shouldHide = isAuth || isMatch || isProfileEdit;
 
     const rootSubSegments = ['index', 'chat', 'Profile', 'Discover', 'nearby', 'Activity'];
     const segs = segments as string[];
-    const isRoot = !isChatDetail && !isCheckIn && !isSettings && (
+    const currentTab = segs[segs.length - 1] ?? '';
+    const isProfileRoute = currentTab.toLowerCase() === 'profile';
+    const isRoot = !isChatDetail && !isCheckIn && !isSettings && !isProfileMetricDetail && (
         segs.length === 0 ||
         (segs.length === 1 && segs[0] === '(tabs)') ||
         (segs.length === 2 && segs[0] === '(tabs)' && rootSubSegments.some(s => s.toLowerCase() === segs[1].toLowerCase()))
@@ -163,7 +160,7 @@ export default function GlobalHeader() {
         [fetchedUser, chatProfilePayload, profileFallback]
     );
 
-    const isOverlayHeader = !isSettings;
+    const isOverlayHeader = !isSettings && !isProfileRoute && !isProfileMetricDetail;
     const containerStyle: ViewStyle = {
         height: 60 + insets.top,
         paddingTop: insets.top,
@@ -226,6 +223,16 @@ export default function GlobalHeader() {
                 </View>
             );
         }
+        if (isProfileMetricDetail) {
+            const metricTitleRaw = (params?.metricLabel as string) || 'Engagement';
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText} numberOfLines={1}>
+                        {metricTitleRaw.toUpperCase()}
+                    </Text>
+                </View>
+            );
+        }
         if (isActivity) {
             return (
                 <View style={styles.brandContainer}>
@@ -234,7 +241,6 @@ export default function GlobalHeader() {
             );
         }
         if (isRoot) {
-            const currentTab = segs[segs.length - 1] ?? '';
             if (currentTab === 'chat') {
                 return (
                     <View style={styles.brandContainer}>
@@ -293,6 +299,9 @@ export default function GlobalHeader() {
             );
         }
         if (isSettings) {
+            return <View style={styles.avatarBtn} />;
+        }
+        if (isProfileMetricDetail) {
             return <View style={styles.avatarBtn} />;
         }
         const avatarUri = getSafeImageURLEx(authUser?.id, authUser?.avatar, 'medium') || getSafeImageURLEx(authUser?.id, authUser?.avatar_url || authUser?.avatarUrl, 'medium');

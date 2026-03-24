@@ -1,4 +1,4 @@
-import { getSafeImageURLEx } from '@/helpers/safeUrl'
+import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl'
 import { toSafeBioHtml } from '@/helpers/lexicalPlainText'
 
 type ProfileFallback = {
@@ -200,6 +200,19 @@ export const normalizeProfileUser = (input?: any, fallback?: ProfileFallback, op
     raw?.avatarUrl ||
     ''
 
+  const bannerUrl =
+    getSafeImageURL(raw?.cover, 'large') ||
+    getSafeImageURL(raw?.cover_image, 'large') ||
+    getSafeImageURL(raw?.cover_image_url, 'large') ||
+    getSafeImageURL(raw?.banner, 'large') ||
+    getSafeImageURL(raw?.banner_url, 'large') ||
+    raw?.cover?.file?.url ||
+    raw?.cover_image?.file?.url ||
+    raw?.cover_image_url ||
+    raw?.banner_url ||
+    input?.cover_image_url ||
+    input?.banner_url
+
   const pickNumber = (...values: any[]) => {
     for (const value of values) {
       if (value === 0) return 0
@@ -226,6 +239,37 @@ export const normalizeProfileUser = (input?: any, fallback?: ProfileFallback, op
     Array.isArray(raw?.following) ? raw.following.length : undefined,
   )
 
+  const postsCount = pickNumber(
+    raw?.posts_count,
+    raw?.postsCount,
+    raw?.post_count,
+    raw?.postCount,
+    raw?.stats?.posts_count,
+    raw?.stats?.posts,
+    raw?.engagements?.counts?.post_count,
+    Array.isArray(raw?.posts) ? raw.posts.length : undefined,
+    Array.isArray(raw?.vibes) ? raw.vibes.length : undefined,
+  )
+
+  const likeReceivedCount = pickNumber(
+    raw?.like_received_count,
+    raw?.likeReceivedCount,
+    raw?.likes_count,
+    raw?.likesCount,
+    raw?.stats?.like_received_count,
+    raw?.stats?.likes_received,
+    raw?.stats?.likes,
+    raw?.engagements?.counts?.like_received_count,
+  )
+
+  const matchCount = pickNumber(
+    raw?.match_count,
+    raw?.matchCount,
+    raw?.stats?.match_count,
+    raw?.stats?.matches,
+    raw?.engagements?.counts?.match_count,
+  )
+
   return {
     ...raw,
     id,
@@ -233,11 +277,16 @@ export const normalizeProfileUser = (input?: any, fallback?: ProfileFallback, op
     displayname,
     username,
     avatar_url: avatarUrl,
-    banner_url: raw?.banner_url,
+    banner_url: bannerUrl,
+    cover_image_url: bannerUrl,
     bioHtml,
     bio: bioText,
     location,
     followers_count: followersCount ?? raw?.followers_count,
     following_count: followingCount ?? raw?.following_count,
+    posts_count: postsCount ?? raw?.posts_count,
+    like_received_count: likeReceivedCount ?? raw?.like_received_count,
+    likes_count: likeReceivedCount ?? raw?.likes_count,
+    match_count: matchCount ?? raw?.match_count,
   }
 }
