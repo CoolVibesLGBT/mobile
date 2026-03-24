@@ -77,6 +77,7 @@ export default function CheckInScreen() {
     const authUser = useAppSelector(state => state.auth.user);
     const systemData = useAppSelector(state => state.system.data);
     const language = useAppSelector(state => state.system.language) || authUser?.default_language || 'en';
+    const draftCheckinParam = Array.isArray(params?.draft_checkin) ? params.draft_checkin[0] : params?.draft_checkin;
     const tabBarHeight = (Platform.OS === 'ios' ? 62 : 66) + Math.max(insets.bottom, 8);
     const createContentBottom = tabBarHeight + 110;
     const contentPaddingTop = GLOBAL_HEADER_HEIGHT + insets.top;
@@ -167,6 +168,25 @@ export default function CheckInScreen() {
         const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
         return () => sub.remove();
     }, [isCreateOpen, router]);
+
+    useEffect(() => {
+        if (!draftCheckinParam || typeof draftCheckinParam !== 'string') return;
+
+        try {
+            const decoded = JSON.parse(decodeURIComponent(draftCheckinParam));
+            if (decoded && typeof decoded === 'object' && decoded.id) {
+                setCheckins(prev => {
+                    if (prev.some(item => item.id === decoded.id)) return prev;
+                    return [decoded as CheckinItem, ...prev];
+                });
+                setViewMode('list');
+            }
+        } catch {
+            // ignore malformed draft payload
+        } finally {
+            router.setParams({ draft_checkin: undefined });
+        }
+    }, [draftCheckinParam, router]);
 
     const tagMap = useMemo(() => {
         const map = new Map<string, any>();
@@ -367,8 +387,7 @@ export default function CheckInScreen() {
     }, [authUser, selectedTags, userLocation, router]);
 
     const handleOpenCreate = useCallback(() => {
-        setIsCreateOpen(true);
-        router.setParams({ checkin_mode: 'create' });
+        router.push('/CheckInCreate');
     }, [router]);
 
     const handleExit = useCallback(() => {

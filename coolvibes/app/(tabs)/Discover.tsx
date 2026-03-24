@@ -166,7 +166,7 @@ function mapTimelinePostsToCards(posts: any[]): TimelinePostCard[] {
         .filter((item) => Boolean(item.id));
 }
 
-export default function DiscoverScreen({ hideHeader = false }: { hideHeader?: boolean }) {
+export default function DiscoverScreen({ hideHeader = false, refreshToken }: { hideHeader?: boolean; refreshToken?: string }) {
     const { colors, dark } = useTheme();
     const insets = useSafeAreaInsets();
     const authUser = useAppSelector(state => state.auth.user);
@@ -337,6 +337,11 @@ export default function DiscoverScreen({ hideHeader = false }: { hideHeader?: bo
     useEffect(() => {
         void fetchTimeline();
     }, [fetchTimeline]);
+
+    useEffect(() => {
+        if (!refreshToken) return;
+        void fetchTimeline({ refresh: true });
+    }, [fetchTimeline, refreshToken]);
 
     const availableStories = useMemo(
         () => stories.filter((story) => story.mediaUrl || story.cover),

@@ -186,6 +186,8 @@ function ThemedApp() {
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           <Stack.Screen name="ChatDetail" options={{ headerShown: false }} />
           <Stack.Screen name="CheckIn" options={{ headerShown: false }} />
+          <Stack.Screen name="CheckInCreate" options={{ headerShown: false }} />
+          <Stack.Screen name="CreatePost" options={{ headerShown: false }} />
           <Stack.Screen name="PostDetail" options={{ headerShown: false }} />
           <Stack.Screen name="Settings" options={{ headerShown: false }} />
           <Stack.Screen name="ProfileEdit" options={{ headerShown: false }} />

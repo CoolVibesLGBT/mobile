@@ -1,20 +1,21 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, withTiming, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Flame, Radar, MessageSquare, MapPin, Plus } from 'lucide-react-native';
+import { Flame, MapPin } from 'lucide-react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/Colors';
 
 // --- Tab Configuration ---
-const TAB_ICONS: Record<string, React.ElementType> = {
-  'index': Flame,
-  'nearby': MapPin,
-  'Match': Radar,
-  'chat': MessageSquare,
+const TAB_ICONS: Record<string, { type: 'lucide' | 'mdi'; icon: any }> = {
+  'index': { type: 'lucide', icon: Flame },
+  'nearby': { type: 'lucide', icon: MapPin },
+  'Match': { type: 'mdi', icon: 'chart-bubble' },
+  'chat': { type: 'mdi', icon: 'chat-processing-outline' },
 };
 
 const TAB_LABELS: Record<string, string> = {
@@ -54,7 +55,7 @@ function TabItem({ route, isFocused, navigation, isDark }: any) {
     }
   };
 
-  const Icon = TAB_ICONS[route.name];
+  const iconConfig = TAB_ICONS[route.name];
   const label = TAB_LABELS[route.name];
   // Spec: default black icons/labels; active tab shows a black/white circular marker.
   const inactiveFg = isDark ? '#FFFFFF' : '#000000';
@@ -75,7 +76,19 @@ function TabItem({ route, isFocused, navigation, isDark }: any) {
           animatedStyle,
         ]}
       >
-        <Icon size={24} color={isFocused ? activeFg : inactiveFg} strokeWidth={isFocused ? 2.75 : 2.25} />
+        {iconConfig?.type === 'mdi' ? (
+          <MaterialCommunityIcons
+            name={iconConfig.icon}
+            size={24}
+            color={isFocused ? activeFg : inactiveFg}
+          />
+        ) : (
+          <iconConfig.icon
+            size={24}
+            color={isFocused ? activeFg : inactiveFg}
+            strokeWidth={isFocused ? 2.75 : 2.25}
+          />
+        )}
       </Animated.View>
       <Text style={[
         styles.tabLabel, 
@@ -88,13 +101,15 @@ function TabItem({ route, isFocused, navigation, isDark }: any) {
   );
 }
 
-function CheckInButton({ palette, isDark }: any) {
-  const router = useRouter();
-
+function CheckInButton({ palette, isDark, isFocused }: any) {
   const onPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     palette.navigation?.navigate('CheckIn');
   };
+
+  const buttonBackground = '#000000';
+  const buttonBorder = isFocused ? '#FFFFFF' : (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.92)');
+  const iconColor = '#FFFFFF';
 
   return (
     <View style={styles.checkInButtonWrapper}>
@@ -103,15 +118,19 @@ function CheckInButton({ palette, isDark }: any) {
         style={[
           styles.checkInButton,
           {
-            backgroundColor: palette.accent,
-            borderColor: palette.surface,
+            backgroundColor: buttonBackground,
+            borderColor: buttonBorder,
             shadowColor: isDark ? '#000000' : '#0F172A',
-            shadowOpacity: isDark ? 0.4 : 0.16,
+            shadowOpacity: isFocused ? (isDark ? 0.42 : 0.18) : (isDark ? 0.28 : 0.12),
           },
         ]}
         activeOpacity={0.9}
       >
-        <Plus size={24} color={isDark ? Colors.dark.background : Colors.light.surface} strokeWidth={3.25} />
+        <MaterialCommunityIcons
+          name="alien-outline"
+          size={22}
+          color={iconColor}
+        />
       </TouchableOpacity>
     </View>
   );
@@ -132,6 +151,7 @@ function CustomTabBar({ state, navigation }: any) {
 
   const firstHalf = visibleRoutes.slice(0, 2);
   const secondHalf = visibleRoutes.slice(2);
+  const isCheckInFocused = state.routes[state.index]?.name === 'CheckIn';
 
   const renderTab = (route: any) => {
     const isFocused = state.index === state.routes.findIndex((r: any) => r.key === route.key);
@@ -167,7 +187,7 @@ function CustomTabBar({ state, navigation }: any) {
         ]}
       >
         {firstHalf.map(renderTab)}
-        <CheckInButton palette={{ ...palette, navigation }} isDark={isDark} />
+        <CheckInButton palette={{ ...palette, navigation }} isDark={isDark} isFocused={isCheckInFocused} />
         {secondHalf.map(renderTab)}
       </View>
     </View>
@@ -239,22 +259,22 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   checkInButtonWrapper: {
-    width: 72,
+    width: 68,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
     height: '100%',
   },
   checkInButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Platform.OS === 'ios' ? -32 : -28,
-    borderWidth: 3,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 10,
+    marginTop: Platform.OS === 'ios' ? -18 : -16,
+    borderWidth: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 6,
   },
 });

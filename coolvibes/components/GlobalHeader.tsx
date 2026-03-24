@@ -43,22 +43,35 @@ export default function GlobalHeader() {
     const isAuth = (segments as any[])[0] === '(auth)';
     const isChatDetail = (segments as any[]).includes('ChatDetail');
     const isCheckIn = (segments as any[]).includes('CheckIn');
+    const isCheckInCreate = (segments as any[]).includes('CheckInCreate');
     const isSettings = (segments as any[]).includes('Settings');
     const isActivity = (segments as any[]).includes('Activity');
     const isMatch = (segments as any[]).includes('Match') || (segments as any[]).includes('MatchScreen');
     const isProfileEdit = (segments as any[]).includes('ProfileEdit');
+    const isCreatePost = (segments as any[]).includes('CreatePost');
     const isProfileMetricDetail = (segments as any[]).includes('ProfileMetricDetail');
-    const shouldHide = isAuth || isMatch || isProfileEdit;
+    const shouldHide = isAuth || isMatch;
 
     const rootSubSegments = ['index', 'chat', 'Profile', 'Discover', 'nearby', 'Activity'];
     const segs = segments as string[];
     const currentTab = segs[segs.length - 1] ?? '';
     const isProfileRoute = currentTab.toLowerCase() === 'profile';
-    const isRoot = !isChatDetail && !isCheckIn && !isSettings && !isProfileMetricDetail && (
+    const isCheckInRoute = isCheckIn || isCheckInCreate;
+    const isRoot = !isChatDetail && !isCheckInRoute && !isSettings && !isProfileEdit && !isCreatePost && !isProfileMetricDetail && (
         segs.length === 0 ||
         (segs.length === 1 && segs[0] === '(tabs)') ||
         (segs.length === 2 && segs[0] === '(tabs)' && rootSubSegments.some(s => s.toLowerCase() === segs[1].toLowerCase()))
     );
+    const settingsReturnToParam = Array.isArray(params?.returnTo) ? params.returnTo[0] : params?.returnTo;
+    const settingsReturnTo =
+        typeof settingsReturnToParam === 'string' && settingsReturnToParam.startsWith('/')
+            ? settingsReturnToParam
+            : null;
+    const rootRoutePath = useMemo(() => {
+        if (segs[0] !== '(tabs)') return '/(tabs)';
+        if (!segs[1] || segs[1] === 'index') return '/(tabs)';
+        return `/(tabs)/${segs[1]}`;
+    }, [segs]);
 
     // Resolve chat user from route params
     const chatUserNameRaw = (params?.name as string) || (params?.chatId as string) || 'Chat';
@@ -160,7 +173,7 @@ export default function GlobalHeader() {
         [fetchedUser, chatProfilePayload, profileFallback]
     );
 
-    const isOverlayHeader = !isSettings && !isProfileRoute && !isProfileMetricDetail;
+    const isOverlayHeader = !isSettings && !isProfileRoute && !isProfileEdit && !isCreatePost && !isProfileMetricDetail;
     const containerStyle: ViewStyle = {
         height: 60 + insets.top,
         paddingTop: insets.top,
@@ -223,6 +236,20 @@ export default function GlobalHeader() {
                 </View>
             );
         }
+        if (isProfileEdit) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>EDIT PROFILE</Text>
+                </View>
+            );
+        }
+        if (isCreatePost) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>CREATE POST</Text>
+                </View>
+            );
+        }
         if (isProfileMetricDetail) {
             const metricTitleRaw = (params?.metricLabel as string) || 'Engagement';
             return (
@@ -270,7 +297,7 @@ export default function GlobalHeader() {
                 );
             }
         }
-        if (isCheckIn) {
+        if (isCheckInRoute) {
             return (
                 <View style={styles.brandContainer}>
                     <Text style={brandText}>CHECK-IN</Text>
@@ -299,6 +326,12 @@ export default function GlobalHeader() {
             );
         }
         if (isSettings) {
+            return <View style={styles.avatarBtn} />;
+        }
+        if (isProfileEdit) {
+            return <View style={styles.avatarBtn} />;
+        }
+        if (isCreatePost) {
             return <View style={styles.avatarBtn} />;
         }
         if (isProfileMetricDetail) {
@@ -333,11 +366,54 @@ export default function GlobalHeader() {
     };
 
     const borderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    const handleLeftPress = useCallback(() => {
+        if (isCheckIn && params?.checkin_mode === 'create') {
+            router.setParams({ checkin_mode: undefined });
+            return;
+        }
+
+        if (isSettings) {
+            if (settingsReturnTo) {
+                router.navigate(settingsReturnTo as any);
+                return;
+            }
+            if (router.canGoBack()) {
+                router.back();
+                return;
+            }
+            router.replace('/(tabs)');
+            return;
+        }
+
+        if (isCheckInRoute || isChatDetail) {
+            if (router.canGoBack()) {
+                router.back();
+            } else {
+                router.replace('/(tabs)');
+            }
+            return;
+        }
+
+        if (isRoot) {
+            router.push({
+                pathname: '/Settings',
+                params: { returnTo: rootRoutePath },
+            });
+            return;
+        }
+
+        if (router.canGoBack()) {
+            router.back();
+            return;
+        }
+
+        router.replace('/(tabs)');
+    }, [isCheckIn, params?.checkin_mode, isSettings, settingsReturnTo, router, isChatDetail, isRoot, rootRoutePath, isCheckInRoute]);
 
     if (shouldHide) return null;
 
     return (
-        <View style={[containerStyle, (!isRoot && !isChatDetail && !isCheckIn) && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: borderColor }]}>
+        <View style={[containerStyle, (!isRoot && !isChatDetail && !isCheckInRoute) && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: borderColor }]}>
             <BlurView
                 intensity={dark ? 45 : 90}
                 style={StyleSheet.absoluteFill}
@@ -348,22 +424,14 @@ export default function GlobalHeader() {
             <View style={contentStyle}>
                 {/* Left */}
                 <TouchableOpacity
-                    onPress={() => {
-                        if (isCheckIn && params?.checkin_mode === 'create') {
-                            router.setParams({ checkin_mode: undefined });
-                        } else if (isCheckIn || isChatDetail || isSettings) {
-                            router.back();
-                        }
-                        else if (isRoot) router.push('/Settings');
-                        else router.back();
-                    }}
+                    onPress={handleLeftPress}
                     style={styles.iconBtn}
                     activeOpacity={0.7}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                     <MaterialCommunityIcons
-                        name={isCheckIn ? 'chevron-left' : (isSettings ? 'close' : (isRoot ? 'tune-vertical' : 'chevron-left'))}
-                        size={isCheckIn ? 30 : (isSettings ? 26 : (isRoot ? 22 : 30))}
+                        name={isCheckInRoute ? 'chevron-left' : (isSettings ? 'chevron-left' : (isRoot ? 'tune-vertical' : 'chevron-left'))}
+                        size={isCheckInRoute ? 30 : (isSettings ? 30 : (isRoot ? 22 : 30))}
                         color={colors.text}
                     />
                 </TouchableOpacity>

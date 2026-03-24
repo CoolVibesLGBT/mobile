@@ -70,10 +70,11 @@ interface User {
   name: string;
 }
 
-type ChatInputKind = 'chat' | 'comment';
+type ChatInputKind = 'chat' | 'comment' | 'post';
 
 interface ChatInputProps {
   kind?: ChatInputKind;
+  autoFocus?: boolean;
   currentUser: any;
   replyingTo: Message | null;
   editingMessage: Message | null;
@@ -171,6 +172,7 @@ const AudioPreview = ({ item }: { item: any }) => {
 
 export default function ChatInput({
   kind = 'chat',
+  autoFocus = false,
   currentUser,
   replyingTo,
   editingMessage,
@@ -182,7 +184,8 @@ export default function ChatInput({
 }: ChatInputProps) {
   const insets = useSafeAreaInsets();
   const isComment = kind === 'comment';
-  const inputPlaceholder = isComment ? 'Write a comment' : 'Type a message';
+  const isPost = kind === 'post';
+  const inputPlaceholder = isComment ? 'Write a comment' : isPost ? 'Write a post' : 'Type a message';
   const [inputText, setInputText] = useState("");
   const [inputHeight, setInputHeight] = useState(40);
   const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
@@ -227,6 +230,14 @@ export default function ChatInput({
       inputRef.current?.focus();
     }
   }, [replyingTo]);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [autoFocus]);
 
   useEffect(() => {
     if (isRecording) {

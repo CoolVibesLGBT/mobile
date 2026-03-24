@@ -11,6 +11,7 @@ import {
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Animated, { 
     FadeIn, 
     useAnimatedStyle, 
@@ -18,6 +19,7 @@ import Animated, {
     useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import DiscoverScreen from './Discover';
 import VibesScreen from '@/components/Vibes/VibesScreen';
 
@@ -27,6 +29,9 @@ export default function HomeScreen() {
     const { colors, dark } = useTheme();
     const [activeTab, setActiveTab] = useState<'flows' | 'vibes'>('flows');
     const insets = useSafeAreaInsets();
+    const router = useRouter();
+    const params = useLocalSearchParams<{ refresh_cool?: string }>();
+    const refreshToken = Array.isArray(params.refresh_cool) ? params.refresh_cool[0] : params.refresh_cool;
     const indicatorPosition = useSharedValue(0);
 
     const handleTabPress = (tab: 'flows' | 'vibes') => {
@@ -123,10 +128,20 @@ export default function HomeScreen() {
             >
                 {activeTab === 'flows' ? (
                     <Animated.View entering={FadeIn} style={{ flex: 1 }}>
-                         <DiscoverScreen hideHeader={true} />
+                         <DiscoverScreen hideHeader={true} refreshToken={refreshToken} />
                     </Animated.View>
                 ) : null}
             </View>
+
+            {activeTab === 'flows' && (
+                <TouchableOpacity
+                    style={[styles.fab, { bottom: (Platform.OS === 'ios' ? 84 : 74) + Math.max(insets.bottom, 8) }]}
+                    onPress={() => router.push('/CreatePost')}
+                    activeOpacity={0.9}
+                >
+                    <MaterialCommunityIcons name="pencil-plus-outline" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+            )}
         </View>
     );
 }
@@ -172,5 +187,21 @@ const styles = StyleSheet.create({
         height: 3,
         width: 40,
         borderRadius: 2,
+    },
+    fab: {
+        position: 'absolute',
+        right: 20,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#000000',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.22,
+        shadowRadius: 14,
+        elevation: 10,
+        zIndex: 20,
     },
 });

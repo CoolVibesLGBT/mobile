@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useRouter } from 'expo-router';
 
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { api } from '@/services/apiService';
@@ -59,7 +58,6 @@ enum PrivacyLevel {
 export default function ProfileEditScreen() {
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const dispatch = useAppDispatch();
 
   const authUser = useAppSelector(state => state.auth.user);
@@ -1061,18 +1059,10 @@ export default function ProfileEditScreen() {
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ paddingTop: insets.top + 60 }}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <MaterialCommunityIcons name="chevron-left" size={26} color={textColor} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: textColor }]}>Edit Profile</Text>
-            <View style={styles.backButton} />
-          </View>
-
+        <View>
           <View style={styles.coverContainer}>
             {coverImageUrl ? (
               <Image source={{ uri: coverImageUrl }} style={styles.coverImage} contentFit="cover" />
@@ -1147,15 +1137,6 @@ export default function ProfileEditScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  headerRow: {
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  headerTitle: { fontSize: 20, fontFamily: 'Outfit-Bold', letterSpacing: 0.5 },
-  backButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   coverContainer: { height: 180, marginHorizontal: 16, borderRadius: 18, overflow: 'hidden' },
   coverImage: { width: '100%', height: '100%' },
   coverPlaceholder: { flex: 1 },
