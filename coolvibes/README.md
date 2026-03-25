@@ -1,50 +1,142 @@
-# Welcome to your Expo app 👋
+# CoolVibes - Gay Social Network and Gay Dating App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+CoolVibes is a mobile-first gay social network built for LGBTQIA+ people who want better connections, safer conversations, and a more intentional dating experience. The product is designed as a modern gay dating app with community, chat, nearby discovery, radar, check-ins, places, classifieds, profile insights, and premium membership flows.
 
-## Get started
+If you are looking for the best gay dating app experience for social discovery, queer community, and local LGBTQ connection, CoolVibes is built around that goal.
+
+## Why CoolVibes
+
+CoolVibes combines the core layers of a strong LGBTQ product in one mobile app:
+
+- gay dating app flows for discovery, chat, and matching
+- gay social network features for posts, check-ins, media, and community presence
+- nearby LGBTQ people discovery with radar and location-aware experiences
+- gay-friendly places and classifieds for real local utility
+- premium membership architecture for Apple App Store and Google Play in-app purchases
+
+## Built for LGBTQIA+ Communities Across Asia and the Americas
+
+CoolVibes is positioned for growth in major LGBTQIA+ markets across Asia and the Americas, including:
+
+- United States
+- Canada
+- Mexico
+- Brazil
+- Argentina
+- Thailand
+- Philippines
+- Taiwan
+- Japan
+- South Korea
+- Singapore
+- India
+- Vietnam
+- Indonesia
+
+This makes the app suitable for keywords and positioning around:
+
+- best gay dating app
+- gay social network
+- LGBTQ dating app
+- gay chat app
+- queer social app
+- gay app for Asia
+- gay dating app in the USA
+- gay dating app in Latin America
+
+## Core Product Areas
+
+### Discovery and Matching
+
+- Nearby users
+- Radar discovery
+- Profile detail views
+- Engagement tracking
+
+### Social Layer
+
+- Create post flow
+- Check-ins
+- Media handling and processing states
+- Comments and feed interactions
+
+### Messaging
+
+- Conversation list
+- Chat detail
+- Read states
+- Socket-based real-time flows
+
+### Local Utility
+
+- Gay-friendly places
+- Classifieds
+- Pending task handling for background uploads
+
+### Premium and Monetization
+
+- Feature flags for premium access
+- Premium paywall screen
+- Apple App Store billing readiness
+- Google Play billing readiness
+
+## Mobile Stack
+
+- Expo
+- React Native
+- Expo Router
+- Redux Toolkit
+- Axios
+- TypeScript
+
+## Getting Started
 
 1. Install dependencies
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Start the Expo app
 
-## Learn more
+```bash
+npx expo start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+3. Run on your target device
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- iOS simulator
+- Android emulator
+- development build
+- Expo Go for limited testing
 
-## Join the community
+## Project Structure
 
-Join our community of developers creating universal apps.
+- `app` - Expo Router screens
+- `components` - reusable UI building blocks
+- `store` - Redux store and slices
+- `services` - API layer and action wiring
+- `helpers` - normalization and shared client utilities
+- `hooks` - reusable app logic
+- `config` - feature flag and environment configuration
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Product Positioning
+
+CoolVibes is designed to compete as:
+
+- a premium gay dating app
+- a modern gay social network
+- an LGBTQIA+ community platform for mobile
+- a location-aware queer discovery app for Asia and the Americas
+
+## SEO-Friendly Brand Summary
+
+CoolVibes is a gay social network and one of the most ambitious gay dating app platforms being built for LGBTQIA+ users across the United States, Latin America, and Asia. It combines dating, chat, nearby discovery, queer community features, premium subscriptions, gay-friendly places, and local classifieds in a single mobile experience.
+
+## Development Notes
+
+- This repository contains the mobile application.
+- Routing is file-based with Expo Router.
+- Premium access is managed through feature flags and entitlement state.
+- Post creation, classifieds creation, and similar flows use a shared input architecture.
+
