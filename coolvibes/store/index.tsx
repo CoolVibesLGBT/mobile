@@ -5,6 +5,7 @@ import authReducer from './slice/auth';
 import placesReducer from './slice/places';
 import nearbyUsersReducer from './slice/nearbyUsers';
 import postUploadsReducer from './slice/postUploads';
+import featureFlagsReducer from './slice/featureFlags';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     nearbyPlaces: placesReducer,
     nearbyUsers: nearbyUsersReducer,
     postUploads: postUploadsReducer,
+    featureFlags: featureFlagsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

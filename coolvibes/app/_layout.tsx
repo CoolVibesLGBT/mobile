@@ -35,6 +35,7 @@ import GlobalHeader from '@/components/GlobalHeader';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import AppErrorOverlay from '@/components/AppErrorOverlay';
 import { installGlobalErrorHandler } from '@/helpers/errorReporter';
+import { hydrateFeatureFlagsThunk } from '@/store/slice/featureFlags';
 
 installGlobalErrorHandler();
 
@@ -119,6 +120,7 @@ function ThemedApp() {
     const init = async () => {
       await setTestToken();
       // Initial sync and auto login
+      dispatch(hydrateFeatureFlagsThunk());
       dispatch(fetchInitialSync());
       dispatch(autoLoginThunk());
     };
@@ -195,6 +197,7 @@ function ThemedApp() {
           <Stack.Screen name="legal/index" options={{ headerShown: false }} />
           <Stack.Screen name="legal/[page]" options={{ headerShown: false }} />
           <Stack.Screen name="Settings" options={{ headerShown: false }} />
+          <Stack.Screen name="Premium" options={{ headerShown: false }} />
           <Stack.Screen name="ProfileEdit" options={{ headerShown: false }} />
           <Stack.Screen name="ProfileMetricDetail" options={{ headerShown: false }} />
         </Stack>

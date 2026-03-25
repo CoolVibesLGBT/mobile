@@ -83,6 +83,7 @@ export default function GlobalHeader() {
     const isPlacesRoot = (segments as any[]).includes('Places') || (segments as any[]).includes('places');
     const isPlaceDetail = (segments as any[]).includes('PlaceDetail') || (segments as any[]).includes('place-detail');
     const isPlacesRoute = isPlacesRoot || isPlaceDetail;
+    const isPremium = (segments as any[]).includes('Premium');
     const isProfileEdit = (segments as any[]).includes('ProfileEdit');
     const isCreatePost = (segments as any[]).includes('CreatePost');
     const isProfileMetricDetail = (segments as any[]).includes('ProfileMetricDetail');
@@ -96,7 +97,7 @@ export default function GlobalHeader() {
     const currentTab = segs[segs.length - 1] ?? '';
     const isProfileRoute = currentTab.toLowerCase() === 'profile';
     const isCheckInRoute = isCheckIn || isCheckInCreate;
-    const isRoot = !isChatDetail && !isCheckInRoute && !isSettings && !isPendingTasks && !isClassifiedsRoute && !isPlacesRoute && !isLegalRoute && !isProfileEdit && !isCreatePost && !isProfileMetricDetail && (
+    const isRoot = !isChatDetail && !isCheckInRoute && !isSettings && !isPendingTasks && !isClassifiedsRoute && !isPlacesRoute && !isLegalRoute && !isPremium && !isProfileEdit && !isCreatePost && !isProfileMetricDetail && (
         segs.length === 0 ||
         (segs.length === 1 && segs[0] === '(tabs)') ||
         (segs.length === 2 && segs[0] === '(tabs)' && rootSubSegments.some(s => s.toLowerCase() === segs[1].toLowerCase()))
@@ -232,7 +233,7 @@ export default function GlobalHeader() {
         [fetchedUser, chatProfilePayload, profileFallback]
     );
 
-    const isOverlayHeader = !isSettings && !isPendingTasks && !isClassifiedsRoute && !isPlacesRoute && !isLegalRoute && !isProfileRoute && !isProfileEdit && !isCreatePost && !isProfileMetricDetail;
+    const isOverlayHeader = !isSettings && !isPendingTasks && !isClassifiedsRoute && !isPlacesRoute && !isLegalRoute && !isPremium && !isProfileRoute && !isProfileEdit && !isCreatePost && !isProfileMetricDetail;
     const containerStyle: ViewStyle = {
         height: 60 + insets.top,
         paddingTop: insets.top,
@@ -320,6 +321,13 @@ export default function GlobalHeader() {
             return (
                 <View style={styles.brandContainer}>
                     <Text style={brandText}>PLACES</Text>
+                </View>
+            );
+        }
+        if (isPremium) {
+            return (
+                <View style={styles.brandContainer}>
+                    <Text style={brandText}>PREMIUM</Text>
                 </View>
             );
         }
@@ -446,6 +454,9 @@ export default function GlobalHeader() {
         if (isPlacesRoute) {
             return <View style={styles.avatarBtn} />;
         }
+        if (isPremium) {
+            return <View style={styles.avatarBtn} />;
+        }
         if (isLegalRoute) {
             return <View style={styles.avatarBtn} />;
         }
@@ -558,7 +569,7 @@ export default function GlobalHeader() {
             return;
         }
 
-        if (isPendingTasks || isClassifiedsRoute || isPlacesRoute || isLegalRoute || isCheckInRoute || isChatDetail) {
+        if (isPendingTasks || isClassifiedsRoute || isPlacesRoute || isLegalRoute || isPremium || isCheckInRoute || isChatDetail) {
             if (router.canGoBack()) {
                 router.back();
             } else {
@@ -566,6 +577,8 @@ export default function GlobalHeader() {
                     router.replace('/(tabs)');
                 } else if (isPlacesRoute) {
                     router.replace('/places');
+                } else if (isPremium) {
+                    router.replace('/Settings');
                 } else if (isLegalRoute) {
                     router.replace('/legal');
                 } else {
@@ -581,7 +594,7 @@ export default function GlobalHeader() {
         }
 
         router.replace('/(tabs)');
-    }, [isCheckIn, params?.checkin_mode, isSettings, settingsReturnTo, router, isChatDetail, isCheckInRoute, isClassifiedCreate, isClassifiedDetail, isClassifiedsRoute, isPendingTasks, isPlacesRoute, isLegalRoute]);
+    }, [isCheckIn, params?.checkin_mode, isSettings, settingsReturnTo, router, isChatDetail, isCheckInRoute, isClassifiedCreate, isClassifiedDetail, isClassifiedsRoute, isPendingTasks, isPlacesRoute, isPremium, isLegalRoute]);
 
     if (shouldHide) return null;
 
@@ -708,6 +721,31 @@ export default function GlobalHeader() {
                                             </Text>
                                         </View>
                                     ) : null}
+                                    <View style={[styles.menuItemChevronWrap, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="chevron-right" size={18} color={colors.text} />
+                                    </View>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.menuItem,
+                                        {
+                                            borderColor,
+                                            backgroundColor: isPremium ? sidebarCardBackground : 'transparent',
+                                        },
+                                    ]}
+                                    activeOpacity={0.82}
+                                    onPress={() => handleSidebarNavigate('/Premium')}
+                                >
+                                    <View style={[styles.menuItemIcon, { backgroundColor: sidebarIconBackground }]}>
+                                        <MaterialCommunityIcons name="crown-outline" size={20} color={colors.text} />
+                                    </View>
+                                    <View style={styles.menuItemBody}>
+                                        <Text style={[styles.menuItemTitle, { color: colors.text }]}>Premium</Text>
+                                        <Text style={[styles.menuItemSubtitle, { color: sidebarMutedText }]}>
+                                            Plans, billing and premium access
+                                        </Text>
+                                    </View>
                                     <View style={[styles.menuItemChevronWrap, { backgroundColor: sidebarIconBackground }]}>
                                         <MaterialCommunityIcons name="chevron-right" size={18} color={colors.text} />
                                     </View>

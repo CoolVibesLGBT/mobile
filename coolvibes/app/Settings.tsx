@@ -22,6 +22,7 @@ import {
     UserX,
     LogOut,
     Check,
+    Star,
 } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +33,8 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slice/auth';
 import { setTheme, toggleBlur, setLanguage, setFontSize } from '@/store/slice/system';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
+import { usePremiumAccess } from '@/hooks/usePremiumAccess';
+import { useRouter } from 'expo-router';
 
 // --- Sub-components (Adapted for Mobile) ---
 
@@ -121,9 +124,18 @@ export default function SettingsScreen() {
     const palette = dark ? Colors.dark : Colors.light;
     const insets = useSafeAreaInsets();
     const dispatch = useAppDispatch();
+    const router = useRouter();
     const blurPhotos = useAppSelector(state => state.system.blurPhotos);
     const language = useAppSelector(state => state.system.language);
     const fontSize = useAppSelector(state => state.system.fontSize);
+    const {
+        premiumFeatureEnabled,
+        premiumPaywallEnabled,
+        billingEnabled,
+        billingProvider,
+        premiumEntitlement,
+        isPremiumUser,
+    } = usePremiumAccess();
     const languageSheetRef = useRef<GorhomBottomSheetModal>(null);
     const fontSizeSheetRef = useRef<GorhomBottomSheetModal>(null);
     const languageOptions = useMemo(() => ([
@@ -194,6 +206,18 @@ export default function SettingsScreen() {
         );
     };
 
+    const showPremiumSection = premiumFeatureEnabled || premiumPaywallEnabled || billingEnabled;
+    const premiumSubtitle = isPremiumUser
+        ? 'Premium entitlement is active on this account'
+        : billingEnabled
+            ? `${billingProvider === 'app_store' ? 'App Store' : billingProvider === 'play_store' ? 'Google Play' : 'Store'} purchases are enabled for this build`
+            : 'Premium flags are configured, but billing is disabled in this build';
+    const premiumValue = isPremiumUser
+        ? (premiumEntitlement.status || 'active').toUpperCase()
+        : premiumFeatureEnabled
+            ? 'ENABLED'
+            : 'OFF';
+
     return (
         <ThemedView style={styles.container}>
             <ScrollView 
@@ -236,6 +260,21 @@ export default function SettingsScreen() {
                         border={false}
                     />
                 </Section>
+
+                {showPremiumSection && (
+                    <Section title="Premium & Billing" palette={palette}>
+                        <SettingItem
+                            icon={Star}
+                            label="Premium Membership"
+                            subtitle={premiumSubtitle}
+                            value={premiumValue}
+                            onPress={() => router.push('/Premium')}
+                            dark={dark}
+                            palette={palette}
+                            border={false}
+                        />
+                    </Section>
+                )}
 
                 <Section title="Notifications" palette={palette}>
                     <SettingItem

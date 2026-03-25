@@ -589,7 +589,9 @@ export default function NearbyScreen() {
                 unpositioned.push(item);
                 continue;
             }
-            const key = `${item.lat.toFixed(4)}:${item.lng.toFixed(4)}`;
+            const lat = item.lat as number;
+            const lng = item.lng as number;
+            const key = `${lat.toFixed(4)}:${lng.toFixed(4)}`;
             const group = groups.get(key);
             if (group) group.push(item);
             else groups.set(key, [item]);
@@ -603,11 +605,13 @@ export default function NearbyScreen() {
             const radius = 0.0008;
             const step = (Math.PI * 2) / group.length;
             group.forEach((user, index) => {
+                const lat = user.lat as number;
+                const lng = user.lng as number;
                 const angle = index * step;
                 output.push({
                     ...user,
-                    lat: user.lat + Math.cos(angle) * radius,
-                    lng: user.lng + Math.sin(angle) * radius,
+                    lat: lat + Math.cos(angle) * radius,
+                    lng: lng + Math.sin(angle) * radius,
                 });
             });
         }
