@@ -9,14 +9,19 @@ import * as Localization from 'expo-localization';
 import ChatInput from '@/components/ChatInput';
 import { api } from '@/services/apiService';
 import { lexicalToPlainText } from '@/helpers/lexicalPlainText';
+import { applyComposerMediaToPayload } from '@/helpers/postComposer';
+import { composeLexicalState } from '@/helpers/plainTextToLexicalState';
 import { getSafeImageURLEx } from '@/helpers/safeUrl';
 import {
   getAttachmentUrl,
+  getFirstLexicalImageUrl,
   getFirstImageAttachment,
   getPostAttachments,
   getProcessingAttachmentCount,
+  isGifAttachment,
   isAttachmentFailed,
   isAttachmentProcessing,
+  isGifUrl,
   normalizePostFetchResponse,
 } from '@/helpers/postMedia';
 import { useAppSelector } from '@/store/hooks';
@@ -100,45 +105,6 @@ function extractFirstImageAltTextFromLexical(input: unknown): string {
     // ignore parse errors
   }
   return '';
-}
-
-function plainTextToLexicalState(text: string): string {
-  const safe = String(text ?? '').replace(/\r\n/g, '\n');
-  const lines = safe.split('\n');
-
-  const paragraphs = lines.map((line) => ({
-    children: line
-      ? [
-          {
-            detail: 0,
-            format: 0,
-            mode: 'normal',
-            style: '',
-            text: line,
-            type: 'text',
-            version: 1,
-          },
-        ]
-      : [],
-    direction: null,
-    format: '',
-    indent: 0,
-    type: 'paragraph',
-    version: 1,
-    textFormat: 0,
-    textStyle: '',
-  }));
-
-  return JSON.stringify({
-    root: {
-      children: paragraphs,
-      direction: null,
-      format: '',
-      indent: 0,
-      type: 'root',
-      version: 1,
-    },
-  });
 }
 
 export default function PostDetailScreen() {
@@ -253,7 +219,8 @@ export default function PostDetailScreen() {
     const seed = author?.public_id || author?.id || post?.author_id || post?.public_id || post?.id;
     const avatar = getSafeImageURLEx(seed, author?.avatar, 'small') || '';
     const firstAttachment = getFirstImageAttachment(getPostAttachments(post)) || getPostAttachments(post)[0];
-    const image = getAttachmentUrl(firstAttachment, ['original', 'large', 'medium', 'small']) || undefined;
+    const lexicalImage = getFirstLexicalImageUrl(post?.content);
+    const image = getAttachmentUrl(firstAttachment, ['original', 'large', 'medium', 'small']) || lexicalImage || undefined;
 
     const content = coerceLocalizedText(post?.content);
     const plain = lexicalToPlainText(content);
@@ -268,6 +235,10 @@ export default function PostDetailScreen() {
         avatar,
       },
       image,
+      isGifMedia: Boolean(
+        (firstAttachment && isGifAttachment(firstAttachment)) ||
+        isGifUrl(lexicalImage)
+      ),
       isMediaProcessing: Boolean(firstAttachment && isAttachmentProcessing(firstAttachment)),
       isMediaFailed: Boolean(firstAttachment && isAttachmentFailed(firstAttachment)),
       caption,
@@ -330,36 +301,12 @@ export default function PostDetailScreen() {
       (async () => {
         try {
           const basePayload: Record<string, any> = {
-            content: plainTextToLexicalState(trimmed),
+            content: composeLexicalState(trimmed, outgoingMedia),
             audience: 'public',
             parentPostId: String(postId),
           };
 
-          const imageFiles: any[] = [];
-          const videoFiles: any[] = [];
-
-          outgoingMedia.forEach((item: any, index: number) => {
-            const uri = typeof item?.uri === 'string' ? item.uri : '';
-            if (!uri) return;
-            if (item?.type === 'image') {
-              imageFiles.push({
-                uri,
-                name: item?.name || `comment-image-${Date.now()}-${index}.jpg`,
-                type: 'image/jpeg',
-              });
-              return;
-            }
-            if (item?.type === 'video') {
-              videoFiles.push({
-                uri,
-                name: item?.name || `comment-video-${Date.now()}-${index}.mp4`,
-                type: 'video/mp4',
-              });
-            }
-          });
-
-          if (imageFiles.length > 0) basePayload.images = imageFiles;
-          if (videoFiles.length > 0) basePayload.videos = videoFiles;
+          applyComposerMediaToPayload(basePayload, outgoingMedia, 'comment');
 
           await api.createPost(basePayload);
           await fetchPost({ refresh: true });
@@ -415,6 +362,7 @@ export default function PostDetailScreen() {
                   style={[styles.postImage, { backgroundColor: dark ? '#1C1C1E' : '#F2F2F7' }]}
                   contentFit="cover"
                   transition={250}
+                  autoplay={header.isGifMedia}
                 />
               ) : header.isMediaProcessing || header.isMediaFailed ? (
                 <View

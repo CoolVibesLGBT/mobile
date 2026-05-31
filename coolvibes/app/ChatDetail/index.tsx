@@ -69,6 +69,30 @@ interface Message {
   videoThumbnail?: string;
 }
 
+const buildOptimisticMediaPreview = (media: any[] = []) => {
+  let image: string | undefined;
+  let video: string | undefined;
+  let videoThumbnail: string | undefined;
+
+  media.forEach((item: any) => {
+    if (!item || typeof item !== 'object') return;
+    const uri = typeof item.uri === 'string' ? item.uri : '';
+    if (!uri) return;
+
+    if (!image && item.type === 'image') {
+      image = uri;
+      return;
+    }
+
+    if (!video && item.type === 'video') {
+      video = uri;
+      videoThumbnail = uri;
+    }
+  });
+
+  return { image, video, videoThumbnail };
+};
+
 interface User {
   id: string;
   name: string;
@@ -113,6 +137,7 @@ export default function ChatDetail() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
+  const [chatBootstrapping, setChatBootstrapping] = useState(false);
 
   const [revealedMediaIds, setRevealedMediaIds] = useState<string[]>([]);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
@@ -218,6 +243,38 @@ export default function ChatDetail() {
       setActiveChatId(initialChatId);
     }
   }, [initialChatId, activeChatId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (isUuid(activeChatId) || !recipientId) {
+      setChatBootstrapping(false);
+      return;
+    }
+
+    setChatBootstrapping(true);
+    setMessagesLoading(true);
+    setMessagesError(null);
+
+    void ensureActiveChatId()
+      .then((createdChatId) => {
+        if (cancelled) return;
+        if (!isUuid(createdChatId)) {
+          setMessagesError('Failed to open chat');
+        }
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setChatBootstrapping(false);
+        if (!isUuid(activeChatId)) {
+          setMessagesLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChatId, recipientId, ensureActiveChatId]);
 
   useEffect(() => {
     if (isUuid(activeChatId)) {
@@ -335,7 +392,7 @@ export default function ChatDetail() {
     let isActive = true;
     if (!isUuid(activeChatId)) {
       setMessages([]);
-      setMessagesLoading(false);
+      if (!chatBootstrapping) setMessagesLoading(false);
       setMessagesError(null);
       return;
     }
@@ -372,7 +429,7 @@ export default function ChatDetail() {
     return () => {
       isActive = false;
     };
-  }, [activeChatId, mapMessages, authUserId, dispatch, queueMarkRead]);
+  }, [activeChatId, mapMessages, authUserId, dispatch, queueMarkRead, chatBootstrapping]);
 
   useEffect(() => {
     if (!socket || !isUuid(activeChatId)) return;
@@ -571,6 +628,23 @@ export default function ChatDetail() {
     } else {
       if (!text?.trim() && (!media || media.length === 0)) return;
 
+      const outgoingMedia = Array.isArray(media) ? media : [];
+      const images = outgoingMedia
+        .filter((item: any) => item?.type === 'image' && item?.uri)
+        .map((item: any) => ({
+          uri: item.uri,
+          name: item.name || `chat-image-${Date.now()}.png`,
+          type: item.mimeType || 'image/png',
+        }));
+      const videos = outgoingMedia
+        .filter((item: any) => item?.type === 'video' && item?.uri)
+        .map((item: any) => ({
+          uri: item.uri,
+          name: item.name || `chat-video-${Date.now()}.mp4`,
+          type: item.mimeType || 'video/mp4',
+        }));
+      const preview = buildOptimisticMediaPreview(outgoingMedia);
+
       const tempId = `temp-${Date.now()}`;
       const newMessage: Message = {
         id: tempId,
@@ -578,6 +652,9 @@ export default function ChatDetail() {
         text: text,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         status: "sent",
+        image: preview.image,
+        video: preview.video,
+        videoThumbnail: preview.videoThumbnail,
         ...(replyToId && { replyTo: { user: chatPartner.name, text: messages.find(m => m.id === replyToId)?.text || "", type: "text" } })
       };
 
@@ -586,7 +663,12 @@ export default function ChatDetail() {
       void (async () => {
         const targetChatId = await ensureActiveChatId();
         if (!targetChatId) return;
-        api.sendMessage(targetChatId, text).catch(() => {
+        api.sendMessage({
+          chat_id: targetChatId,
+          content: text,
+          images: images.length > 0 ? images : undefined,
+          videos: videos.length > 0 ? videos : undefined,
+        }).catch(() => {
           // keep optimistic message; errors will be visible when server doesn't echo
         });
       })();

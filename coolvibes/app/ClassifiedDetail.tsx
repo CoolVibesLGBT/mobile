@@ -19,7 +19,8 @@ import {
   normalizeClassifiedPost,
 } from '@/helpers/classifieds';
 import { lexicalToPlainText } from '@/helpers/lexicalPlainText';
-import { plainTextToLexicalState } from '@/helpers/plainTextToLexicalState';
+import { applyComposerMediaToPayload } from '@/helpers/postComposer';
+import { composeLexicalState } from '@/helpers/plainTextToLexicalState';
 import { getSafeImageURLEx } from '@/helpers/safeUrl';
 import { api } from '@/services/apiService';
 import { useAppSelector } from '@/store/hooks';
@@ -153,38 +154,12 @@ export default function ClassifiedDetailScreen() {
       sendingRef.current = true;
 
       const payload: Record<string, any> = {
-        content: plainTextToLexicalState(trimmed),
+        content: composeLexicalState(trimmed, outgoingMedia),
         audience: 'public',
         parentPostId: String(postIdParam),
       };
 
-      const imageFiles: any[] = [];
-      const videoFiles: any[] = [];
-
-      outgoingMedia.forEach((item: any, index: number) => {
-        const uri = typeof item?.uri === 'string' ? item.uri : '';
-        if (!uri) return;
-
-        if (item?.type === 'image') {
-          imageFiles.push({
-            uri,
-            name: item?.name || `classified-comment-image-${Date.now()}-${index}.jpg`,
-            type: item?.mimeType || 'image/jpeg',
-          });
-          return;
-        }
-
-        if (item?.type === 'video') {
-          videoFiles.push({
-            uri,
-            name: item?.name || `classified-comment-video-${Date.now()}-${index}.mp4`,
-            type: item?.mimeType || 'video/mp4',
-          });
-        }
-      });
-
-      if (imageFiles.length > 0) payload['images[]'] = imageFiles;
-      if (videoFiles.length > 0) payload['videos[]'] = videoFiles;
+      applyComposerMediaToPayload(payload, outgoingMedia, 'classified-comment');
 
       void api.createPost(payload)
         .then(() => fetchDetail({ refresh: true }))

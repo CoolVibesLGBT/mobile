@@ -335,7 +335,7 @@ export default function PremiumScreen() {
                   : null,
               ]}
             >
-              <View style={[styles.benefitIconWrap, { backgroundColor: mutedSurface }]}>
+              <View style={[styles.benefitIconWrap, { backgroundColor: '#0B0F19' }]}>
                 <MaterialCommunityIcons name={item.icon} size={18} color={PRIDE_COLORS[index % PRIDE_COLORS.length]} />
               </View>
               <View style={styles.benefitCopy}>

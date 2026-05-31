@@ -1,5 +1,5 @@
 import React, { useState, memo, useCallback, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions, ActivityIndicator, TouchableOpacity, Platform, LayoutChangeEvent } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions, TouchableOpacity, Platform, LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -17,8 +17,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Image as ExpoImage } from 'expo-image';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
 import { api } from '@/services/apiService';
+import { getCurrentOrLastKnownCoordinates } from '@/helpers/location';
 import { encodeProfileParam, normalizeProfileUser } from '@/helpers/profile';
 import { calculateAge, getSafeImageURLEx } from '@/helpers/safeUrl';
 import FullProfileView from '@/components/FullProfileView';
@@ -569,31 +569,17 @@ export default function MatchScreen() {
 
     const resolveLocation = useCallback(async () => {
         if (location) return location;
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                setLocation(DEFAULT_COORDS);
-                return DEFAULT_COORDS;
-            }
-            try {
-                const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-                const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-                setLocation(coords);
-                return coords;
-            } catch {
-                const lastKnown = await Location.getLastKnownPositionAsync({});
-                if (lastKnown?.coords) {
-                    const coords = { lat: lastKnown.coords.latitude, lng: lastKnown.coords.longitude };
-                    setLocation(coords);
-                    return coords;
-                }
-                setLocation(DEFAULT_COORDS);
-                return DEFAULT_COORDS;
-            }
-        } catch {
+        const deviceCoords = await getCurrentOrLastKnownCoordinates({
+            blockedMessage: 'Allow location access to power Radar discovery.',
+        });
+        if (!deviceCoords) {
             setLocation(DEFAULT_COORDS);
             return DEFAULT_COORDS;
         }
+
+        const coords = { lat: deviceCoords.latitude, lng: deviceCoords.longitude };
+        setLocation(coords);
+        return coords;
     }, [location]);
 
     const mapRadarUser = useCallback((raw: any, coords: { lat: number; lng: number }) => {
@@ -845,19 +831,6 @@ export default function MatchScreen() {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: bottomBarHeight }]}>
                 <View style={styles.radarWrapper}>
-                    {/* Stealth HUD - Only functional icons below GlobalHeader */}
-                    <View style={styles.radarHud}>
-                        <TouchableOpacity style={{ opacity: 0.6 }}>
-                           <MaterialCommunityIcons name="tune-vertical" size={24} color={colors.text} />
-                        </TouchableOpacity>
-                        <View style={{ flex: 1 }} />
-                        <View style={{ opacity: 0.6 }}>
-                            {isLoading ? <ActivityIndicator size="small" color={colors.text} /> : (
-                               <MaterialCommunityIcons name="radar" size={24} color={colors.text} />
-                            )}
-                        </View>
-                    </View>
-
                     <GestureDetector gesture={composedGesture}>
                         <Animated.View
                             style={[styles.radarViewport, animatedCanvasStyle]}
@@ -913,17 +886,6 @@ export default function MatchScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   radarWrapper: { flex: 1, position: 'relative' },
-  radarHud: { 
-    position: 'absolute',
-    width: '100%', 
-    flexDirection: 'row',
-    alignItems: 'center',
-    zIndex: 10, 
-    paddingHorizontal: 25,
-    paddingVertical: 10 
-  },
-  hudLabel: { fontSize: 9, fontFamily: 'Inter-Bold', letterSpacing: 2, marginTop: 2 },
-  hudTitle: { fontSize: 28, fontFamily: 'Outfit-Black', letterSpacing: -1 },
   radarViewport: { position:"relative", flex: 1, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   hexWrap: { position: 'absolute', left: 0, top: 0, width: ITEM_DIM, height: ITEM_DIM, alignItems: 'center', justifyContent: 'center' },
   hexBtn: {

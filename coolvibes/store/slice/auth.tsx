@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
@@ -69,7 +69,7 @@ export const loginThunk = createAsyncThunk(
 //
 export const registerThunk = createAsyncThunk(
   'auth/register',
-  async (data: { name: string; nickname: string; password: string; referralCode?: string, domain: string }, thunkAPI) => {
+  async (data: { name: string; nickname: string; password: string; referralCode?: string, domain: string, captcha: string }, thunkAPI) => {
     try {
       const res = await api.register(data);
       const authData = res.data;

@@ -23,6 +23,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
   useAudioRecorder,
   useAudioPlayer,
@@ -31,7 +32,6 @@ import {
   setAudioModeAsync,
 } from 'expo-audio';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import * as Location from "expo-location";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import {
   BottomSheetModal as GorhomBottomSheetModal,
@@ -41,11 +41,16 @@ import {
 } from "@gorhom/bottom-sheet";
 import BaseBottomSheetModal from "@/components/BaseBottomSheetModal";
 import { GOOGLE_PLACES_KEY } from "@/config";
+import {
+  ensureForegroundLocationPermission,
+  getCurrentOrLastKnownCoordinates,
+} from "@/helpers/location";
+import { STICKER_ASSETS, type StickerAsset } from "@/helpers/stickers";
 
 // --- Types & Interfaces ---
 interface Media {
   uri?: string;
-  type: "image" | "video" | "document" | "audio" | "location" | "live_location" | "tag";
+  type: "image" | "video" | "document" | "audio" | "location" | "live_location" | "tag" | "sticker";
   name?: string;
   mimeType?: string;
   data?: any;
@@ -189,6 +194,7 @@ export default function ChatInput({
   const isComment = kind === 'comment';
   const isPost = kind === 'post';
   const isClassified = kind === 'classified';
+  const usesLexicalStickerPayload = isComment || isPost || isClassified;
   const inputPlaceholder = isComment
     ? 'Write a comment'
     : isPost
@@ -201,6 +207,7 @@ export default function ChatInput({
   const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activePickerTab, setActivePickerTab] = useState<'emoji' | 'gif' | 'sticker'>('emoji');
+  const [downloadingStickerId, setDownloadingStickerId] = useState<string | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -209,6 +216,7 @@ export default function ChatInput({
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [isPreparingLocationPicker, setIsPreparingLocationPicker] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<any>(null);
   const [selectedLocationMap, setSelectedLocationMap] = useState<any>(null);
   const [places, setPlaces] = useState<any[]>([]);
@@ -273,29 +281,40 @@ export default function ChatInput({
 
   useEffect(() => {
     const getLocation = async () => {
-      if (showLocationPicker) {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          console.error("Permission to access location was denied");
-          return;
-        }
+      if (!showLocationPicker) return;
 
-        try {
-          let location = await Location.getCurrentPositionAsync({});
-          setCurrentLocation(location.coords);
-          fetchNearbyPlaces(
-            location.coords.latitude,
-            location.coords.longitude,
-            searchQuery
-          );
-        } catch (error) {
-          console.error("Failed to get location", error);
-        }
+      const coords = await getCurrentOrLastKnownCoordinates({
+        blockedMessage: "Allow location access to share your current location or a nearby place.",
+        unavailableMessage: "We could not get your location right now. Please try again.",
+        alertOnUnavailable: true,
+      });
+      if (!coords) {
+        setShowLocationPicker(false);
+        return;
       }
+
+      setCurrentLocation(coords);
+      fetchNearbyPlaces(coords.latitude, coords.longitude, searchQuery);
     };
 
     getLocation();
-  }, [showLocationPicker]);
+  }, [searchQuery, showLocationPicker]);
+
+  const handleOpenLocationPicker = useCallback(async () => {
+    if (isPreparingLocationPicker) return;
+
+    setIsPreparingLocationPicker(true);
+    try {
+      const hasPermission = await ensureForegroundLocationPermission({
+        blockedMessage: "Allow location access to share your current location or a nearby place.",
+      });
+      if (!hasPermission) return;
+
+      setShowLocationPicker(true);
+    } finally {
+      setIsPreparingLocationPicker(false);
+    }
+  }, [isPreparingLocationPicker]);
 
   useEffect(() => {
     if (!showLocationPicker) return;
@@ -518,7 +537,13 @@ export default function ChatInput({
       if (audioRecorder.uri) {
         setSelectedMedia((prev) => [
           ...prev,
-          { type: "audio", name: `Voice Note (${formatDuration(recordingDuration)})`, uri: audioRecorder.uri ?? "" },
+          {
+            type: "audio",
+            name: `voice-note-${Date.now()}.m4a`,
+            mimeType: "audio/m4a",
+            uri: audioRecorder.uri ?? "",
+            data: { label: `Voice Note (${formatDuration(recordingDuration)})` },
+          },
         ]);
       }
     } catch (e) {
@@ -556,6 +581,68 @@ export default function ChatInput({
     }
     setShowEmojiPicker(!showEmojiPicker);
   };
+
+  const handleStickerSelect = useCallback(async (sticker: StickerAsset) => {
+    try {
+      await Haptics.selectionAsync();
+      if (!usesLexicalStickerPayload) {
+        if (downloadingStickerId) return;
+        setDownloadingStickerId(sticker.id);
+
+        const stickerDirectory = `${FileSystem.cacheDirectory ?? ''}stickers/`;
+        if (!stickerDirectory) return;
+
+        const dirInfo = await FileSystem.getInfoAsync(stickerDirectory);
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(stickerDirectory, { intermediates: true });
+        }
+
+        const localStickerUri = `${stickerDirectory}${sticker.fileName}`;
+        const fileInfo = await FileSystem.getInfoAsync(localStickerUri);
+        if (!fileInfo.exists) {
+          await FileSystem.downloadAsync(sticker.url, localStickerUri);
+        }
+
+        setSelectedMedia((prev) => [
+          ...prev,
+          {
+            type: "image",
+            uri: localStickerUri,
+            name: sticker.fileName,
+            mimeType: "image/png",
+            data: {
+              isSticker: true,
+              stickerId: sticker.id,
+              stickerPath: sticker.path,
+              stickerUrl: sticker.url,
+              label: sticker.label,
+            },
+          },
+        ]);
+        setShowEmojiPicker(false);
+        return;
+      }
+
+      setSelectedMedia((prev) => [
+        ...prev,
+        {
+          type: "sticker",
+          name: sticker.label,
+          data: {
+            stickerId: sticker.id,
+            stickerPath: sticker.path,
+            stickerUrl: sticker.url,
+            label: sticker.label,
+          },
+        },
+      ]);
+      setShowEmojiPicker(false);
+    } catch (error) {
+      console.error("Failed to add sticker", error);
+    } finally {
+      setDownloadingStickerId(null);
+    }
+  }, [downloadingStickerId, usesLexicalStickerPayload]);
 
   const previewItems = useMemo(() => {
     const items: Array<{ item: Media; source: 'extra' | 'selected'; index: number }> = [];
@@ -627,6 +714,12 @@ export default function ChatInput({
                           <View key={`${source}-${index}`} style={{ marginRight: 8 }}>
                             {media.type === "image" ? (
                               <Image source={{ uri: media.uri }} style={styles.mediaPreview} />
+                            ) : media.type === "sticker" ? (
+                              <Image
+                                source={{ uri: media.data?.stickerUrl }}
+                                style={styles.mediaPreview}
+                                resizeMode="contain"
+                              />
                             ) : media.type === "video" && media.uri ? (
                               <VideoPreview uri={media.uri} />
                             ) : media.type === "audio" ? (
@@ -688,7 +781,11 @@ export default function ChatInput({
                       />
                       <View style={{ flexDirection: "row",justifyContent: "center", alignItems: "flex-end", position: 'absolute', right: 0, bottom: 0 }}>
                         <TouchableOpacity style={[styles.internalActionBtn]} onPress={handleEmojiToggle}>
-                          <MaterialCommunityIcons name={showEmojiPicker ? "keyboard-outline" : "sticker-circle-outline"} size={26} color="black" />
+                          <MaterialCommunityIcons
+                            name={showEmojiPicker ? "keyboard-outline" : "sticker-circle-outline"}
+                            size={26}
+                            color="black"
+                          />
                         </TouchableOpacity>
                         {(inputText.trim().length > 0 || hasPreviewItems) && (
                           <TouchableOpacity onPress={handleSendMessagePress} style={styles.internalActionBtn}>
@@ -733,7 +830,31 @@ export default function ChatInput({
                   </ScrollView>
                 )}
                 {activePickerTab === 'gif' && (<View style={styles.centerContent}><Text style={{ color: '#999' }}>GIFs coming soon!</Text></View>)}
-                {activePickerTab === 'sticker' && (<View style={styles.centerContent}><Text style={{ color: '#999' }}>Stickers coming soon!</Text></View>)}
+                {activePickerTab === 'sticker' && (
+                  <ScrollView contentContainerStyle={styles.stickerGrid} showsVerticalScrollIndicator={false}>
+                    {STICKER_ASSETS.map((sticker) => {
+                      const isDownloading = downloadingStickerId === sticker.id;
+                      return (
+                        <TouchableOpacity
+                          key={sticker.id}
+                          style={[styles.stickerItem, isDownloading && styles.stickerItemDisabled]}
+                          onPress={() => {
+                            void handleStickerSelect(sticker);
+                          }}
+                          disabled={isDownloading}
+                        >
+                          <View style={styles.stickerThumbWrap}>
+                            {isDownloading ? (
+                              <ActivityIndicator size="small" color="#111" />
+                            ) : (
+                              <Image source={{ uri: sticker.url }} style={styles.stickerThumb} resizeMode="contain" />
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                )}
               </View>
             </View>
           )}
@@ -754,9 +875,21 @@ export default function ChatInput({
                   <View style={[styles.sheetIconBox, { backgroundColor: '#F0EEFF' }]}><MaterialCommunityIcons name="video" size={30} color="#5856D6" /></View>
                   <Text style={styles.sheetLabel}>Video</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.sheetButton} onPress={() => setShowLocationPicker(true)}>
-                  <View style={[styles.sheetIconBox, { backgroundColor: '#E8FBF0' }]}><MaterialCommunityIcons name="map-marker" size={30} color="#25D366" /></View>
-                  <Text style={styles.sheetLabel}>Location</Text>
+                <TouchableOpacity
+                  style={styles.sheetButton}
+                  onPress={handleOpenLocationPicker}
+                  disabled={isPreparingLocationPicker}
+                >
+                  <View style={[styles.sheetIconBox, { backgroundColor: '#E8FBF0' }]}>
+                    {isPreparingLocationPicker ? (
+                      <ActivityIndicator size="small" color="#25D366" />
+                    ) : (
+                      <MaterialCommunityIcons name="map-marker" size={30} color="#25D366" />
+                    )}
+                  </View>
+                  <Text style={styles.sheetLabel}>
+                    {isPreparingLocationPicker ? 'Checking...' : 'Location'}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sheetButton} onPress={openDocuments}>
                   <View style={[styles.sheetIconBox, { backgroundColor: '#E3F2FD' }]}><MaterialCommunityIcons name="file-document" size={30} color="#007AFF" /></View>
@@ -1080,6 +1213,36 @@ const styles = StyleSheet.create({
   emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8 },
   emojiItem: { width: '12.5%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
   emojiText: { fontSize: 32 },
+  stickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 10,
+    paddingBottom: 16,
+  },
+  stickerItem: {
+    width: '25%',
+    padding: 6,
+  },
+  stickerItemDisabled: {
+    opacity: 0.7,
+  },
+  stickerThumbWrap: {
+    aspectRatio: 1,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  stickerThumb: {
+    width: '100%',
+    height: '100%',
+  },
   centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Bottom Sheet

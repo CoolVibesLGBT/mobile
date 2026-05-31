@@ -16,10 +16,10 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import * as Location from 'expo-location';
 import { Image } from 'expo-image';
 
 import { Constants } from '@/constants/Constants';
+import { getCurrentOrLastKnownCoordinates } from '@/helpers/location';
 import {
   extractPlacesResponse,
   filterPlaces,
@@ -190,20 +190,15 @@ export default function PlacesScreen() {
     let center = ISTANBUL_COORDS;
     let fallback = true;
 
-    try {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (permission.status === 'granted') {
-        const current = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        center = {
-          latitude: current.coords.latitude,
-          longitude: current.coords.longitude,
-        };
-        fallback = false;
-      }
-    } catch {
-      fallback = true;
+    const current = await getCurrentOrLastKnownCoordinates({
+      blockedMessage: 'Allow location access to discover places near you.',
+    });
+    if (current) {
+      center = {
+        latitude: current.latitude,
+        longitude: current.longitude,
+      };
+      fallback = false;
     }
 
     setLocation(center);

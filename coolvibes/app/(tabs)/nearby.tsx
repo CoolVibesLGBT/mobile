@@ -19,11 +19,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '@/store/hooks';
 import { api } from '@/services/apiService';
+import { getCurrentOrLastKnownCoordinates } from '@/helpers/location';
 import { calculateAge, getSafeImageURLEx } from '@/helpers/safeUrl';
 import { encodeProfileParam, normalizeProfileUser } from '@/helpers/profile';
 import BaseBottomSheetModal from '@/components/BaseBottomSheetModal';
@@ -486,43 +486,23 @@ export default function NearbyScreen() {
 
     const resolveLocation = useCallback(async () => {
         if (location) return location;
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                setLocation(DEFAULT_COORDS);
-                return DEFAULT_COORDS;
-            }
-            try {
-                const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-                const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-                setLocation(coords);
-                mapRef.current?.animateToRegion({
-                    latitude: coords.lat,
-                    longitude: coords.lng,
-                    latitudeDelta: 0.06,
-                    longitudeDelta: 0.06,
-                });
-                return coords;
-            } catch {
-                const lastKnown = await Location.getLastKnownPositionAsync({});
-                if (lastKnown?.coords) {
-                    const coords = { lat: lastKnown.coords.latitude, lng: lastKnown.coords.longitude };
-                    setLocation(coords);
-                    mapRef.current?.animateToRegion({
-                        latitude: coords.lat,
-                        longitude: coords.lng,
-                        latitudeDelta: 0.06,
-                        longitudeDelta: 0.06,
-                    });
-                    return coords;
-                }
-                setLocation(DEFAULT_COORDS);
-                return DEFAULT_COORDS;
-            }
-        } catch {
+        const deviceCoords = await getCurrentOrLastKnownCoordinates({
+            blockedMessage: 'Allow location access to see people and places near you.',
+        });
+        if (!deviceCoords) {
             setLocation(DEFAULT_COORDS);
             return DEFAULT_COORDS;
         }
+
+        const coords = { lat: deviceCoords.latitude, lng: deviceCoords.longitude };
+        setLocation(coords);
+        mapRef.current?.animateToRegion({
+            latitude: coords.lat,
+            longitude: coords.lng,
+            latitudeDelta: 0.06,
+            longitudeDelta: 0.06,
+        });
+        return coords;
     }, [location]);
 
     const mapUser = useCallback((raw: any, coords: { lat: number; lng: number }) => {
@@ -903,46 +883,26 @@ export default function NearbyScreen() {
     }, []);
 
     const handleMyLocation = async () => {
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                setLocation(DEFAULT_COORDS);
-                return;
-            }
-            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-            setLocation(coords);
-            setMapRegion({
-                latitude: coords.lat,
-                longitude: coords.lng,
-                latitudeDelta: 0.015,
-                longitudeDelta: 0.015,
-            });
-            mapRef.current?.animateToRegion({
-                latitude: coords.lat,
-                longitude: coords.lng,
-                latitudeDelta: 0.015,
-                longitudeDelta: 0.015,
-            });
-        } catch {
-            const fallback = await Location.getLastKnownPositionAsync({});
-            const coords = fallback?.coords
-                ? { lat: fallback.coords.latitude, lng: fallback.coords.longitude }
-                : DEFAULT_COORDS;
-            setLocation(coords);
-            setMapRegion({
-                latitude: coords.lat,
-                longitude: coords.lng,
-                latitudeDelta: 0.015,
-                longitudeDelta: 0.015,
-            });
-            mapRef.current?.animateToRegion({
-                latitude: coords.lat,
-                longitude: coords.lng,
-                latitudeDelta: 0.015,
-                longitudeDelta: 0.015,
-            });
-        }
+        const deviceCoords = await getCurrentOrLastKnownCoordinates({
+            blockedMessage: 'Allow location access to center the map on your current location.',
+        });
+        const coords = deviceCoords
+            ? { lat: deviceCoords.latitude, lng: deviceCoords.longitude }
+            : DEFAULT_COORDS;
+
+        setLocation(coords);
+        setMapRegion({
+            latitude: coords.lat,
+            longitude: coords.lng,
+            latitudeDelta: 0.015,
+            longitudeDelta: 0.015,
+        });
+        mapRef.current?.animateToRegion({
+            latitude: coords.lat,
+            longitude: coords.lng,
+            latitudeDelta: 0.015,
+            longitudeDelta: 0.015,
+        });
     };
 
     const handleLoadMore = useCallback(() => {

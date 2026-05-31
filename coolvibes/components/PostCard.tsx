@@ -16,11 +16,14 @@ import { useAppSelector } from '@/store/hooks';
 import { api } from '@/services/apiService';
 import {
     getAttachmentUrl,
+    getFirstLexicalImageUrl,
     getFirstImageAttachment,
     getPostAttachments,
     getProcessingAttachmentCount,
+    isGifAttachment,
     isAttachmentFailed,
     isAttachmentProcessing,
+    isGifUrl,
     normalizePostFetchResponse,
 } from '@/helpers/postMedia';
 
@@ -70,14 +73,23 @@ const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes
         () => getProcessingAttachmentCount(attachments),
         [attachments]
     );
+    const lexicalImage = useMemo(
+        () => getFirstLexicalImageUrl(resolvedPost?.content),
+        [resolvedPost]
+    );
     const resolvedImage = useMemo(() => {
         if (imageAttachment) {
             return getAttachmentUrl(imageAttachment, ['large', 'medium', 'small', 'original']) || undefined;
         }
-        return image;
-    }, [imageAttachment, image]);
+        return lexicalImage || image;
+    }, [imageAttachment, lexicalImage, image]);
     const isMediaProcessing = Boolean(imageAttachment && isAttachmentProcessing(imageAttachment));
     const isMediaFailed = Boolean(imageAttachment && isAttachmentFailed(imageAttachment));
+    const isGifMedia = Boolean(
+        (imageAttachment && isGifAttachment(imageAttachment)) ||
+        isGifUrl(lexicalImage) ||
+        isGifUrl(image)
+    );
 
     useEffect(() => {
         if (!postId || processingAttachmentCount === 0) return;
@@ -248,6 +260,7 @@ const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes
                         style={[styles.postImage, { backgroundColor: dark ? '#1C1C1E' : '#F2F2F7' }]} 
                         contentFit="cover" 
                         transition={300}
+                        autoplay={isGifMedia}
                         blurRadius={blurPhotos ? 25 : 0}
                     />
                 </Pressable>

@@ -1,24 +1,24 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { loginThunk, registerThunk } from '@/store/slice/auth';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    Modal,
-    TouchableOpacity,
-    TextInput,
     ActivityIndicator,
     Animated,
     Dimensions,
     KeyboardAvoidingView,
+    Modal,
     Platform,
     ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { loginThunk, registerThunk } from '@/store/slice/auth';
-import * as SecureStore from 'expo-secure-store';
 
 interface AuthWizardProps {
     isOpen: boolean;
@@ -113,6 +113,7 @@ const AuthWizard: React.FC<AuthWizardProps> = ({
                 password: formData.password,
                 referralCode: formData.referralCode,
                 domain: "coolvibes.lgbt",
+                captcha: "COOLVIBES" // Replace with actual captcha token if implemented
             }));
 
             if (registerThunk.fulfilled.match(resultAction)) {

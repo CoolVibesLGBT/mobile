@@ -28,6 +28,7 @@ type PinnedItem = {
   name: string;
   avatar: string;
   online: boolean;
+  profile?: any;
 };
 
 type ConversationItem = {
@@ -362,7 +363,7 @@ export default function ChatScreen() {
         .filter(Boolean)
     );
 
-    const unique = new Map<string, { id: string; name: string; avatar: string; online: boolean }>();
+    const unique = new Map<string, { id: string; name: string; avatar: string; online: boolean; profile?: any }>();
     details.forEach((detail: any) => {
       if (isBlocking(detail)) return;
       const user = getOtherUser(detail);
@@ -372,7 +373,13 @@ export default function ChatScreen() {
       const avatar = getSafeImageURLEx(user?.public_id ?? id, user?.avatar, 'small') || '';
       const name = user?.displayname || user?.display_name || user?.username || 'User';
       if (!unique.has(String(id))) {
-        unique.set(String(id), { id: String(id), name, avatar, online: Boolean(user?.is_online ?? user?.online) });
+        unique.set(String(id), {
+          id: String(id),
+          name,
+          avatar,
+          online: Boolean(user?.is_online ?? user?.online),
+          profile: user,
+        });
       }
     });
 
@@ -415,6 +422,56 @@ export default function ChatScreen() {
       },
     });
   };
+
+  const handleFavoritePress = useCallback(async (item: PinnedItem) => {
+    const fallbackProfile = {
+      ...(item.profile || {}),
+      id: item.id,
+      displayname: item.name,
+      username: item.profile?.username || item.profile?.displayname || item.name,
+      avatar_url: item.avatar,
+    };
+
+    try {
+      const response = await api.createChat([item.id]);
+      const chatId = String(
+        (response as any)?.chat?.id ??
+        (response as any)?.data?.chat?.id ??
+        (response as any)?.chat_id ??
+        (response as any)?.data?.chat_id ??
+        (response as any)?.id ??
+        (response as any)?.data?.id ??
+        item.id
+      );
+
+      router.push({
+        pathname: '/ChatDetail',
+        params: {
+          chatId,
+          realChatId: chatId,
+          userId: item.id,
+          name: item.name,
+          username: item.profile?.username || item.name,
+          avatar: item.avatar,
+          status: item.online ? 'Online' : '',
+          profile: encodeProfileParam(fallbackProfile),
+        },
+      });
+    } catch {
+      router.push({
+        pathname: '/ChatDetail',
+        params: {
+          chatId: item.id,
+          userId: item.id,
+          name: item.name,
+          username: item.profile?.username || item.name,
+          avatar: item.avatar,
+          status: item.online ? 'Online' : '',
+          profile: encodeProfileParam(fallbackProfile),
+        },
+      });
+    }
+  }, [router]);
 
   const renderBackdrop = useCallback(
     (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
@@ -472,22 +529,7 @@ export default function ChatScreen() {
                renderItem={({ item, index }) => (
                  <Animated.View entering={FadeInDown.delay(index * 50)} style={styles.favoriteItem}>
                    <Pressable 
-                    onPress={() => router.push({
-                        pathname: '/ChatDetail',
-                        params: {
-                          chatId: item.id,
-                          name: item.name,
-                          username: item.name,
-                          avatar: item.avatar,
-                          status: 'Online',
-                          profile: encodeProfileParam({
-                            id: item.id,
-                            displayname: item.name,
-                            username: item.name,
-                            avatar_url: item.avatar,
-                          }),
-                        },
-                      })}
+                    onPress={() => { void handleFavoritePress(item); }}
                     style={styles.favoritePress}>
                      <View style={[styles.favoriteAvatarContainer, { borderColor: borderColor }]}>
                         <Image source={{ uri: item.avatar }} style={styles.favoriteAvatar} contentFit="cover" />

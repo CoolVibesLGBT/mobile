@@ -1,6 +1,6 @@
+import { reportAppError } from '@/helpers/errorReporter';
 import { Actions, ActionType } from './actions';
 import httpClient from './httpClient';
-import { reportAppError } from '@/helpers/errorReporter';
 
 interface ApiRequestOptions {
   method?: 'GET' | 'POST';
@@ -23,10 +23,20 @@ const shouldReportApiError = (action: ActionType, error: any) => {
 };
 
 export class ApiService {
+  private isFileLike(value: unknown) {
+    const isBlob = typeof Blob !== 'undefined' && value instanceof Blob;
+    const isFile = typeof File !== 'undefined' && value instanceof File;
+    const isReactNativeFile =
+      typeof value === 'object' &&
+      value !== null &&
+      'uri' in (value as Record<string, unknown>);
+    return isBlob || isFile || isReactNativeFile;
+  }
 
   async call<T = any>(action: ActionType, options: ApiRequestOptions = {}): Promise<T> {
     const method = options.method ?? 'GET';
 
+    console.log(`[API REQUEST]Base ${httpClient.defaults.baseURL}`);
     console.log(`[API REQUEST] Action: ${action} | Method: ${method}`, options.params || options.body || '');
 
     try {
@@ -60,24 +70,23 @@ export class ApiService {
 
                   if (Array.isArray(val)) {
                     const items = val.filter((item: any) => item !== undefined && item !== null);
-                    const isFileLikeItem = (item: any) => {
-                      const itemIsFile = (typeof File !== 'undefined') && (item instanceof File);
-                      const itemIsBlob = (typeof Blob !== 'undefined') && (item instanceof Blob);
-                      return itemIsFile || itemIsBlob || (typeof item === 'object' && item !== null && 'uri' in item);
-                    };
+                    const hasFile = items.some((item: any) => this.isFileLike(item));
+                    const shouldExpand = hasFile || key.endsWith('[]');
 
-                    const isFileArray = items.length > 0 && items.every(isFileLikeItem);
-                    if (isFileArray) {
+                    if (shouldExpand) {
+                      const arrayKey = key.endsWith('[]') ? key : `${key}[]`;
                       items.forEach((item: any) => {
-                        const itemIsFile = (typeof File !== 'undefined') && (item instanceof File);
-                        const itemIsBlob = (typeof Blob !== 'undefined') && (item instanceof Blob);
-                        if (itemIsFile || itemIsBlob) {
-                          formData.append(key, item);
+                        if (item === undefined || item === null) return;
+                        const itemIsFile = this.isFileLike(item);
+                        if (itemIsFile) {
+                          formData.append(arrayKey, item as any);
                           return;
                         }
-                        if (typeof item === 'object' && item !== null && 'uri' in item) {
-                          formData.append(key, item as any);
+                        if (typeof item === 'object') {
+                          formData.append(arrayKey, JSON.stringify(item));
+                          return;
                         }
+                        formData.append(arrayKey, String(item));
                       });
                     } else {
                       formData.append(key, JSON.stringify(val));
@@ -278,10 +287,10 @@ async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {
     });
   }
 
-  async sendMessage(chatId: string, content: string) {
+  async sendMessage(payload: Record<string, unknown>) {
     return this.call(Actions.CMD_SEND_MESSAGE, {
       method: 'POST',
-      body: { chat_id: chatId, content },
+      body: payload,
     });
   }
 

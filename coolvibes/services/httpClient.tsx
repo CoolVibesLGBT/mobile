@@ -1,10 +1,11 @@
+import { defaultServiceServerId, serviceURL } from '@/config';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 
 const httpClient = axios.create({
-  baseURL: "http://192.168.0.14:3001",//serviceURL[defaultServiceServerId],
+  baseURL: serviceURL[defaultServiceServerId],
   timeout: 10000,
   headers: {},
 });

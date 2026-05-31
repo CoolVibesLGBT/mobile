@@ -15,7 +15,8 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import ChatInput from '@/components/ChatInput';
 import { tabToClassifiedKind } from '@/helpers/classifieds';
-import { plainTextToLexicalState } from '@/helpers/plainTextToLexicalState';
+import { applyComposerMediaToPayload } from '@/helpers/postComposer';
+import { composeLexicalState } from '@/helpers/plainTextToLexicalState';
 import { api } from '@/services/apiService';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { completeBackgroundTask, enqueueBackgroundTask, failBackgroundTask } from '@/store/slice/postUploads';
@@ -107,7 +108,7 @@ export default function ClassifiedCreateScreen() {
 
       const taskId = `classified-${Date.now()}`;
       const payload: Record<string, any> = {
-        content: plainTextToLexicalState(trimmedText),
+        content: composeLexicalState(trimmedText, outgoingMedia),
         audience: 'public',
         kind: selectedKind,
         'extras[title]': JSON.stringify(title),
@@ -117,33 +118,7 @@ export default function ClassifiedCreateScreen() {
         payload['extras[metadata]'] = metadataItems;
       }
 
-      const imageFiles: any[] = [];
-      const videoFiles: any[] = [];
-
-      outgoingMedia.forEach((item: any, index: number) => {
-        const uri = typeof item?.uri === 'string' ? item.uri : '';
-        if (!uri) return;
-
-        if (item?.type === 'image') {
-          imageFiles.push({
-            uri,
-            name: item?.name || `classified-image-${Date.now()}-${index}.jpg`,
-            type: item?.mimeType || 'image/jpeg',
-          });
-          return;
-        }
-
-        if (item?.type === 'video') {
-          videoFiles.push({
-            uri,
-            name: item?.name || `classified-video-${Date.now()}-${index}.mp4`,
-            type: item?.mimeType || 'video/mp4',
-          });
-        }
-      });
-
-      if (imageFiles.length > 0) payload['images[]'] = imageFiles;
-      if (videoFiles.length > 0) payload['videos[]'] = videoFiles;
+      applyComposerMediaToPayload(payload, outgoingMedia, 'classified');
 
       dispatch(
         enqueueBackgroundTask({

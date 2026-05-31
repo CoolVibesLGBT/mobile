@@ -6,48 +6,11 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Haptics from 'expo-haptics';
 
 import ChatInput from '@/components/ChatInput';
+import { composeLexicalState } from '@/helpers/plainTextToLexicalState';
+import { applyComposerMediaToPayload } from '@/helpers/postComposer';
 import { api } from '@/services/apiService';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { completePostUpload, enqueuePostUpload, failPostUpload } from '@/store/slice/postUploads';
-
-function plainTextToLexicalState(text: string): string {
-  const safe = String(text ?? '').replace(/\r\n/g, '\n');
-  const lines = safe.split('\n');
-
-  const paragraphs = lines.map((line) => ({
-    children: line
-      ? [
-          {
-            detail: 0,
-            format: 0,
-            mode: 'normal',
-            style: '',
-            text: line,
-            type: 'text',
-            version: 1,
-          },
-        ]
-      : [],
-    direction: null,
-    format: '',
-    indent: 0,
-    type: 'paragraph',
-    version: 1,
-    textFormat: 0,
-    textStyle: '',
-  }));
-
-  return JSON.stringify({
-    root: {
-      children: paragraphs,
-      direction: null,
-      format: '',
-      indent: 0,
-      type: 'root',
-      version: 1,
-    },
-  });
-}
 
 export default function CreatePostScreen() {
   const { colors, dark } = useTheme();
@@ -103,32 +66,20 @@ export default function CreatePostScreen() {
 
       try {
         const payload: Record<string, any> = {
-          content: plainTextToLexicalState(trimmed),
+          content: composeLexicalState(trimmed, outgoingMedia),
           audience: 'public',
         };
 
-        const imageFiles: any[] = [];
-
-        outgoingMedia.forEach((item: any, index: number) => {
-          const uri = typeof item?.uri === 'string' ? item.uri : '';
-          if (!uri) return;
-
-          if (item?.type === 'image') {
-            imageFiles.push({
-              uri,
-              name: item?.name || `post-image-${Date.now()}-${index}.jpg`,
-              type: item?.mimeType || 'image/jpeg',
-            });
-          }
-        });
-
-        if (imageFiles.length > 0) payload['images[]'] = imageFiles;
+        applyComposerMediaToPayload(payload, outgoingMedia, 'post');
 
         const descriptionParts: string[] = [];
         if (trimmed) descriptionParts.push(trimmed.slice(0, 80));
-        if (imageFiles.length > 0) {
-          descriptionParts.push(imageFiles.length === 1 ? '1 gorsel' : `${imageFiles.length} gorsel`);
-        }
+        const imageCount = outgoingMedia.filter((item: any) => item?.type === 'image').length;
+        const audioCount = outgoingMedia.filter((item: any) => item?.type === 'audio').length;
+        const hasLocation = outgoingMedia.some((item: any) => item?.type === 'location' || item?.type === 'live_location');
+        if (imageCount > 0) descriptionParts.push(imageCount === 1 ? '1 gorsel' : `${imageCount} gorsel`);
+        if (audioCount > 0) descriptionParts.push(audioCount === 1 ? '1 ses kaydi' : `${audioCount} ses kaydi`);
+        if (hasLocation) descriptionParts.push('konum');
 
         dispatch(enqueuePostUpload({
           id: uploadId,
