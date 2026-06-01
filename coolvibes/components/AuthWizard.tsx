@@ -1,5 +1,6 @@
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loginThunk, registerThunk } from '@/store/slice/auth';
+import { Colors } from '@/constants/Colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
@@ -143,12 +144,13 @@ const AuthWizard: React.FC<AuthWizardProps> = ({
         return false;
     };
 
-    const iconColor = dark ? '#FFFFFF' : '#000000';
-    const backgroundColor = dark ? '#000000' : '#FFFFFF';
-    const cardColor = dark ? '#1A1A1A' : '#F8F8F8';
-    const borderColor = dark ? '#333333' : '#EEEEEE';
-    const textColor = dark ? '#FFFFFF' : '#000000';
-    const secondaryTextColor = dark ? '#AAAAAA' : '#666666';
+    const palette = dark ? Colors.dark : Colors.light;
+    const iconColor = palette.text;
+    const backgroundColor = palette.background;
+    const cardColor = palette.surface2;
+    const borderColor = palette.border;
+    const textColor = palette.text;
+    const secondaryTextColor = palette.textMuted;
 
     const renderStepContent = () => {
         if (currentStep === 0) {

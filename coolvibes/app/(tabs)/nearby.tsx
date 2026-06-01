@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
+import type { BlurTint } from 'expo-blur';
 import { useAppSelector } from '@/store/hooks';
 import { api } from '@/services/apiService';
 import { getCurrentOrLastKnownCoordinates } from '@/helpers/location';
@@ -36,7 +37,6 @@ import { BlurView } from 'expo-blur';
 const { width } = Dimensions.get('window');
 
 const GLOBAL_HEADER_HEIGHT = 60;
-const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 88 : 68;
 const H_PAD = 12;
 const GRID_GAP = 8;
 const DEFAULT_COORDS = { lat: 41.0082, lng: 28.9784 };
@@ -205,6 +205,7 @@ const GridCard = React.memo(({
         </TouchableOpacity>
     );
 });
+GridCard.displayName = 'GridCard';
 
 /* ── LIST ROW ── */
 const ListRow = React.memo(({
@@ -261,6 +262,7 @@ const ListRow = React.memo(({
         </View>
     );
 });
+ListRow.displayName = 'ListRow';
 
 /* ── MAP PIN ── */
 const MapPin = React.memo(({
@@ -315,6 +317,7 @@ const MapPin = React.memo(({
         </Animated.View>
     );
 });
+MapPin.displayName = 'MapPin';
 
 /* ════════════════════════ MAIN SCREEN ════════════════════════ */
 export default function NearbyScreen() {
@@ -455,13 +458,14 @@ export default function NearbyScreen() {
     }, [users]);
 
     const contentPaddingTop = GLOBAL_HEADER_HEIGHT + insets.top;
+    const bottomContentInset = 58 + Math.max(insets.bottom, 8) + 24;
     const borderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
     const toggleBg = dark ? '#111' : '#F0F0F0';
     const stylesVars = {
         mapBtnBg: dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.7)',
         mapBtnBorder: dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)',
         mapBtnIcon: dark ? '#FFF' : '#111',
-        mapBtnBlurTint: dark ? 'dark' : 'light',
+        mapBtnBlurTint: (dark ? 'dark' : 'light') as BlurTint,
         mapBtnBlurIntensity: Platform.OS === 'ios' ? 30 : 55,
     };
 
@@ -1029,7 +1033,7 @@ export default function NearbyScreen() {
             </View>
 
             {/* ── Content ── */}
-            <View style={[styles.content, { paddingBottom: TAB_BAR_HEIGHT }]}>
+            <View style={styles.content}>
 
                 {/* GRID */}
                 {viewMode === 'grid' && (
@@ -1044,7 +1048,7 @@ export default function NearbyScreen() {
                         onEndReached={handleLoadMore}
                         onEndReachedThreshold={0.5}
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ padding: H_PAD, paddingBottom: 24, gap: GRID_GAP }}
+                        contentContainerStyle={{ padding: H_PAD, paddingBottom: bottomContentInset, gap: GRID_GAP }}
                         columnWrapperStyle={{ gap: GRID_GAP }}
                         removeClippedSubviews
                         maxToRenderPerBatch={8}
@@ -1063,7 +1067,7 @@ export default function NearbyScreen() {
                         onEndReached={handleLoadMore}
                         onEndReachedThreshold={0.5}
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 24 }}
+                        contentContainerStyle={{ paddingBottom: bottomContentInset }}
                         removeClippedSubviews
                         maxToRenderPerBatch={10}
                     />

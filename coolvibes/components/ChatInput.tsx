@@ -17,6 +17,7 @@ import {
   Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@react-navigation/native";
 import Entypo from "@expo/vector-icons/Entypo";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -191,6 +192,7 @@ export default function ChatInput({
   textTemplate,
 }: ChatInputProps) {
   const insets = useSafeAreaInsets();
+  const { colors, dark } = useTheme();
   const isComment = kind === 'comment';
   const isPost = kind === 'post';
   const isClassified = kind === 'classified';
@@ -224,6 +226,12 @@ export default function ChatInput({
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
   const hasSearchQuery = searchQuery.trim().length > 0;
+  const surfaceColor = colors.card;
+  const elevatedSurfaceColor = dark ? '#1F1F1F' : '#FFFFFF';
+  const subtleSurfaceColor = dark ? '#242424' : '#F9F9F9';
+  const primaryTextColor = colors.text;
+  const mutedTextColor = dark ? 'rgba(255,255,255,0.65)' : 'rgba(19,19,19,0.63)';
+  const softIconColor = dark ? 'rgba(255,255,255,0.65)' : 'rgba(19,19,19,0.63)';
 
   const inputRef = useRef<TextInput>(null);
   const bottomSheetModalRef = useRef<GorhomBottomSheetModal>(null);
@@ -673,20 +681,24 @@ export default function ChatInput({
             <View style={styles.inputRow}>
               <TouchableOpacity
                 onPress={isRecording ? cancelRecording : handlePresentModalPress}
-                style={styles.externalButton}
+                style={[styles.externalButton, { backgroundColor: elevatedSurfaceColor, shadowColor: dark ? '#000000' : 'rgba(19,19,19,0.35)' }]}
               >
                 {isRecording ? (
-                  <MaterialCommunityIcons name="trash-can-outline" size={24} color="#FF3B30" />
+                  <MaterialCommunityIcons name="trash-can-outline" size={24} color="#FF593C" />
                 ) : (
-                  <Entypo name="attachment" size={24} color="black" />
+                  <Entypo name="attachment" size={24} color={softIconColor} />
                 )}
               </TouchableOpacity>
 
-              <View style={[styles.inputPillContainer, isMultiline ? styles.pillMultiline : styles.pillSingleLine]}>
+              <View style={[
+                styles.inputPillContainer,
+                isMultiline ? styles.pillMultiline : styles.pillSingleLine,
+                { backgroundColor: elevatedSurfaceColor, borderColor: colors.border, shadowColor: dark ? '#000000' : 'rgba(19,19,19,0.35)' },
+              ]}>
                 {isRecording ? (
                   <View style={styles.recordingContainer}>
                     <Animated.View style={[styles.recordingIndicator, { opacity: recordingOpacity }]} />
-                    <Text style={styles.recordingText}>
+                    <Text style={[styles.recordingText, { color: primaryTextColor }]}>
                     Recording... {formatDuration(recordingDuration)}
                     </Text>
                   </View>
@@ -703,7 +715,7 @@ export default function ChatInput({
                           </Text>
                         </View>
                         <TouchableOpacity onPress={editingMessage ? onCancelEdit : onCancelReply}>
-                          <Entypo name="cross" size={24} color="black" />
+                          <Entypo name="cross" size={24} color={primaryTextColor} />
                         </TouchableOpacity>
                       </View>
                     )}
@@ -766,13 +778,13 @@ export default function ChatInput({
                       </ScrollView>
                     )}
 
-                    <View style={[styles.inputPill]}>
+                    <View style={styles.inputPill}>
                       <TextInput
                         ref={inputRef}
-                        style={[styles.textInput]}
+                        style={[styles.textInput, { color: primaryTextColor }]}
                         multiline
                         placeholder={inputPlaceholder}
-                        placeholderTextColor="#999"
+                        placeholderTextColor={mutedTextColor}
                         value={inputText}
                         onChangeText={setInputText}
                         onFocus={() => setShowEmojiPicker(false)}
@@ -784,12 +796,12 @@ export default function ChatInput({
                           <MaterialCommunityIcons
                             name={showEmojiPicker ? "keyboard-outline" : "sticker-circle-outline"}
                             size={26}
-                            color="black"
+                            color={softIconColor}
                           />
                         </TouchableOpacity>
                         {(inputText.trim().length > 0 || hasPreviewItems) && (
                           <TouchableOpacity onPress={handleSendMessagePress} style={styles.internalActionBtn}>
-                            <MaterialCommunityIcons name="send-circle" size={26} color="black" />
+                            <MaterialCommunityIcons name="send-circle" size={26} color={colors.primary} />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -799,24 +811,27 @@ export default function ChatInput({
               </View>
 
               {(!inputText.trim() && !hasPreviewItems) && (
-                <TouchableOpacity style={styles.externalButton} onPress={isRecording ? stopRecording : startRecording}>
-                  <MaterialCommunityIcons name={isRecording ? "stop" : "microphone"} size={24} color={isRecording ? "#FF3B30" : "black"} />
+                <TouchableOpacity
+                  style={[styles.externalButton, { backgroundColor: elevatedSurfaceColor, shadowColor: dark ? '#000000' : 'rgba(19,19,19,0.35)' }]}
+                  onPress={isRecording ? stopRecording : startRecording}
+                >
+                  <MaterialCommunityIcons name={isRecording ? "stop" : "microphone"} size={24} color={isRecording ? "#FF593C" : primaryTextColor} />
                 </TouchableOpacity>
               )}
             </View>
           </View>
 
           {showEmojiPicker && (
-            <View style={styles.pickerContainer}>
-              <View style={styles.pickerTabs}>
-                <TouchableOpacity style={[styles.pickerTab, activePickerTab === 'emoji' && styles.pickerTabActive]} onPress={() => setActivePickerTab('emoji')} >
-                  <Text style={[styles.pickerTabText, activePickerTab === 'emoji' && styles.pickerTabTextActive]}>Emoji</Text>
+            <View style={[styles.pickerContainer, { backgroundColor: surfaceColor }]}>
+              <View style={[styles.pickerTabs, { backgroundColor: subtleSurfaceColor }]}>
+                <TouchableOpacity style={[styles.pickerTab, activePickerTab === 'emoji' && styles.pickerTabActive, activePickerTab === 'emoji' && { backgroundColor: elevatedSurfaceColor }]} onPress={() => setActivePickerTab('emoji')} >
+                  <Text style={[styles.pickerTabText, { color: mutedTextColor }, activePickerTab === 'emoji' && { color: primaryTextColor }]}>Emoji</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.pickerTab, activePickerTab === 'gif' && styles.pickerTabActive]} onPress={() => setActivePickerTab('gif')} >
-                  <Text style={[styles.pickerTabText, activePickerTab === 'gif' && styles.pickerTabTextActive]}>GIF</Text>
+                <TouchableOpacity style={[styles.pickerTab, activePickerTab === 'gif' && styles.pickerTabActive, activePickerTab === 'gif' && { backgroundColor: elevatedSurfaceColor }]} onPress={() => setActivePickerTab('gif')} >
+                  <Text style={[styles.pickerTabText, { color: mutedTextColor }, activePickerTab === 'gif' && { color: primaryTextColor }]}>GIF</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.pickerTab, activePickerTab === 'sticker' && styles.pickerTabActive]} onPress={() => setActivePickerTab('sticker')} >
-                  <Text style={[styles.pickerTabText, activePickerTab === 'sticker' && styles.pickerTabTextActive]}>Sticker</Text>
+                <TouchableOpacity style={[styles.pickerTab, activePickerTab === 'sticker' && styles.pickerTabActive, activePickerTab === 'sticker' && { backgroundColor: elevatedSurfaceColor }]} onPress={() => setActivePickerTab('sticker')} >
+                  <Text style={[styles.pickerTabText, { color: mutedTextColor }, activePickerTab === 'sticker' && { color: primaryTextColor }]}>Sticker</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.pickerContent}>
@@ -829,7 +844,7 @@ export default function ChatInput({
                     ))}
                   </ScrollView>
                 )}
-                {activePickerTab === 'gif' && (<View style={styles.centerContent}><Text style={{ color: '#999' }}>GIFs coming soon!</Text></View>)}
+                {activePickerTab === 'gif' && (<View style={styles.centerContent}><Text style={{ color: mutedTextColor }}>GIFs coming soon!</Text></View>)}
                 {activePickerTab === 'sticker' && (
                   <ScrollView contentContainerStyle={styles.stickerGrid} showsVerticalScrollIndicator={false}>
                     {STICKER_ASSETS.map((sticker) => {
@@ -845,7 +860,7 @@ export default function ChatInput({
                         >
                           <View style={styles.stickerThumbWrap}>
                             {isDownloading ? (
-                              <ActivityIndicator size="small" color="#111" />
+                              <ActivityIndicator size="small" color={primaryTextColor} />
                             ) : (
                               <Image source={{ uri: sticker.url }} style={styles.stickerThumb} resizeMode="contain" />
                             )}
@@ -901,7 +916,7 @@ export default function ChatInput({
             <BottomSheetFlatList
               contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 12 }}
               ref={bottomSheetFlatListRef}
-              style={{ flex: 1, backgroundColor: "#F7F7FA" }}
+              style={{ flex: 1, backgroundColor: surfaceColor }}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               data={places}
@@ -926,28 +941,28 @@ export default function ChatInput({
                       <MaterialCommunityIcons name={icon.name as any} size={20} color="white" />
                     </View>
                     <View style={styles.placeText}>
-                      <Text style={styles.placeName} numberOfLines={1}>{item.name}</Text>
-                      <Text style={styles.placeAddr} numberOfLines={1}>{item.address}</Text>
+                      <Text style={[styles.placeName, { color: primaryTextColor }]} numberOfLines={1}>{item.name}</Text>
+                      <Text style={[styles.placeAddr, { color: mutedTextColor }]} numberOfLines={1}>{item.address}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color="#C7C7CC" style={styles.placeChevron} />
                   </TouchableOpacity>
                 );
               }}
               ListHeaderComponent={
-                <View style={styles.locHeaderWrapper}>
-                  <View style={styles.locHeader}>
-                    <TouchableOpacity style={styles.locHeaderButton} onPress={() => setShowLocationPicker(false)}>
-                      <Ionicons name="close" size={24} color="#111" />
+                <View style={[styles.locHeaderWrapper, { backgroundColor: surfaceColor }]}>
+                  <View style={[styles.locHeader, { backgroundColor: surfaceColor }]}>
+                    <TouchableOpacity style={[styles.locHeaderButton, { backgroundColor: subtleSurfaceColor }]} onPress={() => setShowLocationPicker(false)}>
+                      <Ionicons name="close" size={24} color={primaryTextColor} />
                     </TouchableOpacity>
-                    <Text style={styles.locTitle}>Share location</Text>
+                    <Text style={[styles.locTitle, { color: primaryTextColor }]}>Share location</Text>
                     <View style={styles.locHeaderRight}>
                       {isLoadingPlaces && <ActivityIndicator size="small" color="#8e8e93" />}
                     </View>
                   </View>
-                  <View style={styles.locSearchBar}>
+                  <View style={[styles.locSearchBar, { backgroundColor: subtleSurfaceColor }]}>
                     <Ionicons name="search" size={18} color="#8e8e93" />
                     <TextInput
-                      style={styles.locSearchInput}
+                      style={[styles.locSearchInput, { color: primaryTextColor }]}
                       placeholder="Search for a place"
                       placeholderTextColor="#8e8e93"
                       value={searchQuery}
@@ -960,7 +975,7 @@ export default function ChatInput({
                       </TouchableOpacity>
                     )}
                   </View>
-                  <View style={styles.locMapCard}>
+                  <View style={[styles.locMapCard, { backgroundColor: subtleSurfaceColor, borderColor: colors.border }]}>
                     {currentLocation ? (
                       <MapView
                         provider={PROVIDER_GOOGLE}
@@ -1008,8 +1023,8 @@ export default function ChatInput({
                         <MaterialCommunityIcons name="radio-tower" size={24} color="white" />
                       </View>
                       <View style={styles.locActionTextCol}>
-                        <Text style={styles.locActionTitle}>Share Live Location</Text>
-                        <Text style={styles.locActionSub}>Updates in real-time while you move</Text>
+                        <Text style={[styles.locActionTitle, { color: primaryTextColor }]}>Share Live Location</Text>
+                        <Text style={[styles.locActionSub, { color: mutedTextColor }]}>Updates in real-time while you move</Text>
                       </View>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -1026,8 +1041,8 @@ export default function ChatInput({
                         <MaterialCommunityIcons name="map-marker-radius" size={22} color="#007AFF" />
                       </View>
                       <View style={styles.locActionTextCol}>
-                        <Text style={styles.locActionTitle}>Send Current Location</Text>
-                        <Text style={styles.locActionSub}>Accurate to 15 metres</Text>
+                        <Text style={[styles.locActionTitle, { color: primaryTextColor }]}>Send Current Location</Text>
+                        <Text style={[styles.locActionSub, { color: mutedTextColor }]}>Accurate to 15 metres</Text>
                       </View>
                     </TouchableOpacity>
                   </View>

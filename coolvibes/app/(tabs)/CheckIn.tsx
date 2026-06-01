@@ -18,6 +18,8 @@ import { api } from '@/services/apiService';
 import { getSafeImageURL, getSafeImageURLEx } from '@/helpers/safeUrl';
 import { getTagGradient } from '@/helpers/colors';
 import { lexicalToPlainText } from '@/helpers/lexicalPlainText';
+import { composeLexicalState } from '@/helpers/plainTextToLexicalState';
+import { applyComposerMediaToPayload } from '@/helpers/postComposer';
 
 const DEFAULT_COORDS = { latitude: 41.0082, longitude: 28.9784 };
 const MAP_DELTA = { latitudeDelta: 0.02, longitudeDelta: 0.02 };
@@ -78,7 +80,7 @@ export default function CheckInScreen() {
     const systemData = useAppSelector(state => state.system.data);
     const language = useAppSelector(state => state.system.language) || authUser?.default_language || 'en';
     const draftCheckinParam = Array.isArray(params?.draft_checkin) ? params.draft_checkin[0] : params?.draft_checkin;
-    const tabBarHeight = (Platform.OS === 'ios' ? 62 : 66) + Math.max(insets.bottom, 8);
+    const tabBarHeight = 58 + Math.max(insets.bottom, 8);
     const createContentBottom = tabBarHeight + 110;
     const contentPaddingTop = GLOBAL_HEADER_HEIGHT + insets.top;
     const borderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
@@ -97,6 +99,7 @@ export default function CheckInScreen() {
     const [viewMode, setViewMode] = useState<ViewModeType>('map');
     const mapRef = useRef<MapView>(null);
     const checkinsRequestRef = useRef(false);
+    const createCheckinRequestRef = useRef(false);
     const fabPulse = useSharedValue(0);
     const [mapRegion, setMapRegion] = useState({
         latitude: DEFAULT_COORDS.latitude,
@@ -136,10 +139,6 @@ export default function CheckInScreen() {
             active = false;
         };
     }, []);
-
-    useEffect(() => {
-        fetchCheckins();
-    }, [fetchCheckins]);
 
     useEffect(() => {
         fabPulse.value = withRepeat(
@@ -286,6 +285,14 @@ export default function CheckInScreen() {
         const normalizedLat = typeof latitude === 'string' ? Number(latitude) : latitude;
         const normalizedLng = typeof longitude === 'string' ? Number(longitude) : longitude;
 
+        const rawTags = Array.isArray(post?.extras?.tags)
+            ? post.extras.tags
+            : Array.isArray(post?.tags)
+                ? post.tags
+                : Array.isArray(post?.checkin?.tags)
+                    ? post.checkin.tags
+                    : [];
+
         return {
             id,
             user: {
@@ -299,7 +306,7 @@ export default function CheckInScreen() {
             likes: Number.isFinite(likes) ? likes : 0,
             comments: Number.isFinite(comments) ? comments : 0,
             time: formatRelativeTime(post?.created_at ?? post?.updated_at ?? ''),
-            tags: Array.isArray(post?.extras?.tags) ? post.extras.tags : [],
+            tags: rawTags.map((tag: any) => String(tag)).filter(Boolean),
             latitude: Number.isFinite(normalizedLat) ? (normalizedLat as number) : undefined,
             longitude: Number.isFinite(normalizedLng) ? (normalizedLng as number) : undefined,
             raw: post,
@@ -330,7 +337,11 @@ export default function CheckInScreen() {
             const mapped = posts
                 .map((post: any, index: number) => mapCheckinPost(post, index))
                 .filter((item: CheckinItem | null): item is CheckinItem => Boolean(item && item.id));
-            setCheckins(mapped);
+            setCheckins(prev => {
+                const mappedIds = new Set(mapped.map((item: CheckinItem) => item.id));
+                const localDrafts = prev.filter(item => !item.raw && !mappedIds.has(item.id));
+                return [...localDrafts, ...mapped];
+            });
         } catch (error) {
             console.error('Failed to fetch check-ins', error);
             setCheckinsError('Check-ins yüklenemedi');
@@ -340,6 +351,10 @@ export default function CheckInScreen() {
             checkinsRequestRef.current = false;
         }
     }, [mapCheckinPost]);
+
+    useEffect(() => {
+        fetchCheckins();
+    }, [fetchCheckins]);
 
     const handleRemoveTagAttachment = useCallback((media: any) => {
         const tagKey = media?.data?.tag || media?.name;
@@ -358,11 +373,14 @@ export default function CheckInScreen() {
     }, []);
 
     const handleSendMessage = useCallback((text: string, media: any[]) => {
+        if (createCheckinRequestRef.current) return;
         const trimmed = text?.trim?.() ?? '';
-        const mediaImage = media?.find((m: any) => m?.type === 'image' && m?.uri)?.uri;
+        const outgoingMedia = Array.isArray(media) ? media : [];
+        const mediaImage = outgoingMedia.find((m: any) => m?.type === 'image' && m?.uri)?.uri;
         const hasTags = selectedTags.length > 0;
         if (!trimmed && !mediaImage && !hasTags) return;
 
+        createCheckinRequestRef.current = true;
         const name = authUser?.displayname || authUser?.username || 'You';
         const username = authUser?.username || 'you';
         const avatar = getSafeImageURLEx(authUser?.public_id ?? authUser?.id ?? username, authUser?.avatar, 'small') || `https://i.pravatar.cc/150?u=${username}`;
@@ -380,11 +398,43 @@ export default function CheckInScreen() {
             longitude: userLocation.longitude,
         };
 
+        const payload: Record<string, any> = {
+            content: composeLexicalState(trimmed || 'Check-in', outgoingMedia),
+            audience: 'public',
+            tags: selectedTags,
+            extras: { tags: selectedTags },
+            lat: userLocation.latitude,
+            lng: userLocation.longitude,
+            latitude: userLocation.latitude,
+            longitude: userLocation.longitude,
+        };
+        applyComposerMediaToPayload(payload, outgoingMedia, 'checkin');
+
         setCheckins(prev => [newItem, ...prev]);
         setSelectedTags([]);
         setIsCreateOpen(false);
         router.setParams({ checkin_mode: undefined });
-    }, [authUser, selectedTags, userLocation, router]);
+
+        void api.createCheckIn(payload)
+            .then((response: any) => {
+                const body = response?.data ?? response ?? {};
+                if (response?.success === false || body?.success === false) {
+                    throw new Error(response?.message || body?.message || 'Check-in gönderilemedi');
+                }
+                const post = body?.post ?? body?.checkin ?? body?.data?.post ?? body?.data?.checkin ?? null;
+                const mapped = mapCheckinPost(post, 0);
+                if (!mapped) return;
+                setCheckins(prev => prev.map(item => (item.id === newItem.id ? mapped : item)));
+            })
+            .catch((error) => {
+                console.error('Failed to create check-in', error);
+                setCheckins(prev => prev.filter(item => item.id !== newItem.id));
+                setCheckinsError('Check-in gönderilemedi');
+            })
+            .finally(() => {
+                createCheckinRequestRef.current = false;
+            });
+    }, [authUser, mapCheckinPost, selectedTags, userLocation, router]);
 
     const handleOpenCreate = useCallback(() => {
         router.push('/CheckInCreate');
@@ -512,7 +562,7 @@ export default function CheckInScreen() {
                 </View>
             </View>
 
-            <View style={[styles.content, { paddingBottom: tabBarHeight }]}>
+            <View style={styles.content}>
                 {viewMode === 'map' && (
                     <View style={{ flex: 1 }}>
                         <MapView

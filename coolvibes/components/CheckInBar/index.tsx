@@ -22,10 +22,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HEX_SIZE = 100;
 const DEFAULT_CENTER_X = SCREEN_WIDTH / 2;
 const DEFAULT_CENTER_Y = 250;
-const ITEM_DIM = 140;
+const ITEM_DIM = 156;
 const HEX_BUTTON_SIZE = 76;
 const HEX_BUTTON_RADIUS = HEX_BUTTON_SIZE / 2;
-const HEX_LABEL_MARGIN = 8;
+const HEX_LABEL_MARGIN = 9;
+const HEX_LABEL_TOP = (ITEM_DIM - HEX_BUTTON_SIZE) / 2 + HEX_BUTTON_SIZE + HEX_LABEL_MARGIN;
 const OFFSET = ITEM_DIM / 2;
 
 const axialToPixel = (q: number, r: number) => {
@@ -41,20 +42,30 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.max(min, Math.min(value, max));
 };
 
-const HexItem = memo(({ authUser, language, tag, q, r, panX, panY, isSelected, onSelect, centerX, centerY }: any) => {
+const resolveTagLabel = (tag: any, language?: string, fallbackLanguage?: string) => {
+  const localized = LocalizedStringToString(tag?.name, language || fallbackLanguage || 'en').trim();
+  if (localized) return localized;
+
+  return String(tag?.tag || tag?.id || 'Vibe')
+    .replace(/[_-]+/g, ' ')
+    .trim();
+};
+
+const HexItem = memo(function HexItem({ authUser, language, tag, q, r, panX, panY, isSelected, onSelect, centerX, centerY }: any) {
   const { colors } = useTheme();
   const { x, y } = axialToPixel(q, r);
   const iconName = tag.icon;
   const gradient = getTagGradient(tag.tag ?? tag.id ?? 'tag');
   const activeTextColor = gradient.textColor;
+  const label = resolveTagLabel(tag, language, authUser?.default_language);
   
   const style = useAnimatedStyle(() => {
     const px = x + panX.value;
     const py = y + panY.value;
     const dist = Math.sqrt(px * px + py * py);
 
-    const scale = interpolate(dist, [0, 80, 400], [1.6, 1.0, 0.5], Extrapolation.CLAMP);
-    const opacity = interpolate(dist, [0, 250, 450], [1, 0.85, 0.35], Extrapolation.CLAMP);
+    const scale = interpolate(dist, [0, 80, 420], [1.5, 1.0, 0.68], Extrapolation.CLAMP);
+    const opacity = interpolate(dist, [0, 260, 480], [1, 0.92, 0.68], Extrapolation.CLAMP);
 
     return {
       transform: [
@@ -99,10 +110,10 @@ const HexItem = memo(({ authUser, language, tag, q, r, panX, panY, isSelected, o
         ellipsizeMode="tail"
         style={[
           styles.hexText,
-          { color: isSelected ? activeTextColor : colors.text, opacity: isSelected ? 1 : 0.65, fontFamily: isSelected ? 'Inter-Bold' : 'Inter-SemiBold' },
+          { color: colors.text, opacity: isSelected ? 1 : 0.78, fontFamily: isSelected ? 'Inter-Bold' : 'Inter-SemiBold' },
         ]}
       >
-        {LocalizedStringToString(tag.name, language || authUser?.default_language)}
+        {label}
       </Text>
     </Animated.View>
   );
@@ -189,7 +200,7 @@ export function CheckInRadar({ selectedTags, onSelectTag, onClearTags, centerOff
     if (!bounds) {
       return { centerX: desiredCenterX, centerY: desiredCenterY };
     }
-    const padding = 14;
+    const padding = 34;
     const minCenterX = padding - bounds.minX;
     const maxCenterX = viewport.width - padding - bounds.maxX;
     const minCenterY = padding - bounds.minY;
@@ -344,13 +355,14 @@ const styles = StyleSheet.create({
   pressedBtn: { transform: [{ scale: 0.92 }], opacity: 0.85 },
   hexText: { 
     position: 'absolute',
-    top: ITEM_DIM / 2 + HEX_BUTTON_RADIUS + HEX_LABEL_MARGIN,
-    left: 0,
-    right: 0,
-    fontSize: 9,
-    lineHeight: 12,
+    top: HEX_LABEL_TOP,
+    left: 4,
+    right: 4,
+    minHeight: 30,
+    fontSize: 9.5,
+    lineHeight: 13,
     textAlign: 'center',
-    letterSpacing: 0.5,
+    letterSpacing: 0.25,
     textTransform: 'uppercase'
   },
   crosshairContainer: { 

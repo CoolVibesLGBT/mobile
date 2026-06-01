@@ -95,6 +95,10 @@ export default function ClassifiedsScreen() {
   const borderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)';
   const cardBackground = dark ? 'rgba(255,255,255,0.04)' : '#FFFFFF';
   const subduedBackground = dark ? 'rgba(255,255,255,0.06)' : '#F8FAFC';
+  const tabColor = dark ? '#FFFFFF' : '#0F172A';
+  const inactiveTabColor = dark ? 'rgba(255,255,255,0.58)' : 'rgba(15,23,42,0.52)';
+  const activeChipBg = dark ? 'rgba(255,255,255,0.12)' : '#FFFFFF';
+  const inactiveChipBg = dark ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.04)';
 
   const filteredItems = useMemo(() => searchClassifieds(items, searchQuery), [items, searchQuery]);
   const activeCountText = `${filteredItems.length} active listing${filteredItems.length === 1 ? '' : 's'}`;
@@ -290,27 +294,42 @@ export default function ClassifiedsScreen() {
     <View style={styles.headerContent}>
       <View style={[styles.controlCard, { backgroundColor: cardBackground, borderColor }]}>
         <View style={styles.segmentHeaderRow}>
-          <View style={[styles.segmentWrap, { backgroundColor: subduedBackground, borderColor }]}>
+          <View style={[styles.segmentWrap, { backgroundColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.05)' }]}>
             {(['hiring', 'seeking'] as ClassifiedTab[]).map((tab) => {
               const selected = tab === activeTab;
               return (
                 <TouchableOpacity
                   key={tab}
-                  style={[
-                    styles.segmentButton,
-                    selected && { backgroundColor: dark ? '#FFFFFF' : '#0F172A' },
-                  ]}
+                  style={styles.segmentButton}
                   activeOpacity={0.86}
                   onPress={() => setActiveTab(tab)}
                 >
-                  <Text
+                  <View
                     style={[
-                      styles.segmentButtonText,
-                      { color: selected ? (dark ? '#0B0B0B' : '#FFFFFF') : colors.text },
+                      styles.segmentContent,
+                      {
+                        backgroundColor: selected ? activeChipBg : inactiveChipBg,
+                        borderColor: selected ? borderColor : 'transparent',
+                      },
                     ]}
                   >
-                    {tab === 'hiring' ? 'Hire' : 'Jobs'}
-                  </Text>
+                    <MaterialCommunityIcons
+                      name={tab === 'hiring' ? 'briefcase-outline' : 'account-search-outline'}
+                      size={21}
+                      color={selected ? tabColor : inactiveTabColor}
+                    />
+                    <Text
+                      style={[
+                        styles.segmentButtonText,
+                        {
+                          color: selected ? tabColor : inactiveTabColor,
+                          fontFamily: selected ? 'Inter-Bold' : 'Inter-SemiBold',
+                        },
+                      ]}
+                    >
+                      {tab === 'hiring' ? 'Hire' : 'Jobs'}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -357,7 +376,7 @@ export default function ClassifiedsScreen() {
         </View>
       ) : null}
     </View>
-  ), [activeCountText, activeTab, borderColor, cardBackground, colors.text, dark, error, fetchClassifieds, mutedText, openCreate, renderTemplateCard, searchQuery, subduedBackground]);
+  ), [activeChipBg, activeCountText, activeTab, borderColor, cardBackground, colors.text, dark, error, fetchClassifieds, inactiveChipBg, inactiveTabColor, mutedText, openCreate, renderTemplateCard, searchQuery, subduedBackground, tabColor]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -482,21 +501,30 @@ const styles = StyleSheet.create({
   },
   segmentWrap: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 18,
+    height: 46,
+    borderRadius: 23,
     padding: 4,
     flexDirection: 'row',
+    gap: 6,
   },
   segmentButton: {
     flex: 1,
-    height: 40,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  segmentContent: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 19,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   segmentButtonText: {
-    fontSize: 13,
-    fontFamily: 'Inter-Bold',
+    fontSize: 14,
+    letterSpacing: 0.1,
   },
   listingCount: {
     fontSize: 11,

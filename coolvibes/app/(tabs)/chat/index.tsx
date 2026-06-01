@@ -18,6 +18,7 @@ import { getSafeImageURLEx } from '@/helpers/safeUrl';
 import { encodeProfileParam } from '@/helpers/profile';
 import { useSocket } from '@/contexts/SocketContext';
 import { Actions } from '@/services/actions';
+import { api } from '@/services/apiService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

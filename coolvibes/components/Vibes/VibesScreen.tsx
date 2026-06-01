@@ -198,11 +198,11 @@ export default function VibesScreen({ overlayBottomInset }: VibesScreenProps) {
   const currentVibe = useMemo(() => vibes[activeIndex], [activeIndex, vibes]);
   const mediaHeaders = useMemo(() => (authToken ? { Authorization: authToken } : undefined), [authToken]);
   const tabBarHeight = useMemo(
-    () => (Platform.OS === 'ios' ? 62 : 66) + Math.max(insets.bottom, 8),
+    () => 58 + Math.max(insets.bottom, 8),
     [insets.bottom]
   );
   const overlayInset = overlayBottomInset ?? tabBarHeight;
-  const topChromeInset = useMemo(() => 60 + insets.top + 64 + 1, [insets.top]);
+  const topControlInset = useMemo(() => 60 + insets.top + 66, [insets.top]);
 
   useEffect(() => {
     let mounted = true;
@@ -312,7 +312,7 @@ export default function VibesScreen({ overlayBottomInset }: VibesScreenProps) {
         isActive={index === activeIndex}
         isMuted={isMuted}
         viewportHeight={viewportHeight}
-        topInset={topChromeInset}
+        topInset={0}
         bottomInset={overlayInset}
         mediaHeaders={mediaHeaders}
         onMediaReady={() => {
@@ -324,7 +324,7 @@ export default function VibesScreen({ overlayBottomInset }: VibesScreenProps) {
         onBurst={setBurstType}
       />
     ),
-    [activeIndex, isMuted, mediaHeaders, overlayInset, topChromeInset, viewportHeight]
+    [activeIndex, isMuted, mediaHeaders, overlayInset, viewportHeight]
   );
 
   const showInitialLoader = isLoading && !hasVibes;
@@ -364,7 +364,7 @@ export default function VibesScreen({ overlayBottomInset }: VibesScreenProps) {
         />
       ) : null}
 
-      <View style={[styles.topControls, { top: 10 }]} pointerEvents="box-none">
+      <View style={[styles.topControls, { top: topControlInset }]} pointerEvents="box-none">
         <Pressable style={styles.muteButton} onPress={() => setIsMuted((value) => !value)}>
           <BlurView intensity={35} tint="dark" style={styles.muteButtonBlur}>
             {isMuted ? <VolumeX size={22} color="#FFFFFF" /> : <Volume2 size={22} color="#FFFFFF" />}
@@ -373,7 +373,7 @@ export default function VibesScreen({ overlayBottomInset }: VibesScreenProps) {
       </View>
 
       {showInitialLoader ? (
-        <View style={[styles.loaderTopWrap, { top: 10 }]} pointerEvents="none">
+        <View style={[styles.loaderTopWrap, { top: topControlInset + 8 }]} pointerEvents="none">
           <BlurView intensity={35} tint="dark" style={styles.loaderPill}>
             <ActivityIndicator size="small" color="#FFFFFF" />
             <Text style={styles.loaderPillText}>Loading vibes</Text>
@@ -382,7 +382,7 @@ export default function VibesScreen({ overlayBottomInset }: VibesScreenProps) {
       ) : null}
 
       {showMediaLoader ? (
-        <View style={[styles.loaderTopWrap, { top: 10 }]} pointerEvents="none">
+        <View style={[styles.loaderTopWrap, { top: topControlInset + 8 }]} pointerEvents="none">
           <BlurView intensity={30} tint="dark" style={styles.loaderDot}>
             <ActivityIndicator size="small" color="#FFFFFF" />
           </BlurView>
@@ -401,7 +401,7 @@ export default function VibesScreen({ overlayBottomInset }: VibesScreenProps) {
 
       <BurstOverlay type={burstType} />
       {__DEV__ && currentVibe ? (
-        <View style={[styles.devHud, { top: 70 }]} pointerEvents="none">
+        <View style={[styles.devHud, { top: topControlInset + 58 }]} pointerEvents="none">
           <Text style={styles.devHudText}>
             {`vibes=${vibes.length} idx=${activeIndex} mediaLoading=${isMediaLoading ? '1' : '0'} type=${currentVibe.mediaType}`}
           </Text>

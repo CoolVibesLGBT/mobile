@@ -204,8 +204,8 @@ export function VibeItem({
         )}
       </View>
 
-      {/* Foreground media clipped between header + tab bar (prevents "half visible" look). */}
-      <View style={[styles.safeFrame, { top: topInset, bottom: bottomInset }]} pointerEvents="none">
+      {/* Keep the media running under the floating tab bar; the tab bar fade handles the visual blend. */}
+      <View style={[styles.safeFrame, { top: topInset, bottom: 0 }]} pointerEvents="none">
         {vibe.mediaType === 'video' ? (
           <VideoMedia
             uri={vibe.mediaUrl}
@@ -241,21 +241,23 @@ export function VibeItem({
 
       <View style={[styles.overlay, { paddingBottom: bottomInset + 18 }]}> 
         <View style={styles.infoColumn} pointerEvents="box-none">
-          <Pressable onPress={handleOpenProfile} hitSlop={10}>
-            <Text style={styles.username}>
-              {vibe.username}
-              {age ? <Text style={styles.age}> {age}</Text> : null}
-            </Text>
-          </Pressable>
-          {!!vibe.bioHtml ? (
-            <RenderHTML
-              contentWidth={Math.max(0, width * 0.7 - 20)}
-              source={{ html: vibe.bioHtml }}
-              baseStyle={styles.bio}
-              defaultTextProps={{ selectable: false }}
-            />
-          ) : null}
-          {!vibe.bio && !!vibe.description && <Text style={styles.bio}>{vibe.description}</Text>}
+          <BlurView intensity={22} tint="dark" style={styles.infoPanel}>
+            <Pressable onPress={handleOpenProfile} hitSlop={10}>
+              <Text style={styles.username}>
+                {vibe.username}
+                {age ? <Text style={styles.age}> {age}</Text> : null}
+              </Text>
+            </Pressable>
+            {!!vibe.bioHtml ? (
+              <RenderHTML
+                contentWidth={Math.max(0, Math.min(310, width * 0.68))}
+                source={{ html: vibe.bioHtml }}
+                baseStyle={styles.bio}
+                defaultTextProps={{ selectable: false }}
+              />
+            ) : null}
+            {!vibe.bio && !!vibe.description && <Text style={styles.bio}>{vibe.description}</Text>}
+          </BlurView>
         </View>
 
         <View style={styles.actionsWrap}>
@@ -327,29 +329,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
   },
   infoColumn: {
     flex: 1,
     paddingRight: 16,
   },
+  infoPanel: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.20)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.13)',
+  },
   username: {
     color: '#FFFFFF',
-    fontSize: 30,
+    fontSize: 27,
     fontFamily: 'Outfit-Black',
-    lineHeight: 34,
+    lineHeight: 31,
   },
   age: {
-    fontSize: 24,
+    fontSize: 21,
     fontFamily: 'Outfit-Regular',
   },
   bio: {
     color: 'rgba(255,255,255,0.85)',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13.5,
+    lineHeight: 19,
     fontFamily: 'Inter-Medium',
-    marginTop: 8,
-    maxWidth: 260,
+    marginTop: 7,
+    maxWidth: 310,
   },
   actionsWrap: {
     alignSelf: 'flex-end',

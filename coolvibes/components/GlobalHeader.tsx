@@ -15,6 +15,7 @@ import { getLegalPage } from '@/helpers/legal';
 import { getSafeImageURLEx } from '@/helpers/safeUrl';
 import { decodeProfileParam, normalizeProfileUser } from '@/helpers/profile';
 import { api } from '@/services/apiService';
+import { Colors } from '@/constants/Colors';
 
 export default function GlobalHeader() {
     const insets = useSafeAreaInsets();
@@ -129,10 +130,11 @@ export default function GlobalHeader() {
         : recentTaskCount > 0
             ? `${recentTaskCount} recent task${recentTaskCount === 1 ? '' : 's'}`
             : 'No background tasks';
-    const sidebarCardBackground = dark ? 'rgba(255,255,255,0.05)' : '#FFFFFF';
-    const sidebarMutedText = dark ? 'rgba(255,255,255,0.58)' : 'rgba(17,24,39,0.58)';
-    const sidebarIconBackground = dark ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.06)';
-    const sidebarPillBackground = dark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)';
+    const palette = dark ? Colors.dark : Colors.light;
+    const sidebarCardBackground = palette.surface2;
+    const sidebarMutedText = palette.textMuted;
+    const sidebarIconBackground = palette.surface3;
+    const sidebarPillBackground = palette.surface3;
     // Resolve chat user from route params
     const chatUserNameRaw = (params?.name as string) || (params?.chatId as string) || 'Chat';
     const chatUserName = chatUserNameRaw === 'Chat' ? 'Chat' : chatUserNameRaw;

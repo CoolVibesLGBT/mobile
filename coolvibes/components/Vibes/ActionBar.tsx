@@ -24,7 +24,7 @@ interface ActionButtonProps {
 const ActionButton = ({ icon: Icon, label, onPress }: ActionButtonProps) => (
   <Pressable onPress={onPress} style={styles.actionButton} hitSlop={10}>
     <BlurView intensity={34} tint="dark" style={styles.actionButtonBlur}>
-      <Icon size={30} color="#FFFFFF" strokeWidth={2.2} />
+      <Icon size={27} color="#FFFFFF" strokeWidth={2.15} />
     </BlurView>
     <Text style={styles.actionLabel}>{label}</Text>
   </Pressable>
@@ -64,7 +64,7 @@ export function ActionBar({ avatarUrl, onLike, onMessage, onOpenProfile, onBurst
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    gap: 14,
+    gap: 13,
   },
   avatarWrap: {
     alignItems: 'center',
@@ -72,9 +72,9 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     borderWidth: 2,
     borderColor: '#FFFFFF',
     backgroundColor: '#2A2A2A',
@@ -96,21 +96,20 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionButtonBlur: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.26)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.16)',
+    borderColor: 'rgba(255,255,255,0.18)',
   },
   actionLabel: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9.5,
     fontFamily: 'Inter-SemiBold',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    letterSpacing: 0.2,
   },
 });

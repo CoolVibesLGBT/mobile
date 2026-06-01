@@ -194,7 +194,7 @@ export default function ChatDetail() {
     if (candidates.size === 0) return '';
     const matchedChat = chats.find((chat: any) => {
       const chatIds = [chat?.id, chat?.chat_id, chat?.public_id, chat?.uuid]
-        .map((value) => String(value || '').trim())
+        .map((value: unknown) => String(value || '').trim())
         .filter(Boolean);
       if (chatIds.some((value) => candidates.has(value))) return true;
 
@@ -204,9 +204,9 @@ export default function ChatDetail() {
           participant?.user?.id,
           participant?.user?.public_id,
         ])
-        .map((value) => String(value || '').trim())
+        .map((value: unknown) => String(value || '').trim())
         .filter(Boolean);
-      if (participantIds.some((value) => candidates.has(value))) return true;
+      if (participantIds.some((value: string) => candidates.has(value))) return true;
 
       const counterpartIds = [
         chat?.other_user?.id,
@@ -243,38 +243,6 @@ export default function ChatDetail() {
       setActiveChatId(initialChatId);
     }
   }, [initialChatId, activeChatId]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (isUuid(activeChatId) || !recipientId) {
-      setChatBootstrapping(false);
-      return;
-    }
-
-    setChatBootstrapping(true);
-    setMessagesLoading(true);
-    setMessagesError(null);
-
-    void ensureActiveChatId()
-      .then((createdChatId) => {
-        if (cancelled) return;
-        if (!isUuid(createdChatId)) {
-          setMessagesError('Failed to open chat');
-        }
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setChatBootstrapping(false);
-        if (!isUuid(activeChatId)) {
-          setMessagesLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeChatId, recipientId, ensureActiveChatId]);
 
   useEffect(() => {
     if (isUuid(activeChatId)) {
@@ -602,6 +570,38 @@ export default function ChatDetail() {
       return '';
     }
   }, [activeChatId, recipientId, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (isUuid(activeChatId) || !recipientId) {
+      setChatBootstrapping(false);
+      return;
+    }
+
+    setChatBootstrapping(true);
+    setMessagesLoading(true);
+    setMessagesError(null);
+
+    void ensureActiveChatId()
+      .then((createdChatId) => {
+        if (cancelled) return;
+        if (!isUuid(createdChatId)) {
+          setMessagesError('Failed to open chat');
+        }
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setChatBootstrapping(false);
+        if (!isUuid(activeChatId)) {
+          setMessagesLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChatId, recipientId, ensureActiveChatId]);
 
   // Chat Partner Data
   const chatPartner: User = {

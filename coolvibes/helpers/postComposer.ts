@@ -99,7 +99,8 @@ export function applyComposerMediaToPayload(
 
   if (!selectedLocation) return payload;
 
-  const locationSource = selectedLocation.data ?? {};
+  const locationMedia = selectedLocation as ComposerMedia;
+  const locationSource = locationMedia.data ?? {};
   const latitude = Number(
     locationSource.latitude ??
       locationSource.lat ??

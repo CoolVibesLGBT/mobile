@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Dimensions,
     StatusBar,
     Platform,
     ActivityIndicator,
@@ -15,9 +14,6 @@ import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Animated, { 
     FadeIn, 
-    useAnimatedStyle, 
-    withSpring,
-    useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -25,8 +21,6 @@ import DiscoverScreen from './Discover';
 import VibesScreen from '@/components/Vibes/VibesScreen';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { clearPostUploadNotice } from '@/store/slice/postUploads';
-
-const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
     const { colors, dark } = useTheme();
@@ -43,20 +37,18 @@ export default function HomeScreen() {
         : postUploadCompletedVersion > 0
             ? `post:${postUploadCompletedVersion}`
             : undefined;
-    const indicatorPosition = useSharedValue(0);
 
     const handleTabPress = (tab: 'flows' | 'vibes') => {
         setActiveTab(tab);
-        indicatorPosition.value = withSpring(tab === 'flows' ? 0 : width / 2, { damping: 20, stiffness: 150 });
     };
 
-    const indicatorStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: indicatorPosition.value + (width / 4) - 20 }],
-    }));
-
-    const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
-    const tabColor = dark ? '#FFFFFF' : '#000000';
-    const inactiveTabColor = dark ? '#666666' : '#999999';
+    const bottomNavHeight = 58 + Math.max(insets.bottom, 8);
+    const headerTop = 60 + insets.top;
+    const borderColor = dark ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.08)';
+    const tabColor = dark ? '#FFFFFF' : '#0F172A';
+    const inactiveTabColor = dark ? 'rgba(255,255,255,0.58)' : 'rgba(15,23,42,0.52)';
+    const activeChipBg = dark ? 'rgba(255,255,255,0.12)' : '#FFFFFF';
+    const inactiveChipBg = dark ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.04)';
 
     useEffect(() => {
         if (!postUploadNotice || postUploadNotice.kind === 'uploading') return;
@@ -78,7 +70,12 @@ export default function HomeScreen() {
             ) : null}
             
             {/* Premium Header / Tab Switcher - Now integrated seamlessly below GlobalHeader */}
-            <View style={[styles.header, { borderBottomColor: borderColor, marginTop: 60 + insets.top, borderBottomWidth: 1 }]}>
+            <View
+                style={[
+                    styles.header,
+                    { borderBottomColor: borderColor, marginTop: headerTop },
+                ]}
+            >
                 <BlurView
                     intensity={dark ? 45 : 90}
                     tint={dark ? 'dark' : 'light'}
@@ -91,24 +88,37 @@ export default function HomeScreen() {
                     pointerEvents="none"
                     style={[
                         StyleSheet.absoluteFill,
-                        { backgroundColor: dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.52)' },
+                        {
+                            backgroundColor: dark ? 'rgba(3,7,18,0.52)' : 'rgba(255,255,255,0.58)',
+                        },
                     ]}
                 />
-                <View style={styles.tabSwitcher}>
+                <View style={[styles.tabSwitcher, { backgroundColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.05)' }]}>
                     <TouchableOpacity 
                         onPress={() => handleTabPress('flows')}
                         style={styles.tabButton}
                         activeOpacity={0.7}
                     >
-                        <View style={styles.tabContent}>
+                        <View
+                            style={[
+                                styles.tabContent,
+                                {
+                                    backgroundColor: activeTab === 'flows' ? activeChipBg : inactiveChipBg,
+                                    borderColor: activeTab === 'flows' ? borderColor : 'transparent',
+                                },
+                            ]}
+                        >
                             <Image 
                                 source={require('../../assets/icons/flows.webp')} 
-                                style={[styles.tabIcon, { opacity: activeTab === 'flows' ? 1 : 0.4 }]} 
+                                style={[styles.tabIcon, { opacity: activeTab === 'flows' ? 1 : 0.52 }]}
                                 contentFit="contain"
                             />
                             <Text style={[
                                 styles.tabText, 
-                                { color: activeTab === 'flows' ? tabColor : inactiveTabColor, fontFamily: activeTab === 'flows' ? 'Inter-Bold' : 'Inter-SemiBold' }
+                                {
+                                    color: activeTab === 'flows' ? tabColor : inactiveTabColor,
+                                    fontFamily: activeTab === 'flows' ? 'Inter-Bold' : 'Inter-SemiBold',
+                                }
                             ]}>Cool</Text>
                         </View>
                     </TouchableOpacity>
@@ -118,31 +128,35 @@ export default function HomeScreen() {
                         style={styles.tabButton}
                         activeOpacity={0.7}
                     >
-                        <View style={styles.tabContent}>
+                        <View
+                            style={[
+                                styles.tabContent,
+                                {
+                                    backgroundColor: activeTab === 'vibes' ? activeChipBg : inactiveChipBg,
+                                    borderColor: activeTab === 'vibes' ? borderColor : 'transparent',
+                                },
+                            ]}
+                        >
                             <Image 
                                 source={require('../../assets/icons/vibes.webp')} 
-                                style={[styles.tabIcon, { opacity: activeTab === 'vibes' ? 1 : 0.4 }]} 
+                                style={[styles.tabIcon, { opacity: activeTab === 'vibes' ? 1 : 0.52 }]}
                                 contentFit="contain"
                             />
                             <Text style={[
                                 styles.tabText, 
-                                { color: activeTab === 'vibes' ? tabColor : inactiveTabColor, fontFamily: activeTab === 'vibes' ? 'Inter-Bold' : 'Inter-SemiBold' }
+                                {
+                                    color: activeTab === 'vibes' ? tabColor : inactiveTabColor,
+                                    fontFamily: activeTab === 'vibes' ? 'Inter-Bold' : 'Inter-SemiBold',
+                                }
                             ]}>Vibes</Text>
                         </View>
                     </TouchableOpacity>
-                    
-                    {/* Minimalist Indicator */}
-                    <Animated.View style={[styles.activeIndicator, { backgroundColor: tabColor }, indicatorStyle]} />
                 </View>
             </View>
 
             {/* Content Area */}
             <View
-                style={{
-                    flex: 1,
-                    paddingBottom:
-                        activeTab === 'flows' ? (Platform.OS === 'ios' ? 88 : 68) : 0,
-                }}
+                style={{ flex: 1 }}
                 pointerEvents={activeTab === 'flows' ? 'auto' : 'none'}
             >
                 {activeTab === 'flows' ? (
@@ -154,7 +168,7 @@ export default function HomeScreen() {
 
             {activeTab === 'flows' && (
                 <TouchableOpacity
-                    style={[styles.fab, { bottom: (Platform.OS === 'ios' ? 84 : 74) + Math.max(insets.bottom, 8) }]}
+                    style={[styles.fab, { bottom: bottomNavHeight + 12 }]}
                     onPress={() => router.push('/CreatePost')}
                     activeOpacity={0.9}
                 >
@@ -168,7 +182,7 @@ export default function HomeScreen() {
                     style={[
                         styles.uploadNoticeWrap,
                         {
-                            bottom: (Platform.OS === 'ios' ? 84 : 74) + Math.max(insets.bottom, 8),
+                            bottom: bottomNavHeight + 12,
                             right: activeTab === 'flows' ? 92 : 16,
                         },
                     ]}
@@ -208,14 +222,18 @@ const styles = StyleSheet.create({
     header: {
         width: '100%',
         backgroundColor: 'transparent',
-        borderBottomWidth: 1,
+        borderBottomWidth: StyleSheet.hairlineWidth,
         zIndex: 10,
         overflow: 'hidden',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
     },
     tabSwitcher: {
         flexDirection: 'row',
-        height: 64,
-        position: 'relative',
+        height: 46,
+        borderRadius: 23,
+        padding: 4,
+        gap: 6,
     },
     tabButton: {
         flex: 1,
@@ -226,22 +244,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 12,
+        gap: 8,
+        width: '100%',
+        height: '100%',
+        borderRadius: 19,
+        borderWidth: StyleSheet.hairlineWidth,
     },
     tabIcon: {
-        width: 32,
-        height: 32,
+        width: 24,
+        height: 24,
     },
     tabText: {
-        fontSize: 16,
-        letterSpacing: 0.5,
-    },
-    activeIndicator: {
-        position: 'absolute',
-        bottom: 0,
-        height: 3,
-        width: 40,
-        borderRadius: 2,
+        fontSize: 14,
+        letterSpacing: 0.1,
     },
     fab: {
         position: 'absolute',

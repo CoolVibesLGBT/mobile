@@ -107,14 +107,20 @@ export default function ClassifiedCreateScreen() {
       sendingRef.current = true;
 
       const taskId = `classified-${Date.now()}`;
+      const extras = {
+        title,
+        metadata: metadataItems,
+      };
       const payload: Record<string, any> = {
         content: composeLexicalState(trimmedText, outgoingMedia),
         audience: 'public',
         kind: selectedKind,
-        'extras[title]': JSON.stringify(title),
+        extras,
+        'extras[title]': title,
       };
 
       if (metadataItems.length > 0) {
+        payload.metadata = metadataItems;
         payload['extras[metadata]'] = metadataItems;
       }
 

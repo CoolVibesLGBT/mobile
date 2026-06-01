@@ -26,8 +26,8 @@ const BaseBottomSheetModal = forwardRef<GorhomBottomSheetModal, BaseBottomSheetM
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
   const indicatorStyle = useMemo(
-    () => StyleSheet.flatten([{ backgroundColor: palette.icon, width: 40 }, handleIndicatorStyle]),
-    [handleIndicatorStyle, palette.icon]
+    () => StyleSheet.flatten([{ backgroundColor: palette.textSoft, width: 40 }, handleIndicatorStyle]),
+    [handleIndicatorStyle, palette.textSoft]
   );
 
   return (
@@ -38,6 +38,7 @@ const BaseBottomSheetModal = forwardRef<GorhomBottomSheetModal, BaseBottomSheetM
       enablePanDownToClose={enablePanDownToClose}
       handleIndicatorStyle={indicatorStyle}
       containerStyle={[{ marginTop: insets.top }, containerStyle]}
+      backgroundStyle={{ backgroundColor: palette.surface1, borderColor: palette.border }}
       {...rest}
     >
       {children}

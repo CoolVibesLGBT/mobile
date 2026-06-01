@@ -280,6 +280,15 @@ async markMessagesRead(params: { chat_id: string; message_ids: string[] }) {
     return this.call(Actions.CMD_USER_CHECK_IN_FETCH, { method: 'POST', body: params });
   }
 
+  async createCheckIn(payload: Record<string, any>) {
+    return this.call(Actions.CMD_USER_CHECK_IN, {
+      method: 'POST',
+      body: payload,
+      timeout: 0,
+      suppressGlobalError: true,
+    });
+  }
+
   async fetchUserEngagements(payload: Record<string, any> = {}) {
     return this.call(Actions.CMD_USER_FETCH_ENGAGEMENTS, {
       method: 'POST',

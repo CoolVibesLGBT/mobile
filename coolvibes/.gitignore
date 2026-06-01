@@ -3,6 +3,8 @@
 # dependencies
 node_modules/
 node_modules/
+interface-main/
+interface-main/
 ./node_modules/
 # Expo
 .expo/

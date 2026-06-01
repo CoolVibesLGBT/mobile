@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, View, Text, StyleSheet, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,6 +11,9 @@ import { getCurrentLocation } from '@/utils/location';
 import { LocalizedStringToString } from '@/utils/utils';
 import { getSafeImageURLEx } from '@/helpers/safeUrl';
 import { getTagGradient } from '@/helpers/colors';
+import { composeLexicalState } from '@/helpers/plainTextToLexicalState';
+import { applyComposerMediaToPayload } from '@/helpers/postComposer';
+import { api } from '@/services/apiService';
 
 const DEFAULT_COORDS = { latitude: 41.0082, longitude: 28.9784 };
 const GLOBAL_HEADER_HEIGHT = 60;
@@ -40,6 +43,11 @@ const encodeDraftCheckin = (value: DraftCheckinItem) => {
   }
 };
 
+const getCreatedCheckinPost = (response: any) => {
+  const body = response?.data ?? response ?? {};
+  return body?.post ?? body?.checkin ?? body?.data?.post ?? body?.data?.checkin ?? null;
+};
+
 export default function CheckInCreateScreen() {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -49,6 +57,9 @@ export default function CheckInCreateScreen() {
   const language = useAppSelector((state) => state.system.language) || authUser?.default_language || 'en';
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [userLocation, setUserLocation] = useState(DEFAULT_COORDS);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const sendingRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -112,12 +123,18 @@ export default function CheckInCreateScreen() {
     setSelectedTags([]);
   }, []);
 
-  const handleSendMessage = useCallback((text: string, media: any[]) => {
+  const handleSendMessage = useCallback(async (text: string, media: any[]) => {
+    if (sendingRef.current) return;
     const trimmed = text?.trim?.() ?? '';
-    const mediaImage = media?.find((item: any) => item?.type === 'image' && item?.uri)?.uri;
+    const outgoingMedia = Array.isArray(media) ? media : [];
+    const mediaImage = outgoingMedia.find((item: any) => item?.type === 'image' && item?.uri)?.uri;
     const hasTags = selectedTags.length > 0;
 
     if (!trimmed && !mediaImage && !hasTags) return;
+
+    sendingRef.current = true;
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     const name = authUser?.displayname || authUser?.username || 'You';
     const username = authUser?.username || 'you';
@@ -125,25 +142,52 @@ export default function CheckInCreateScreen() {
       getSafeImageURLEx(authUser?.public_id ?? authUser?.id ?? username, authUser?.avatar, 'small') ||
       `https://i.pravatar.cc/150?u=${username}`;
 
-    const draftItem: DraftCheckinItem = {
-      id: String(Date.now()),
-      user: { name, username, avatar },
-      image: mediaImage,
-      caption: trimmed || 'Check-in',
-      likes: 0,
-      comments: 0,
-      time: 'Just now',
-      tags: [...selectedTags],
+    const payload: Record<string, any> = {
+      content: composeLexicalState(trimmed || 'Check-in', outgoingMedia),
+      audience: 'public',
+      tags: selectedTags,
+      extras: { tags: selectedTags },
+      lat: userLocation.latitude,
+      lng: userLocation.longitude,
       latitude: userLocation.latitude,
       longitude: userLocation.longitude,
     };
+    applyComposerMediaToPayload(payload, outgoingMedia, 'checkin');
 
-    const encodedDraft = encodeDraftCheckin(draftItem);
+    try {
+      const response: any = await api.createCheckIn(payload);
+      const body = response?.data ?? response ?? {};
+      if (response?.success === false || body?.success === false) {
+        throw new Error(response?.message || body?.message || 'Check-in gonderilemedi');
+      }
 
-    router.replace({
-      pathname: '/(tabs)/CheckIn',
-      params: encodedDraft ? { draft_checkin: encodedDraft } : undefined,
-    });
+      const createdPost = getCreatedCheckinPost(response);
+      const draftItem: DraftCheckinItem = {
+        id: String(createdPost?.public_id ?? createdPost?.id ?? Date.now()),
+        user: { name, username, avatar },
+        image: mediaImage,
+        caption: trimmed || 'Check-in',
+        likes: 0,
+        comments: 0,
+        time: 'Just now',
+        tags: [...selectedTags],
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+      };
+
+      const encodedDraft = encodeDraftCheckin(draftItem);
+
+      router.replace({
+        pathname: '/(tabs)/CheckIn',
+        params: encodedDraft ? { draft_checkin: encodedDraft } : undefined,
+      });
+    } catch (error) {
+      console.error('Failed to create check-in', error);
+      setSubmitError('Check-in gonderilemedi. Lutfen tekrar dene.');
+    } finally {
+      sendingRef.current = false;
+      setIsSubmitting(false);
+    }
   }, [authUser, router, selectedTags, userLocation.latitude, userLocation.longitude]);
 
   return (
@@ -156,6 +200,23 @@ export default function CheckInCreateScreen() {
           Durumunu sec ve paylas
         </Text>
       </View>
+
+      {(isSubmitting || submitError) ? (
+        <View
+          style={[
+            styles.submitBanner,
+            {
+              backgroundColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.06)',
+              borderColor: dark ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.08)',
+            },
+          ]}
+        >
+          {isSubmitting ? <ActivityIndicator size="small" color={colors.text} /> : null}
+          <Text style={[styles.submitBannerText, { color: submitError ? '#EF4444' : colors.text }]}>
+            {submitError || 'Check-in gonderiliyor...'}
+          </Text>
+        </View>
+      ) : null}
 
       <View style={styles.honeycombWrap}>
         <CheckInRadar
@@ -206,6 +267,23 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
     fontFamily: 'Inter-Medium',
+  },
+  submitBanner: {
+    marginHorizontal: 20,
+    marginBottom: 8,
+    minHeight: 40,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  submitBannerText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'Inter-SemiBold',
   },
   honeycombWrap: {
     flex: 1,

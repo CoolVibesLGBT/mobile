@@ -14,6 +14,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { useAppSelector } from '@/store/hooks';
 import { api } from '@/services/apiService';
+import { Colors } from '@/constants/Colors';
 import {
     getAttachmentUrl,
     getFirstLexicalImageUrl,
@@ -50,6 +51,8 @@ interface PostCardProps {
 }
 
 const { width } = Dimensions.get('window');
+const CARD_MARGIN = 12;
+const CARD_WIDTH = width - CARD_MARGIN * 2;
 
 const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes, comments, time, raw, tags }) => {
     const { colors, dark } = useTheme();
@@ -65,9 +68,20 @@ const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes
     }, [raw]);
 
     const attachments = useMemo(() => getPostAttachments(resolvedPost), [resolvedPost]);
-    const imageAttachment = useMemo(
-        () => getFirstImageAttachment(attachments) || attachments[0] || null,
+    const imageAttachments = useMemo(
+        () => attachments.filter((attachment) => {
+            const mimeType =
+                attachment?.file?.mime_type ||
+                attachment?.mime_type ||
+                attachment?.file?.type ||
+                '';
+            return typeof mimeType === 'string' && mimeType.startsWith('image/');
+        }),
         [attachments]
+    );
+    const imageAttachment = useMemo(
+        () => imageAttachments[0] || getFirstImageAttachment(attachments) || attachments[0] || null,
+        [attachments, imageAttachments]
     );
     const processingAttachmentCount = useMemo(
         () => getProcessingAttachmentCount(attachments),
@@ -77,19 +91,33 @@ const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes
         () => getFirstLexicalImageUrl(resolvedPost?.content),
         [resolvedPost]
     );
-    const resolvedImage = useMemo(() => {
-        if (imageAttachment) {
-            return getAttachmentUrl(imageAttachment, ['large', 'medium', 'small', 'original']) || undefined;
+    const mediaItems = useMemo(() => {
+        const attachmentImages = imageAttachments
+            .map((attachment, index) => ({
+                id: String(attachment?.public_id ?? attachment?.id ?? attachment?.file?.id ?? `image-${index}`),
+                uri: getAttachmentUrl(attachment, ['large', 'medium', 'small', 'original']) || '',
+                attachment,
+            }))
+            .filter((item) => Boolean(item.uri));
+
+        if (attachmentImages.length > 0) return attachmentImages;
+        if (lexicalImage || image) {
+            return [{
+                id: 'fallback-image',
+                uri: lexicalImage || image || '',
+                attachment: imageAttachment,
+            }];
         }
-        return lexicalImage || image;
-    }, [imageAttachment, lexicalImage, image]);
+        return [];
+    }, [imageAttachments, imageAttachment, lexicalImage, image]);
+    const [activeMediaIndex, setActiveMediaIndex] = useState(0);
     const isMediaProcessing = Boolean(imageAttachment && isAttachmentProcessing(imageAttachment));
     const isMediaFailed = Boolean(imageAttachment && isAttachmentFailed(imageAttachment));
-    const isGifMedia = Boolean(
-        (imageAttachment && isGifAttachment(imageAttachment)) ||
-        isGifUrl(lexicalImage) ||
-        isGifUrl(image)
-    );
+
+    useEffect(() => {
+        if (activeMediaIndex <= mediaItems.length - 1) return;
+        setActiveMediaIndex(0);
+    }, [activeMediaIndex, mediaItems.length]);
 
     useEffect(() => {
         if (!postId || processingAttachmentCount === 0) return;
@@ -165,16 +193,16 @@ const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes
         transform: [{ scale: likeScale.value }],
     }));
 
-    const iconColor = dark ? '#FFFFFF' : '#000000';
-    const borderColor = dark ? '#1C1C1E' : '#F2F2F7';
-    const tagBg = dark ? '#1C1C1E' : '#F1F5F9';
-    const tagTextColor = dark ? '#D1D5DB' : '#475569';
+    const palette = dark ? Colors.dark : Colors.light;
+    const iconColor = palette.text;
+    const borderColor = palette.border;
+    const cardBackground = palette.surface1;
+    const mediaBackground = palette.surface2;
+    const tagBg = palette.surface2;
+    const tagTextColor = palette.textMuted;
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Divider */}
-            <View style={[styles.topDivider, { backgroundColor: borderColor }]} />
-            
+        <View style={[styles.container, { backgroundColor: cardBackground, borderColor }]}>
             {/* Header */}
             <View style={styles.header}>
                 <Image source={{ uri: user.avatar }} style={styles.avatar} contentFit="cover" />
@@ -253,23 +281,61 @@ const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes
             </View>
 
             {/* Post Image with Subtle Rounded Corners */}
-            {resolvedImage ? (
-                <Pressable onPress={handleLike}>
-                    <Image 
-                        source={{ uri: resolvedImage }} 
-                        style={[styles.postImage, { backgroundColor: dark ? '#1C1C1E' : '#F2F2F7' }]} 
-                        contentFit="cover" 
-                        transition={300}
-                        autoplay={isGifMedia}
-                        blurRadius={blurPhotos ? 25 : 0}
-                    />
-                </Pressable>
+            {mediaItems.length > 0 ? (
+                <View style={styles.mediaFrame}>
+                    <ScrollView
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        scrollEventThrottle={16}
+                        onMomentumScrollEnd={(event) => {
+                            const offsetX = event.nativeEvent.contentOffset.x;
+                            setActiveMediaIndex(Math.round(offsetX / CARD_WIDTH));
+                        }}
+                    >
+                        {mediaItems.map((item) => {
+                            const itemIsGif = Boolean(isGifAttachment(item.attachment) || isGifUrl(item.uri));
+                            return (
+                                <Pressable key={item.id} onPress={handleLike}>
+                                    <Image
+                                        source={{ uri: item.uri }}
+                                        style={[styles.postImage, { backgroundColor: mediaBackground }]}
+                                        contentFit="cover"
+                                        transition={300}
+                                        autoplay={itemIsGif}
+                                        blurRadius={blurPhotos ? 25 : 0}
+                                    />
+                                </Pressable>
+                            );
+                        })}
+                    </ScrollView>
+                    {mediaItems.length > 1 ? (
+                        <>
+                            <View style={styles.mediaCountPill}>
+                                <Text style={styles.mediaCountText}>
+                                    {activeMediaIndex + 1}/{mediaItems.length}
+                                </Text>
+                            </View>
+                            <View style={styles.mediaDots}>
+                                {mediaItems.map((item, index) => (
+                                    <View
+                                        key={`${item.id}-dot`}
+                                        style={[
+                                            styles.mediaDot,
+                                            index === activeMediaIndex && styles.mediaDotActive,
+                                        ]}
+                                    />
+                                ))}
+                            </View>
+                        </>
+                    ) : null}
+                </View>
             ) : isMediaProcessing || isMediaFailed ? (
                 <View
                     style={[
                         styles.mediaPlaceholder,
                         {
-                            backgroundColor: dark ? '#17181C' : '#F5F7FA',
+                            backgroundColor: mediaBackground,
                             borderColor: borderColor,
                         },
                     ]}
@@ -333,13 +399,18 @@ const PostCard: React.FC<PostCardProps> = ({ postId, user, image, caption, likes
 
 const styles = StyleSheet.create({
     container: {
-        width: '100%',
-        marginBottom: 8,
-    },
-    topDivider: {
-        height: 1,
-        width: '100%',
-        opacity: 0.5,
+        width: CARD_WIDTH,
+        marginHorizontal: CARD_MARGIN,
+        marginTop: 10,
+        marginBottom: 12,
+        borderRadius: 28,
+        borderWidth: StyleSheet.hairlineWidth,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.06,
+        shadowRadius: 20,
+        elevation: 2,
     },
     header: {
         flexDirection: 'row',
@@ -380,13 +451,54 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingBottom: 12,
     },
+    mediaFrame: {
+        width: CARD_WIDTH,
+        overflow: 'hidden',
+    },
     postImage: {
-        width: width,
-        height: width,
+        width: CARD_WIDTH,
+        height: CARD_WIDTH,
+    },
+    mediaCountPill: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        minWidth: 44,
+        height: 26,
+        borderRadius: 13,
+        paddingHorizontal: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.56)',
+    },
+    mediaCountText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontFamily: 'Inter-Bold',
+    },
+    mediaDots: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 12,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 6,
+    },
+    mediaDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: 'rgba(255,255,255,0.45)',
+    },
+    mediaDotActive: {
+        width: 18,
+        backgroundColor: '#FFFFFF',
     },
     mediaPlaceholder: {
-        width: width,
-        height: width,
+        width: CARD_WIDTH,
+        height: CARD_WIDTH,
         alignItems: 'center',
         justifyContent: 'center',
         borderTopWidth: StyleSheet.hairlineWidth,
@@ -412,8 +524,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 12,
-        paddingVertical: 12,
+        paddingHorizontal: 14,
+        paddingTop: 12,
+        paddingBottom: 8,
     },
     leftActions: {
         flexDirection: 'row',

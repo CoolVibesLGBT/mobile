@@ -23,6 +23,7 @@ import { useRouter } from 'expo-router';
 import { api } from '@/services/apiService';
 import { useAppSelector } from '@/store/hooks';
 import { USER_ATTRIBUTES } from '@/constants/profile-data';
+import { Colors } from '@/constants/Colors';
 import { parsePreferencesFlags, isBitSet } from '@/helpers/bitfield';
 import { buildProfileMetrics, formatCompactMetricCount } from '@/helpers/profile-metrics';
 
@@ -68,13 +69,13 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
   const scrollY = useRef(new Animated.Value(0)).current;
   const { width: windowWidth } = useWindowDimensions();
 
-  // Monochrome colors
-  const textColor = dark ? '#FFFFFF' : '#000000';
-  const backgroundColor = dark ? '#000000' : '#FFFFFF';
-  const secondaryText = dark ? '#888888' : '#666666';
-  const borderColor = dark ? '#1A1A1A' : '#F0F0F0';
-  const cardColor = dark ? '#0F0F0F' : '#F9F9F9';
-  const dangerColor = '#EF4444';
+  const palette = dark ? Colors.dark : Colors.light;
+  const textColor = palette.text;
+  const backgroundColor = palette.background;
+  const secondaryText = palette.textMuted;
+  const borderColor = palette.border;
+  const cardColor = palette.surface2;
+  const dangerColor = palette.critical;
   const isProfilePageLayout = layoutVariant === 'profile-page';
   const flags = parsePreferencesFlags(user?.preferences_flags);
   const fontScale = fontSize === 'small' ? 0.9 : fontSize === 'large' ? 1.15 : 1;
@@ -701,7 +702,7 @@ export default function FullProfileView({ user, isMe, showActions = true, onMess
               <RenderHTML
                 contentWidth={Math.max(0, windowWidth - 32)}
                 source={{ html: bioHtml }}
-                baseStyle={[styles.bio, { color: textColor }]}
+                baseStyle={{ ...styles.bio, color: textColor }}
                 defaultTextProps={{ selectable: false }}
               />
             ) : user.bio ? (

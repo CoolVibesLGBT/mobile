@@ -44,8 +44,9 @@ export const unstable_settings = {
 };
 
 function AppBootScreen({ dark }: { dark: boolean }) {
+  const palette = dark ? Colors.dark : Colors.light;
   return (
-    <View style={[styles.bootScreen, { backgroundColor: dark ? '#000000' : '#ffffff' }]}>
+    <View style={[styles.bootScreen, { backgroundColor: palette.background }]}>
       <Image
         source={require('@/assets/images/splash-icon.png')}
         style={styles.bootLogo}
@@ -135,9 +136,9 @@ function ThemedApp() {
     ...DarkTheme,
     colors: {
       ...DarkTheme.colors,
-      primary: Colors.dark.text,
+      primary: Colors.dark.accent,
       background: Colors.dark.background,
-      card: Colors.dark.card,
+      card: Colors.dark.surface1,
       text: Colors.dark.text,
       border: Colors.dark.border,
       notification: Colors.dark.notification,
@@ -148,9 +149,9 @@ function ThemedApp() {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      primary: Colors.light.text,
+      primary: Colors.light.accent,
       background: Colors.light.background,
-      card: Colors.light.card,
+      card: Colors.light.surface1,
       text: Colors.light.text,
       border: Colors.light.border,
       notification: Colors.light.notification,

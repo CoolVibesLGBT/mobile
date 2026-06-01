@@ -31,11 +31,11 @@ const currentDomain = 'coolvibes.app';
 // Default URL'ler remoteDebug durumuna göre
 const defaultServiceURL: [string, string] = remoteDebug
   ? ['https://api.coolvibes.app/api', 'https://api.coolvibes.app/api']
-  : ['http://192.168.0.14:4001/api', 'http://192.168.0.14:4001/api'];
+  : ['http://192.168.0.22:4001/api', 'http://192.168.0.22:4001/api'];
 
 const defaultSocketURL: [string, string] = remoteDebug
   ? ['wss://socket.coolvibes.app', 'wss://socket2.coolvibes.app']
-  : ['ws://192.168.0.14:3002', 'ws://192.168.0.14:3003'];
+  : ['ws://192.168.0.22:3002', 'ws://192.168.0.22:3003'];
 
 export const defaultServiceServerId = 0;
 export const serviceURL = isDev

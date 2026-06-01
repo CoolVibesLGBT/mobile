@@ -427,10 +427,6 @@ export default function MatchScreen() {
         centerY.value = centerYJs;
     }, [centerX, centerXJs, centerY, centerYJs]);
 
-    useEffect(() => {
-        fetchRadarUsers({ reset: true });
-    }, [fetchRadarUsers]);
-
     const coordGenerator = useRef(spiralCoordGenerator());
     const seenIdsRef = useRef(new Set<string>());
     const [honeycomb, setHoneycomb] = useState<any[]>([]);
@@ -679,6 +675,10 @@ export default function MatchScreen() {
         }
     }, [isLoading, cursor, resolveLocation, mapRadarUser]);
 
+    useEffect(() => {
+        fetchRadarUsers({ reset: true });
+    }, [fetchRadarUsers]);
+
     const loadMore = useCallback(() => {
         if (!cursor || isLoading) return;
         fetchRadarUsers();
@@ -825,11 +825,9 @@ export default function MatchScreen() {
         }
     }, [router]);
 
-    const bottomBarHeight = Platform.OS === 'ios' ? 88 : 68;
-
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: bottomBarHeight }]}>
+            <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
                 <View style={styles.radarWrapper}>
                     <GestureDetector gesture={composedGesture}>
                         <Animated.View

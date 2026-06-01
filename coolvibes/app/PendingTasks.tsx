@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import {
+  ColorValue,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -229,7 +230,7 @@ export default function PendingTasksScreen() {
   const cardBackground = dark ? '#0E1628' : '#FFFFFF';
   const secondarySurface = dark ? 'rgba(255,255,255,0.06)' : '#F8FAFC';
   const mutedText = dark ? 'rgba(255,255,255,0.64)' : '#64748B';
-  const heroGradient = dark
+  const heroGradient: [ColorValue, ColorValue, ColorValue] = dark
     ? ['#090B14', '#111827', '#172554']
     : ['#0F172A', '#1E293B', '#334155'];
 
