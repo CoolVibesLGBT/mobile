@@ -56,6 +56,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
   bool locating = false;
   String? locationError;
   late int columns = widget.initialColumns;
+  Json? _selectedUser;
   Future<void> locate() async {
     if (locating) return;
     setState(() => locating = true);
@@ -98,20 +99,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
         );
         if (mounted) reload();
       });
-  void person(Json user) => showGeneralDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.transparent,
-    transitionDuration: MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : const Duration(milliseconds: 200),
-    pageBuilder: (context, _, _) => SafeArea(
-      child: RadarProfileCard(
-        user: user,
-        onClose: () => Navigator.pop(context),
-      ),
-    ),
-  );
+  void person(Json user) => setState(() => _selectedUser = user);
   @override
   Widget build(BuildContext context) => widget.radar
       ? const RadarScreen()
@@ -181,63 +169,95 @@ class _NearbyScreenState extends State<NearbyScreen> {
               ),
             ],
           ),
-          body: Column(
-            children: [
-              if (locating && view != 'map') const LinearProgressIndicator(),
-              Expanded(
-                child: view == 'map'
-                    ? DiscoveryMap(
-                        action: 'user.fetch.nearby.users',
-                        coordinates: coordinates,
-                        onCoordinatesChanged: (point) =>
-                            setState(() => coordinates = point),
-                      )
-                    : locationError != null
-                    ? ScreenStatus(error: locationError, retry: locate)
-                    : locating
-                    ? const ScreenStatus(loading: true)
-                    : ColoredBox(
-                        color: AppPalette.of(context).row,
-                        child: LayoutBuilder(
-                          builder: (context, box) {
-                            final count = view == 'list'
-                                ? 1
-                                : columns.clamp(
-                                    1,
-                                    (box.maxWidth /
-                                            (84 *
-                                                MediaQuery.textScalerOf(
-                                                  context,
-                                                ).scale(1)))
-                                        .floor()
-                                        .clamp(1, 8),
-                                  );
-                            return RecordList(
+          body: LayoutBuilder(
+            builder: (context, box) => Stack(
+              children: [
+                Column(
+                  children: [
+                    if (locating && view != 'map')
+                      const LinearProgressIndicator(),
+                    Expanded(
+                      child: view == 'map'
+                          ? DiscoveryMap(
                               action: 'user.fetch.nearby.users',
-                              params: coordinates,
-                              columns: count,
-                              // List rows carry their own hairline separators.
-                              gap: view == 'list' ? 0 : 8,
-                              itemBuilder: (context, raw, reload) {
-                                final user = nearbyPerson(raw, coordinates);
-                                return PersonTile(
-                                  person: user,
-                                  grid: view == 'grid',
-                                  subtitle: string(user['distance']).isEmpty
-                                      ? null
-                                      : '${user['distance']} km',
-                                  onTap: () => person(user),
-                                  onChat: () => message(user),
-                                  onLike: () => react(user, 'like', reload),
-                                  onDislike: () => react(user, 'dislike', reload),
-                                );
-                              },
-                            );
-                          },
-                        ),
+                              coordinates: coordinates,
+                              onCoordinatesChanged: (point) =>
+                                  setState(() => coordinates = point),
+                            )
+                          : locationError != null
+                          ? ScreenStatus(error: locationError, retry: locate)
+                          : locating
+                          ? const ScreenStatus(loading: true)
+                          : ColoredBox(
+                              color: AppPalette.of(context).row,
+                              child: LayoutBuilder(
+                                builder: (context, box) {
+                                  final count = view == 'list'
+                                      ? 1
+                                      : columns.clamp(
+                                          1,
+                                          (box.maxWidth /
+                                                  (84 *
+                                                      MediaQuery.textScalerOf(
+                                                        context,
+                                                      ).scale(1)))
+                                              .floor()
+                                              .clamp(1, 8),
+                                        );
+                                  return RecordList(
+                                    action: 'user.fetch.nearby.users',
+                                    params: coordinates,
+                                    columns: count,
+                                    // List rows carry their own hairline separators.
+                                    gap: view == 'list' ? 0 : 8,
+                                    itemBuilder: (context, raw, reload) {
+                                      final user = nearbyPerson(
+                                        raw,
+                                        coordinates,
+                                      );
+                                      return PersonTile(
+                                        person: user,
+                                        grid: view == 'grid',
+                                        subtitle:
+                                            string(user['distance']).isEmpty
+                                            ? null
+                                            : '${user['distance']} km',
+                                        onTap: () => person(user),
+                                        onChat: () => message(user),
+                                        onLike: () =>
+                                            react(user, 'like', reload),
+                                        onDislike: () =>
+                                            react(user, 'dislike', reload),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+                // RadarCardHost pattern: overlay the profile card directly
+                // inside the screen body so the spring morph starts from the
+                // correct position and animates upward to the pinned header,
+                // matching the RN RadarCardHost / NearbyScreen behaviour.
+                if (_selectedUser != null)
+                  Positioned.fill(
+                    child: RadarProfileCard(
+                      key: ValueKey(
+                        _selectedUser!['public_id'] ?? _selectedUser!['id'],
                       ),
-              ),
-            ],
+                      user: _selectedUser!,
+                      topInset:
+                          View.of(context).viewPadding.top /
+                              View.of(context).devicePixelRatio +
+                          AppDesign.headerHeight,
+                      bottomInset: MediaQuery.paddingOf(context).bottom,
+                      onClose: () => setState(() => _selectedUser = null),
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
 }

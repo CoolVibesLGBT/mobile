@@ -214,4 +214,76 @@ void main({bool nativeRendering = false}) {
       session.dispose();
     });
   }
+  testWidgets('nearby profile stays below header while details scroll', (
+    tester,
+  ) async {
+    if (!nativeRendering && !const bool.fromEnvironment('NATIVE_HOST_TOUCH')) {
+      tester.view.physicalSize = const Size(1170, 2532);
+      tester.view.devicePixelRatio = 3;
+      tester.view.viewPadding = const FakeViewPadding(top: 177, bottom: 102);
+      tester.view.padding = const FakeViewPadding(top: 177, bottom: 102);
+      addTearDown(tester.view.reset);
+    }
+    final api = PreviewApi(PreviewState.populated);
+    final session = Session(api, persistPreferences: false)
+      ..ready = true
+      ..user = previewSelf
+      ..locale = const Locale('tr');
+    await tester.pumpWidget(
+      CoolvibesApp(session: session, home: const NearbyScreen()),
+    );
+    await pumpUI(tester);
+    await tapUI(tester, find.byType(PersonTile).first);
+    await waitForUI(tester, find.byType(RadarProfileCard));
+    await pumpUI(tester);
+    await tapUI(
+      tester,
+      find.descendant(
+        of: find.byType(RadarProfileCard),
+        matching: find.byKey(const ValueKey('radar.profile.avatar')),
+      ),
+    );
+    final about = find.byKey(const ValueKey('radar.profile.about'));
+    await waitForUI(tester, about);
+    await tester.pump(const Duration(seconds: 3));
+    await pumpUI(tester);
+
+    final header = tester.getRect(find.byType(AppHeader));
+    final avatar = find.byKey(const ValueKey('radar.profile.avatar'));
+    final identity = find.byKey(const ValueKey('radar.profile.identity'));
+    final actions = find.byKey(const ValueKey('radar.profile.actions'));
+    final before = [
+      tester.getRect(avatar),
+      tester.getRect(identity),
+      tester.getRect(actions),
+    ];
+    final aboutBefore = tester.getRect(about);
+    expect(before.first.top, closeTo(header.bottom + 20, 1));
+
+    final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    await tester.dragFrom(
+      Offset(screen.width / 2, screen.height - 140),
+      const Offset(0, -360),
+    );
+    await pumpUI(tester);
+    final scroll = find
+        .descendant(
+          of: find.byKey(const ValueKey('radar.profile.scroll')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final offset = tester.state<ScrollableState>(scroll).position.pixels;
+    expect(offset, greaterThan(0));
+    for (final (finder, rect) in [
+      (avatar, before[0]),
+      (identity, before[1]),
+      (actions, before[2]),
+    ]) {
+      expect(tester.getRect(finder), rect);
+    }
+    expect(aboutBefore.top - tester.getRect(about).top, closeTo(offset, 1));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    session.dispose();
+  });
 }

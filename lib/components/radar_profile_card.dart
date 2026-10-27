@@ -237,9 +237,7 @@ class _RadarProfileCardState extends State<RadarProfileCard>
               child: CustomScrollView(
                 key: const ValueKey('radar.profile.scroll'),
                 controller: scroll,
-                physics: expanded
-                    ? const BouncingScrollPhysics()
-                    : const NeverScrollableScrollPhysics(),
+                physics: expanded ? null : const NeverScrollableScrollPhysics(),
                 slivers: [
                   PinnedHeaderSliver(
                     child: Stack(
