@@ -1,0 +1,182 @@
+{
+  "add": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/Add.imageset/ic_lt_add.pdf",
+    "sha256": "9574c76e3587596c0519ac52777e1ee969ebb84fb75825c60447618b7e7a86a1",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "list": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolList.imageset/list.bullet.pdf",
+    "sha256": "3b0f7d92dd6f482faebe3acda4450e0fedf3e95413790287454ddf5e9753420c",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "table": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolTable.imageset/tablecells.pdf",
+    "sha256": "8591c3595dee93dd94ac2c902236e15742e7e8b947049b12dca2d375de940fb8",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "attach": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolAttach.imageset/attach.pdf",
+    "sha256": "354b08a9fa6ab3a86c5ca620bd23a6e70a535ff0795d0dd76e6c6ece1f15a16d",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "emoji": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolEmoji.imageset/smile.pdf",
+    "sha256": "ef2fc4bdb8a5fba70ff34865ede97f818eccabb67348a8082c1ebc11898bcce4",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "bold": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolBold.imageset/bold.pdf",
+    "sha256": "cb10c5abeff69551683ab4a53241c2ca84cc2d5b052c58a261efa0974eed2bdb",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "italic": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolItalic.imageset/italic.pdf",
+    "sha256": "48c05e992de8d67c77066b158317d7941769a447821201147a3fae78e4c21b3e",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "strike": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolStrike.imageset/strikedthrough.pdf",
+    "sha256": "7d01d4a4ca955d972f640f9646be5210fd90f100b5b3483ddd8e0712efe8c3a9",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "underline": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolUnderline.imageset/underline.pdf",
+    "sha256": "b838e0b8f0b122dc07ebf5c501e11faa944f38032b5a8c2e04ee243f222ea79e",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "spoiler": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolSpoiler.imageset/spoiler.pdf",
+    "sha256": "ed3565a8aede7b15324ba26271cb38624c5eb4bdd4b7bd70a19e1b218d118b32",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "link": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolLink.imageset/link.pdf",
+    "sha256": "ef152dc502b8929b6aacea2a63cc14a22330e5c4e58a2cf32fd5da0288fa7ae7",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "quote": {
+    "source": "submodules/TelegramUI/Images.xcassets/RichText/ToolQuote.imageset/quote.pdf",
+    "sha256": "3b0b67f8d02dee2ccaa13d6e0b92de9e807229d3e10dbfd9ee572a260ab05e9c",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "send": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Input/Text/SendIcon.imageset/send.pdf",
+    "sha256": "a90522d04c6e64d3cd951fd59b19a1e1c9044c301b737b1d01fdee4dd7d6afa8",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "close": {
+    "source": "submodules/TelegramUI/Images.xcassets/Navigation/Close.imageset/headercross_30.pdf",
+    "sha256": "23683a1d817a18c12e2dcb914e3a908ad780cef9c4192d69c5fe716447939170",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "undo": {
+    "source": "submodules/TelegramUI/Images.xcassets/Media Editor/Undo.imageset/undo_30 (4).pdf",
+    "sha256": "25c93a8d5a5bfcd27f9314a6ce646f54bef4333430bfc92352622609f037aec6",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "redo": {
+    "source": "submodules/TelegramUI/Images.xcassets/Media Editor/Redo.imageset/redo-flipped.pdf",
+    "sha256": "866e9c89fe1bf07f2a9f6f1e3b120f0696cb72065ae91c63297722a0927175b4",
+    "width": 30.0,
+    "height": 30.0
+  },
+  "keyboard": {
+    "source": "submodules/TelegramUI/Images.xcassets/Media Editor/Close.imageset/closekeyboard.pdf",
+    "sha256": "e40d8cacfcb1af65a6efe7fb4a79fc529e7c08aae12a0e08844eff8462008a4a",
+    "width": 40.0,
+    "height": 40.0
+  },
+  "heading": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatHeading.imageset/heading.pdf",
+    "sha256": "65a6b2e02940c96475b63a13d8698bac8f2e1678e90eebba68910b10898d10c5",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "h1": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatHeading1.imageset/heading1.pdf",
+    "sha256": "291c2b2bee698dcd710695a98c122f08cc1164c5be08c7709345c1b7f6835bc0",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "h2": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatHeading2.imageset/heading2.pdf",
+    "sha256": "9f2ba9ad6959d4271246e877af91db3014b007d4db6a2e47660a993a97aacd8b",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "h3": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatHeading3.imageset/heading3.pdf",
+    "sha256": "0beb4adf5215834e0cc8ebdebc011db3ee85906c4d0e0fac49cdcf819d9837b4",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "h4": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatHeading4.imageset/heading4.pdf",
+    "sha256": "24bf3e993d3badf416bda5937f7eba61773673838989048dfe1748169ea16b9b",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "h5": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatHeading5.imageset/heading5.pdf",
+    "sha256": "91ac7b6b8473a5735cb41172893edea89361b4fcff79956ab00439f8cae6f71a",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "h6": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatHeading6.imageset/heading6.pdf",
+    "sha256": "bee3f38a86a6910b27f9be54a94bd00429a59c5e608ab3e3b575455e3773597d",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "text": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatText.imageset/text.pdf",
+    "sha256": "31b646b209ba01b28a433827869f94c46153eba173bedce3b2b183080ad2d5af",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "bullet": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatBulletList.imageset/bullets.pdf",
+    "sha256": "1ad1715b5f4e86780791add3300e60abd14c9ee73afdb42b24c68e4a5c4d02ba",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "number": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatNumberList.imageset/bullets-1.pdf",
+    "sha256": "cbe05ed36973d57fc61d458e50709ecba64ceaa405d73836845316e3c8eb6a6f",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "checklist": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatChecklist.imageset/checks.pdf",
+    "sha256": "2deebf13e67541178aa69f6494300deca74079aca02344e07bc9b5ca1d36199f",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "blockquote": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatQuote.imageset/quote.pdf",
+    "sha256": "3df8eb2352f2e62e1a05db5e21f4a3d4b3290089b108c9ade34a8f27b84515b5",
+    "width": 24.0,
+    "height": 24.0
+  },
+  "code": {
+    "source": "submodules/TelegramUI/Images.xcassets/Chat/Context Menu/FormatCode.imageset/code.pdf",
+    "sha256": "fa4b794b937b90b7c9db505d2f5ba492fbc4c2920237315d89e28c618a41cd0a",
+    "width": 24.0,
+    "height": 24.0
+  }
+}

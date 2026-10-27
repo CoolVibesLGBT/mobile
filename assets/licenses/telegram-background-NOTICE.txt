@@ -1,0 +1,38 @@
+Telegram Web K reference: https://github.com/morethanwords/tweb
+Bundled pattern.svg, theme preset data and adapted gradient/color algorithms originate from tweb, GPL-3.0.
+Local reference supplied by the user: tweb-master.
+The upstream license is included as LICENSE-telegram.txt.
+
+The eight public color-theme bundles plus the default theme, their four appearance variants and original SVG wallpaper patterns supply saved application/chat appearance. No account, authentication or access-hash data is included.
+
+Original tgico SVG paths, Lottie worker/player, fonts declarations and adapted interaction/layout algorithms are attributed to the same supplied source. Roboto font files and their separate Apache license are in /fonts/telegram/.
+
+The sticker picker uses 294 public documents from 11 public Telegram sticker sets, imported through this project's Bot API access. These are separate from tweb's bundled greeting/animated-emoji assets. Set names and emoji metadata are retained in src/features/emoticons/sticker-packs.json; credentials, Telegram file IDs and download tokens are excluded. The import script is scripts/import-telegram-stickers.mjs. Public sticker artwork belongs to the respective set creators; this notice does not assign ownership of their artwork to tweb or CoolVibes.
+
+Telegram-iOS reference: the local Telegram-iOS-master checkout (GPL-2.0).
+assets/chat/location/pin_background.png, pin_shadow.png and pin_icon.png (and
+their 2.0x/3.0x variants) are LocationMessagePinBackground, LocationMessagePinShadow
+and LocationMessagePinIcon from submodules/TelegramUI/Images.xcassets/Chat/Message.
+
+Article editor artwork: SVG conversions of the original PDF glyphs in the supplied
+Telegram-iOS-master/submodules/TelegramUI/Images.xcassets checkout. Original
+copyright and upstream licensing apply. Source paths, SHA-256 hashes and original
+point dimensions are recorded in assets/images/article/sources.json. Conversion
+uses pdftocairo through tool/import_article_icons.py; no icon paths were redrawn.
+
+Emoji search artwork: original animated icons from the public EmojiCategories
+set (https://t.me/addemoji/EmojiCategories), imported with the project's Bot API
+access and decompressed without changing the artwork. Sources and hashes are in
+assets/animations/emoji_search/sources.json; tool/import_emoji_search.py performs
+the import. Artwork belongs to its respective creators. No bot credentials or
+download URLs are bundled. Search transition animations originate from the
+supplied Telegram-iOS-master/submodules/TelegramUI/Resources/Animations checkout.
+
+Media panel arrow: original IconExpandInput/StickersTabArrow PNGs from the
+supplied Telegram-iOS checkout, at 26pt in the original 2x and 3x resolutions.
+Source hashes are in assets/images/chat_media_expand.sources.json.
+
+Chat list actions: original Pin, Unpin, Muted, Unmute and Delete PDF artwork
+from Chat/Context Menu in the supplied Telegram-iOS checkout, converted to SVG
+with pdftocairo without redrawing. Sources and hashes are in
+assets/images/chat_actions.sources.json.

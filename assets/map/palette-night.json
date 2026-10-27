@@ -1,0 +1,26 @@
+{
+  "ground": [
+    "#785e4b",
+    "#5f3153",
+    "#491b5e"
+  ],
+  "grass": "#907059",
+  "park": "#9e4e86",
+  "forest": "#bd5d9f",
+  "farmland": "#571e6f",
+  "sand": "#262b5e",
+  "water": "#493f78",
+  "roadFill": "#fee4cf",
+  "roadCasing": "#542c4a",
+  "building": "#816756",
+  "buildingRoof": "#5f2678",
+  "buildingTop": "#514881",
+  "label": "#fef6ef",
+  "marker": {
+    "pale": "#f0eefb",
+    "light": "#c9c0f1",
+    "main": "#8774e1",
+    "deep": "#6c5cb4",
+    "deepest": "#40376c"
+  }
+}

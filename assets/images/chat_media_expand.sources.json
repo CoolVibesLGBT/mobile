@@ -1,0 +1,12 @@
+{
+  "2": {
+    "source": "/Users/ersanyakit/Downloads/Telegram-iOS-master/submodules/TelegramUI/Images.xcassets/Chat/Input/Text/IconExpandInput.imageset/StickersTabArrow@2x.png",
+    "sha256": "8f9b2b80fe6f6008dac731aa2521ae33311ab6454211c8649ef02f360ffad9b2",
+    "pointSize": 26
+  },
+  "3": {
+    "source": "/Users/ersanyakit/Downloads/Telegram-iOS-master/submodules/TelegramUI/Images.xcassets/Chat/Input/Text/IconExpandInput.imageset/StickersTabArrow@3x.png",
+    "sha256": "e28b5952036214258ff587acda9104a38bf035c86166bfc2437be52a463ded58",
+    "pointSize": 26
+  }
+}

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head><script>window.ReactNativeWebView={postMessage:function(value){CoolvibesMap.postMessage(value);}};</script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:__COOLVIBES_BG_COLOR__}
+#map{position:absolute;inset:0;width:100%;height:100%}
+
+.gm-marker-root{position:relative;width:76px;display:flex;flex-direction:column;align-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.gm-bubble-stack{display:flex;flex-direction:column;align-items:center;margin-bottom:7px;max-width:176px}
+.gm-bubble{position:relative;color:#111827;font-size:12px;line-height:15px;font-weight:700;white-space:nowrap;padding:6px 11px;border-radius:9999px;max-width:176px;overflow:hidden;text-overflow:ellipsis;background:var(--gm-glass-fill);-webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);border:1px solid var(--gm-glass-edge);box-shadow:inset 0 1px 0 var(--gm-glass-hi),0 4px 14px rgba(0,0,0,.18)}
+.gm-bubble-caret{width:10px;height:10px;margin-top:-6px;transform:rotate(45deg);border-radius:2px;background:var(--gm-glass-fill);-webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);border-right:1px solid var(--gm-glass-edge);border-bottom:1px solid var(--gm-glass-edge)}
+.gm-avatar-stage{position:relative;width:76px;height:62px;display:flex;flex-direction:column;align-items:center}
+.gm-avatar-circle{position:relative;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--gm-glass-fill);-webkit-backdrop-filter:blur(14px) saturate(180%);backdrop-filter:blur(14px) saturate(180%);border:1px solid var(--gm-glass-edge);box-shadow:inset 0 1px 1px var(--gm-glass-hi),inset 0 -2px 4px rgba(0,0,0,.06),0 6px 16px rgba(0,0,0,.24);color:#fff;font-size:16px;font-weight:800}
+.gm-avatar-circle::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;background:linear-gradient(145deg,var(--gm-glass-hi) 0%,rgba(255,255,255,0) 42%,rgba(255,255,255,0) 70%,var(--gm-glass-lo) 100%)}
+.gm-avatar-photo{position:relative;width:46px;height:46px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,var(--gm-pale) 0%,var(--gm-light) 45%,var(--gm-main) 100%)}
+.gm-avatar-photo img{display:block;width:46px;height:46px;border-radius:50%;object-fit:cover}
+body.gm-dark .gm-bubble{color:#F2F2F7}
+body.gm-opaque .gm-bubble,body.gm-opaque .gm-bubble-caret,body.gm-opaque .gm-avatar-circle{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--gm-solid)}
+body.gm-opaque .gm-avatar-circle::after{display:none}
+.gm-ground-line{width:4px;height:8px;border-radius:9999px;background:linear-gradient(180deg,var(--gm-light) 0%,var(--gm-main) 30%,var(--gm-deep) 75%,var(--gm-deepest) 100%)}
+.gm-shadow{width:22px;height:6px;border-radius:9999px;background:rgba(0,0,0,.28);margin-top:0}
+.gm-player-wrap{position:relative;width:10px;height:10px;pointer-events:none}
+.gm-player-radius{position:absolute;left:50%;top:50%;width:170px;height:170px;margin-left:-85px;margin-top:-85px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0) 55%,rgba(255,255,255,.35) 100%);border:2px solid rgba(255,255,255,.85)}
+.gm-player-pulse{position:absolute;left:50%;top:50%;width:28px;height:28px;margin-left:-14px;margin-top:-14px;border-radius:9999px;background:radial-gradient(circle,var(--gm-ring) 0%,var(--gm-clear) 72%);animation:gm-player-pulse 2s ease-out infinite}
+@keyframes gm-player-pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+.gm-player-dot{position:absolute;left:50%;top:50%;width:28px;height:28px;margin-left:-14px;margin-top:-14px;border-radius:9999px;background:radial-gradient(circle at 35% 28%,var(--gm-light) 0%,var(--gm-main) 55%,var(--gm-deep) 100%);border:2.5px solid #fff;box-shadow:0 0 0 2px var(--gm-deep),0 0 0 6px var(--gm-glow),0 2px 6px rgba(0,0,0,.45)}
+.maplibregl-marker{position:absolute;left:0;top:0}
+
+.maplibregl-ctrl-attrib{font-size:10px}
+.maplibregl-ctrl-attrib.maplibregl-compact{margin:0 6px 4px 0}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+// Separate script: it still runs when the map script below fails to parse.
+window.__gmBooted = false;
+window.addEventListener('error', function(e){
+  if (window.__gmBooted) return;
+  try { window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'maperror', message: String((e && e.message) || 'boot').slice(0, 160) })); } catch (_) {}
+});
+</script>
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script>
+(function(){
+"use strict";
+var RN = window.ReactNativeWebView;
+function post(msg){ try { RN && RN.postMessage(JSON.stringify(msg)); } catch (e) {} }
+var BOOT_OK = false;
+var INIT = __COOLVIBES_INIT_JSON__;
+// Colors come from the app's Appearance theme (helpers/appearance/mapColors) and can be replaced live.
+var COLORS = INIT.colors;
+var ROAD_WIDTH = ['interpolate',['linear'],['zoom'],12,1.5,15,4,17,8,20,16];
+var CASING_WIDTH = ['interpolate',['linear'],['zoom'],12,2.5,15,6,17,11,20,20];
+function applyMarkerColors(c){
+  try {
+    var m = c.marker, root = document.documentElement.style;
+    root.setProperty('--gm-pale', m.pale); root.setProperty('--gm-light', m.light); root.setProperty('--gm-main', m.main);
+    root.setProperty('--gm-deep', m.deep); root.setProperty('--gm-deepest', m.deepest);
+    // Alpha variants of the main tone (8-digit hex): halo .13, ring/pulse .45, glow .28, transparent.
+    root.setProperty('--gm-halo', m.main + '21'); root.setProperty('--gm-ring', m.main + '73');
+    root.setProperty('--gm-glow', m.main + '47'); root.setProperty('--gm-clear', m.main + '00');
+  } catch (e) {}
+}
+applyMarkerColors(COLORS);
+// Marker glass follows the app appearance; Reduce Transparency swaps it for an opaque surface.
+function applyAppearance(a){
+  try {
+    var root = document.documentElement.style, b = document.body.classList;
+    root.setProperty('--gm-glass-fill', a.dark ? 'rgba(44,44,46,.42)' : 'rgba(255,255,255,.34)');
+    root.setProperty('--gm-glass-edge', a.dark ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.7)');
+    root.setProperty('--gm-glass-hi', a.dark ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.85)');
+    root.setProperty('--gm-glass-lo', a.dark ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.35)');
+    root.setProperty('--gm-solid', a.dark ? '#1C1C1E' : '#FFFFFF');
+    b.toggle('gm-dark', !!a.dark); b.toggle('gm-opaque', !!a.opaque);
+  } catch (e) {}
+}
+applyAppearance(INIT.appearance);
+function patchwork(){ return ['match',['%',['coalesce',['id'],0],3],0,COLORS.ground[0],1,COLORS.ground[1],2,COLORS.ground[2],COLORS.ground[0]]; }
+
+function applyTheme(map){
+  try {
+    var layers = (map.getStyle() && map.getStyle().layers) || [];
+    if (map.getLayer('background')) {
+      try { map.setPaintProperty('background','background-color',COLORS.ground[0]); } catch (e) {}
+    }
+    layers.forEach(function(layer){
+      var id = String(layer.id || '').toLowerCase();
+      if (layer.type !== 'fill') return;
+      try {
+        if (id.indexOf('water') !== -1) {
+          map.setPaintProperty(layer.id,'fill-color',COLORS.water);
+          map.setPaintProperty(layer.id,'fill-opacity',1);
+        } else if (id.indexOf('farmland') !== -1) {
+          map.setPaintProperty(layer.id,'fill-color',COLORS.farmland);
+        } else if (id.indexOf('wood') !== -1 || id.indexOf('forest') !== -1) {
+          map.setPaintProperty(layer.id,'fill-color',COLORS.forest);
+        } else if (id.indexOf('park') !== -1 || id.indexOf('garden') !== -1 || id.indexOf('cemetery') !== -1 || id.indexOf('recreation') !== -1) {
+          map.setPaintProperty(layer.id,'fill-color',COLORS.park);
+          map.setPaintProperty(layer.id,'fill-opacity',0.95);
+        } else if (id.indexOf('grass') !== -1 || id.indexOf('meadow') !== -1 || id.indexOf('scrub') !== -1 || id.indexOf('pitch') !== -1) {
+          map.setPaintProperty(layer.id,'fill-color',COLORS.grass);
+        } else if (id.indexOf('sand') !== -1 || id.indexOf('beach') !== -1) {
+          map.setPaintProperty(layer.id,'fill-color',COLORS.sand);
+        } else if (id.indexOf('building') !== -1) {
+        } else if (id.indexOf('landuse') !== -1 || id.indexOf('landcover') !== -1) {
+          map.setPaintProperty(layer.id,'fill-color',patchwork());
+        }
+      } catch (e) {}
+    });
+    // The style ships its own grey 'building-3d' extrusion; only the themed game buildings may draw.
+    layers.forEach(function(layer){
+      if (layer.type === 'fill-extrusion' && layer.id !== 'game-buildings-3d') {
+        try { map.setLayoutProperty(layer.id,'visibility','none'); } catch (e) {}
+      }
+    });
+    var flat = null;
+    for (var i = 0; i < layers.length; i++) { if (layers[i].id === 'building') { flat = layers[i]; break; } }
+    var extrusionColor = ['interpolate',['linear'],['coalesce',['get','render_height'],8],0,COLORS.building,40,COLORS.buildingRoof,120,COLORS.buildingTop];
+    if (map.getLayer('game-buildings-3d')) { try { map.setPaintProperty('game-buildings-3d','fill-extrusion-color',extrusionColor); } catch (e) {} }
+    if (flat && flat.source) {
+      try { map.setLayoutProperty('building','visibility','none'); } catch (e) {}
+      try {
+        if (!map.getLayer('game-buildings-3d')) {
+          map.addLayer({
+            id: 'game-buildings-3d', type: 'fill-extrusion',
+            source: flat.source, 'source-layer': flat['source-layer'], minzoom: 14,
+            paint: {
+              'fill-extrusion-color': extrusionColor,
+              'fill-extrusion-height': ['coalesce',['get','render_height'],8],
+              'fill-extrusion-base': ['coalesce',['get','render_min_height'],0],
+              'fill-extrusion-opacity': 0.96
+            }
+          });
+        }
+        if (!map.getLayer('game-buildings-outline')) {
+          map.addLayer({
+            id: 'game-buildings-outline', type: 'line',
+            source: flat.source, 'source-layer': flat['source-layer'], minzoom: 15,
+            paint: { 'line-color': '#ffffff', 'line-width': 1, 'line-opacity': 0.6 }
+          });
+        }
+      } catch (e) {}
+    }
+    layers.forEach(function(layer){
+      var id = String(layer.id || '').toLowerCase();
+      if (layer.type !== 'line') return;
+      var isRoad = id.indexOf('transportation') !== -1 || id.indexOf('road') !== -1 || id.indexOf('bridge') !== -1 || id.indexOf('tunnel') !== -1;
+      if (!isRoad || id.indexOf('label') !== -1) return;
+      try {
+        if (id.indexOf('casing') !== -1) {
+          map.setPaintProperty(layer.id,'line-color',COLORS.roadCasing);
+          map.setPaintProperty(layer.id,'line-width',CASING_WIDTH);
+          map.setPaintProperty(layer.id,'line-opacity',1);
+        } else {
+          map.setPaintProperty(layer.id,'line-color',COLORS.roadFill);
+          map.setPaintProperty(layer.id,'line-width',ROAD_WIDTH);
+          map.setPaintProperty(layer.id,'line-opacity',1);
+        }
+      } catch (e) {}
+    });
+    layers.forEach(function(layer){
+      if (INIT.preview && layer.type === 'symbol' && layer.layout && layer.layout['icon-image']) {
+        try { map.setLayoutProperty(layer.id,'visibility','none'); } catch (e) {}
+        return;
+      }
+      if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
+        try { map.setPaintProperty(layer.id,'text-color',COLORS.label); } catch (e) {}
+      }
+    });
+  } catch (e) {}
+}
+
+if (typeof maplibregl === 'undefined') {
+  post({ type: 'maperror', message: 'sdk-missing' });
+} else {
+try {
+var map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://tiles.openfreemap.org/styles/liberty',
+  center: INIT.center,
+  zoom: INIT.zoom,
+  pitch: INIT.pitch,
+  bearing: INIT.bearing,
+  maxPitch: 85,
+  attributionControl: INIT.preview ? false : { compact: true },
+  // The snapshot (below) reads the canvas outside its render task.
+  canvasContextAttributes: { antialias: true, preserveDrawingBuffer: !!INIT.snapshot }
+});
+map.dragRotate.disable();
+map.touchZoomRotate.disableRotation();
+map.keyboard.disableRotation();
+applyInteractive(INIT.interactive);
+
+function applyInteractive(cfg){
+  try {
+    if (cfg.pan) { map.dragPan.enable(); } else { map.dragPan.disable(); }
+    if (cfg.zoom) { map.scrollZoom.enable(); map.boxZoom.enable(); map.doubleClickZoom.enable(); map.touchZoomRotate.enable(); }
+    else { map.scrollZoom.disable(); map.boxZoom.disable(); map.doubleClickZoom.disable(); map.touchZoomRotate.disable(); }
+    if (cfg.rotate) { map.dragRotate.enable(); try { map.touchZoomRotate.enableRotation(); } catch (e) {} try { map.keyboard.enableRotation(); } catch (e) {} }
+    else { map.dragRotate.disable(); try { map.touchZoomRotate.disableRotation(); } catch (e) {} try { map.keyboard.disableRotation(); } catch (e) {} }
+    if (cfg.pitch) { try { map.touchPitch.enable(); } catch (e) {} } else { try { map.touchPitch.disable(); } catch (e) {} }
+  } catch (e) {}
+}
+
+var markers = {};
+function esc(s){
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function markerHtml(m){
+  // Only a real label draws a bubble; a missing one must not print "undefined".
+  var label = m.label == null ? '' : String(m.label).trim();
+  var bubble = label
+    ? '<div class="gm-bubble-stack"><div class="gm-bubble">' + esc(label) + '</div><div class="gm-bubble-caret"></div></div>'
+    : '';
+  var seed = String(m.initial || m.label || '?').trim() || '?';
+  var initial = esc(seed.charAt(0).toUpperCase());
+  var avatarInner;
+  if (m.imageUrl) {
+    // Escapes are doubled: this file is a TS template literal, and the page needs \' inside its own quotes.
+    avatarInner = '<img src="' + esc(m.imageUrl) + '" alt="" style="' + (m.blurred ? 'filter:blur(6px);' : '') + '" onload="this.nextElementSibling.style.display=\'none\'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'" />' +
+      '<span style="display:none;color:#fff;font-size:16px;font-weight:800">' + initial + '</span>';
+  } else {
+    avatarInner = '<span style="color:#fff;font-size:16px;font-weight:800">' + initial + '</span>';
+  }
+  return '<div class="gm-marker-root">' + bubble +
+    '<div class="gm-avatar-stage">' +
+    '<div class="gm-avatar-circle"><div class="gm-avatar-photo">' + avatarInner + '</div></div>' +
+    '<div class="gm-ground-line"></div>' +
+    '</div><div class="gm-shadow"></div></div>';
+}
+function playerHtml(){
+  return '<div class="gm-player-wrap"><div class="gm-player-radius"></div><div class="gm-player-pulse"></div><div class="gm-player-dot"></div></div>';
+}
+function setMarkers(list){
+  Object.keys(markers).forEach(function(id){ try { markers[id].remove(); } catch (e) {} });
+  markers = {};
+  (list || []).forEach(function(m){
+    if (typeof m.latitude !== 'number' || typeof m.longitude !== 'number') return;
+    var el = document.createElement('div');
+    el.innerHTML = markerHtml(m);
+    (function(id){
+      el.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        post({ type: 'marker', id: String(id) });
+      });
+    })(m.id);
+    var marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      .setLngLat([m.longitude, m.latitude])
+      .addTo(map);
+    markers[String(m.id)] = marker;
+  });
+}
+var playerMarker = null;
+function setPlayer(pos){
+  if (playerMarker) { try { playerMarker.remove(); } catch (e) {} playerMarker = null; }
+  if (!pos || typeof pos.latitude !== 'number' || typeof pos.longitude !== 'number') return;
+  var el = document.createElement('div');
+  el.innerHTML = playerHtml();
+  playerMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
+    .setLngLat([pos.longitude, pos.latitude])
+    .addTo(map);
+}
+
+map.on('load', function(){
+  BOOT_OK = true; window.__gmBooted = true;
+  try { applyTheme(map); } catch (e) {}
+  setMarkers(INIT.markers);
+  setPlayer(INIT.player);
+  post({ type: 'ready' });
+});
+map.on('error', function(e){
+  if (BOOT_OK) return;
+  var msg = 'style';
+  try { msg = String((e && e.error && e.error.message) || e.error || 'style').slice(0, 160); } catch (_) {}
+  post({ type: 'maperror', message: msg });
+});
+map.on('movestart', function(e){ post({ type: 'movestart', user: !!(e && e.originalEvent) }); });
+map.on('moveend', function(){
+  var c = map.getCenter();
+  post({ type: 'moveend', latitude: c.lat, longitude: c.lng, zoom: map.getZoom() });
+});
+map.on('click', function(){ post({ type: 'press' }); });
+
+// Backdrop for the app's glass: Flutter's glass cannot sample this WebView,
+// so the rendered map is sent as a JPEG (≤2x, ~8 per second while it
+// changes, and once when it settles). DOM markers are not in the canvas.
+var SNAP = { last: 0, timer: null, canvas: null };
+function snapshot(){
+  if (!INIT.snapshot || SNAP.done || (INIT.snapshotOnly && !map.loaded())) return;
+  var wait = 120 - (Date.now() - SNAP.last);
+  if (wait > 0) {
+    if (!SNAP.timer) SNAP.timer = setTimeout(function(){ SNAP.timer = null; snapshot(); }, wait);
+    return;
+  }
+  SNAP.last = Date.now();
+  try {
+    var src = map.getCanvas();
+    var w = src.clientWidth, h = src.clientHeight;
+    if (!w || !h) return;
+    var scale = Math.min(window.devicePixelRatio || 1, 2);
+    var c = SNAP.canvas || (SNAP.canvas = document.createElement('canvas'));
+    c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    post({ type: 'snapshot', width: w, height: h, data: c.toDataURL('image/jpeg', 0.85) });
+    if (INIT.snapshotOnly) SNAP.done = true;
+  } catch (e) {}
+}
+map.on('render', snapshot);
+map.on('idle', snapshot);
+
+window.__gameMap = {
+  setColors: function(colors){
+    try { COLORS = colors; applyMarkerColors(colors); document.body.style.background = colors.ground[0]; applyTheme(map); } catch (e) {}
+  },
+  zoomBy: function(delta, durationMs){
+    try { map.easeTo({ zoom: map.getZoom() + delta, duration: durationMs }); } catch (e) {}
+  },
+  setMarkers: setMarkers,
+  setAppearance: applyAppearance,
+  setPlayer: setPlayer,
+  setInteractive: applyInteractive,
+  flyTo: function(lat, lng, zoom, durationMs){
+    try {
+      if (durationMs > 0) { map.flyTo({ center: [lng, lat], zoom: zoom, duration: durationMs }); }
+      else { map.jumpTo({ center: [lng, lat], zoom: zoom }); }
+    } catch (e) {}
+  }
+};
+} catch (bootErr) {
+  try { post({ type: 'maperror', message: String((bootErr && bootErr.message) || bootErr).slice(0, 160) }); } catch (_) {}
+}
+}
+})();
+</script>
+</body>
+</html>

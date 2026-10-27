@@ -1,0 +1,711 @@
+{
+  "@@locale": "en",
+  "connection": "Connection",
+  "logOut": "Log Out",
+  "yourAccountCouldNotBeLoaded": "Your account could not be loaded.",
+  "checkYourConnectionAndTryAgain": "Check your connection and try again.",
+  "save": "Save",
+  "required": "Required",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "enterAValidEmail": "Enter a valid email",
+  "actions": "Actions",
+  "send": "Send",
+  "add": "Add",
+  "file": "File",
+  "location": "Location",
+  "cancel": "Cancel",
+  "stopRecording": "Stop recording",
+  "remove": "Remove",
+  "removeLocation": "Remove location",
+  "gallery": "Gallery",
+  "camera": "Camera",
+  "close": "Close",
+  "recents": "Recents",
+  "chooseFromLibrary": "Choose from Library",
+  "youGaveAccessToSelectedPhotos": "You gave access to selected photos only.",
+  "manage": "Manage",
+  "allowPhotoAccessToSeeYour": "Allow photo access to see your recent photos here.",
+  "openSettings": "Open Settings",
+  "mediaCouldNotBeAddedTry": "Media could not be added. Try again.",
+  "selected": "{length} selected",
+  "@selected": {
+    "placeholders": {
+      "length": {
+        "type": "Object"
+      }
+    }
+  },
+  "hideWithSpoiler": "Hide with spoiler",
+  "video": "Video",
+  "photo": "Photo",
+  "media": "Media",
+  "tapToView": "Tap to view",
+  "reply": "Reply",
+  "forwardedFrom": "Forwarded from",
+  "you": "You",
+  "message": "Message",
+  "messageNotSentTapToRetry": "Message not sent. Tap to retry.",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "shareAThoughtWinQuestionOr": "Share a thought, win, question or vibe...",
+  "attachments": "Attachments",
+  "stopRecording2": "Stop recording",
+  "voiceMessage": "Voice message",
+  "emojiStickersAndGifs": "Emoji, stickers and GIFs",
+  "typeAMessage": "Type a message",
+  "showKeyboard": "Show keyboard",
+  "unmute": "Unmute",
+  "mute": "Mute",
+  "deleteLabel": "Delete",
+  "unreadMessages": "{name}, {unread} unread messages",
+  "@unreadMessages": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      },
+      "unread": {
+        "type": "Object"
+      }
+    }
+  },
+  "unpin": "Unpin",
+  "pin": "Pin",
+  "removeTag": "Remove tag: {name}",
+  "@removeTag": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "dragToSelect": "Drag to select",
+  "vibeSelected": "VIBE SELECTED",
+  "reset": "RESET",
+  "publicPost": "Public post",
+  "connecting": "Connecting…",
+  "liveConnectionCouldNotBeVerified": "Live connection could not be verified",
+  "waitingForConnection": "Waiting for connection…",
+  "changeLocation": "Change location",
+  "myLocation": "My location",
+  "sticker": "Sticker",
+  "mapCouldNotLoadCheckYour": "Map could not load. Check your connection.",
+  "mapIsUnavailableOnThisDevice": "Map is unavailable on this device",
+  "zoomIn": "Zoom in",
+  "zoomOut": "Zoom out",
+  "openLocationInMaps": "Open location in Maps",
+  "online": "Online",
+  "profile": "Profile",
+  "chat": "Chat",
+  "like": "Like",
+  "dislike": "Dislike",
+  "attributes": "Attributes",
+  "fantasies": "Fantasies",
+  "noFantasiesAddedYet": "No fantasies added yet.",
+  "interests": "Interests",
+  "noInterestsAddedYet": "No interests added yet.",
+  "online2": "online",
+  "statistics": "Statistics",
+  "verified": "Verified",
+  "nothingHereYet": "Nothing here yet",
+  "retry": "Retry",
+  "noItemsHereYet": "No items here yet.",
+  "tryAgain": "Try again",
+  "spoilerTapToReveal": "Spoiler. Tap to reveal",
+  "menu": "Menu",
+  "editProfile": "Edit profile",
+  "name": "Name",
+  "username": "Username",
+  "email": "Email",
+  "about": "About",
+  "website": "Website",
+  "dateOfBirth": "Date of birth",
+  "changePassword": "Change password",
+  "currentPassword": "Current password",
+  "newPassword": "New password",
+  "confirmNewPassword": "Confirm new password",
+  "editGroup": "Edit group",
+  "title": "Title",
+  "description": "Description",
+  "comment": "Comment",
+  "preview": "Preview",
+  "thisIsHowYourChatsWill": "This is how your chats will look.",
+  "yourMessagesYourColors": "Your messages, your colors.",
+  "colorTheme": "Color theme",
+  "cancel2": "Cancel",
+  "done": "Done",
+  "selectedColor": "Selected color",
+  "hue": "Hue",
+  "saturation": "Saturation",
+  "brightness": "Brightness",
+  "hexColor": "Hex color",
+  "enterAColorLike3390ec": "Enter a color like #3390EC.",
+  "acceptTheTermsToContinue": "Accept the terms to continue",
+  "unableToReachTheServiceCheck": "Unable to reach the service. Check your connection and try again.",
+  "registrationFailedPleaseTryAgain": "Registration failed. Please try again.",
+  "loginFailedPleaseCheckYourCredentials": "Login failed. Please check your credentials.",
+  "signUp": "Sign Up",
+  "signIn": "Sign In",
+  "complete": "Complete",
+  "joinCoolvibesToday": "Join CoolVibes today.",
+  "enterYourCredentialsToContinue": "Enter your credentials to continue.",
+  "nickname": "Nickname",
+  "nicknameEmail": "Nickname / Email",
+  "password": "Password",
+  "confirmPassword": "Confirm Password",
+  "referralCodeOptional": "Referral Code (Optional)",
+  "iAm18OrOlderAnd": "I am 18 or older and accept the terms and privacy policy",
+  "createAccount": "Create Account",
+  "verification": "Verification",
+  "messages": "Messages",
+  "activity": "Activity",
+  "newMessage": "New Message",
+  "newConversation": "New conversation",
+  "create": "Create",
+  "searchUsers": "Search users",
+  "groupTitle": "Group title",
+  "deleteMessage": "Delete message?",
+  "deleteMessages": "Delete {length} messages?",
+  "@deleteMessages": {
+    "placeholders": {
+      "length": {
+        "type": "Object"
+      }
+    }
+  },
+  "deleteForMe": "Delete for me",
+  "deleteForEveryone": "Delete for everyone",
+  "off": "Off",
+  "n10Seconds": "10 seconds",
+  "n1Minute": "1 minute",
+  "n1Hour": "1 hour",
+  "n1Day": "1 day",
+  "n1Week": "1 week",
+  "selfDestructTimer": "Self-Destruct Timer",
+  "newMessagesDisappearThisLongAfter": "New messages disappear this long after they are opened.",
+  "reply2": "Reply",
+  "copy": "Copy",
+  "edit": "Edit",
+  "forward": "Forward",
+  "select": "Select",
+  "chat2": "Chat",
+  "typing": "typing…",
+  "selectMessages": "Select Messages",
+  "selected2": "{length} Selected",
+  "@selected2": {
+    "placeholders": {
+      "length": {
+        "type": "Object"
+      }
+    }
+  },
+  "groupInfo": "Group Info",
+  "loadEarlierMessages": "Load earlier messages",
+  "deleteSelectedMessages": "Delete selected messages",
+  "forwardSelectedMessages": "Forward selected messages",
+  "scheduleMessage": "Schedule Message",
+  "selfDestructTimer2": "Self-Destruct Timer",
+  "scheduledMessages": "Scheduled Messages",
+  "editMessage": "Edit Message",
+  "replyTo": "Reply to {name}",
+  "@replyTo": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "forwardMessage": "Forward Message",
+  "forwardMessages": "Forward {count} Messages",
+  "@forwardMessages": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "from": "From: {name}",
+  "@from": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "cancelEditing": "Cancel editing",
+  "cancelReply": "Cancel reply",
+  "cancelForwarding": "Cancel forwarding",
+  "lastSeenJustNow": "last seen just now",
+  "lastSeen1MinuteAgo": "last seen 1 minute ago",
+  "lastSeenMinutesAgo": "last seen {count} minutes ago",
+  "@lastSeenMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "lastSeen1HourAgo": "last seen 1 hour ago",
+  "lastSeenHoursAgo": "last seen {count} hours ago",
+  "@lastSeenHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "lastSeenAt": "last seen {day} at {clock}",
+  "@lastSeenAt": {
+    "placeholders": {
+      "day": {
+        "type": "Object"
+      },
+      "clock": {
+        "type": "Object"
+      }
+    }
+  },
+  "forwardTo": "Forward to…",
+  "search": "Search",
+  "removeParticipant": "Remove participant",
+  "today2": "today",
+  "sendAt": "Send {day} at {clock}",
+  "@sendAt": {
+    "placeholders": {
+      "day": {
+        "type": "Object"
+      },
+      "clock": {
+        "type": "Object"
+      }
+    }
+  },
+  "noScheduledMessages": "No scheduled messages",
+  "sendNow": "Send Now",
+  "pinnedMessage": "Pinned Message #{value}",
+  "@pinnedMessage": {
+    "placeholders": {
+      "value": {
+        "type": "Object"
+      }
+    }
+  },
+  "pinnedMessage2": "Pinned Message",
+  "classifieds": "Classifieds",
+  "createListing": "Create listing",
+  "offers": "Offers",
+  "seeking": "Seeking",
+  "enterATitle": "Enter a title",
+  "addAPhotoOrText": "Add a photo or text",
+  "whatIsOnYourMind": "What is on your mind?",
+  "shareACheckIn": "Share a check-in…",
+  "writeAComment": "Write a comment…",
+  "newStory": "New story",
+  "newListing": "New listing",
+  "createPost": "Create post",
+  "share": "Share",
+  "tags": "Tags",
+  "separateWithCommas": "Separate with commas",
+  "label": "Label",
+  "value": "Value",
+  "addDetail": "Add detail",
+  "attach": "Attach",
+  "photos": "Photos",
+  "yourLocationIsUnavailableCheckLocation": "Your location is unavailable. Check location permission and try again.",
+  "columns": "Columns",
+  "columns2": "{count} columns",
+  "@columns2": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "useMyLocation": "Use my location",
+  "grid": "Grid",
+  "list": "List",
+  "map": "Map",
+  "map2": "Map",
+  "list2": "List",
+  "checkIn": "Check in",
+  "all": "All",
+  "people": "People",
+  "events": "Events",
+  "posts": "Posts",
+  "places": "Places",
+  "searchCoolvibes": "Search CoolVibes",
+  "findPeoplePostsEventsAndPlaces": "Find people, posts, events and places.",
+  "searchCouldNotBeCompleted": "Search could not be completed.",
+  "noResults": "No results",
+  "searchPeoplePostsAndPlaces": "Search people, posts and places",
+  "clearSearch": "Clear search",
+  "post": "Post",
+  "matches": "Matches",
+  "drawing": "Drawing",
+  "undo": "Undo",
+  "use": "Use",
+  "couldNotLoadStickers": "Could not load stickers",
+  "couldNotLoadGifsTryAgain": "Could not load GIFs. Try again.",
+  "recent": "Recent",
+  "searchGifs": "Search GIFs",
+  "searchEmoji": "Search emoji",
+  "searchStickers": "Search stickers",
+  "more": "More",
+  "stickers": "Stickers",
+  "deleteLastCharacter": "Delete last character",
+  "addStory": "Add Story",
+  "bookmark": "Bookmark",
+  "report": "Report",
+  "comments": "Comments",
+  "viewAllComments": "View all {comments} comments",
+  "@viewAllComments": {
+    "placeholders": {
+      "comments": {
+        "type": "Object"
+      }
+    }
+  },
+  "justNow": "just now",
+  "minAgo": "{inMinutes} min ago",
+  "@minAgo": {
+    "placeholders": {
+      "inMinutes": {
+        "type": "Object"
+      }
+    }
+  },
+  "hoursAgo": "{inHours} hours ago",
+  "@hoursAgo": {
+    "placeholders": {
+      "inHours": {
+        "type": "Object"
+      }
+    }
+  },
+  "daysAgo": "{inDays} days ago",
+  "@daysAgo": {
+    "placeholders": {
+      "inDays": {
+        "type": "Object"
+      }
+    }
+  },
+  "comments2": "Comments ({length})",
+  "@comments2": {
+    "placeholders": {
+      "length": {
+        "type": "Object"
+      }
+    }
+  },
+  "noCommentsYet": "No comments yet.",
+  "placesCouldNotBeLoaded": "Places could not be loaded.",
+  "allowLocationAccessToUseYour": "Allow location access to use your current location.",
+  "selectedLocation": "Selected location",
+  "teleportToThisArea": "Teleport to this area",
+  "sendMyCurrentLocation": "Send My Current Location",
+  "sendSelectedLocation": "Send Selected Location",
+  "searchPlaces": "Search places",
+  "sendLocation": "Send Location",
+  "locating": "Locating…",
+  "nearbyPlaces": "NEARBY PLACES",
+  "morePlaces": "More places",
+  "noPlacesFound": "No places found",
+  "searchPlaces2": "Search Places",
+  "ofLabel": "{value} of {length}",
+  "@ofLabel": {
+    "placeholders": {
+      "value": {
+        "type": "Object"
+      },
+      "length": {
+        "type": "Object"
+      }
+    }
+  },
+  "playPause": "Play / pause",
+  "couldNotOpenFile": "Could not open file",
+  "audioCouldNotBePlayed": "Audio could not be played",
+  "pause": "Pause",
+  "play": "Play",
+  "places2": "Places",
+  "nearbyPlaces2": "Nearby places",
+  "comment2": "Comment",
+  "website2": "Website",
+  "profilePreferences": "Profile preferences",
+  "refresh": "Refresh",
+  "profileUsernameIsMissing": "Profile username is missing",
+  "confirm": "Confirm",
+  "blockUnblock": "Block / unblock",
+  "changeAvatar": "Change avatar",
+  "block": "Block",
+  "bio": "Bio",
+  "likes": "Likes",
+  "upload": "Upload",
+  "requestAccess": "Request access",
+  "privatePhotos": "Private photos",
+  "viewProfile": "View profile",
+  "settings": "Settings",
+  "photoAccessRequests": "Photo access requests",
+  "friends": "Friends",
+  "legal": "Legal",
+  "appearance": "Appearance",
+  "language": "Language",
+  "logOut2": "Log Out?",
+  "areYouSureYouWantTo": "Are you sure you want to sign out? You will need to login again to access your profile.",
+  "accessRequests": "Access requests",
+  "approve": "Approve",
+  "deny": "Deny",
+  "manageYourPremiumSubscription": "Manage your Premium subscription",
+  "openAccount": "Open account",
+  "home": "Home",
+  "nearby": "Nearby",
+  "chats": "Chats",
+  "uploads": "Uploads",
+  "metricFollowers": "Followers",
+  "metricFollowing": "Following",
+  "metricViewsReceived": "Views Received",
+  "metricDislikesReceived": "Dislikes Received",
+  "metricLikesGiven": "Likes Given",
+  "metricViewsGiven": "Views Given",
+  "metricDislikesGiven": "Dislikes Given",
+  "metricBlockedUsers": "Blocked Users",
+  "accentColor": "Accent Color",
+  "end": "End",
+  "start": "Start",
+  "messageTextSize": "Message Text Size",
+  "chatWallpaper": "Chat Wallpaper",
+  "defaultLabel": "Default",
+  "messageColors": "Message colors",
+  "messageGradient": "Message gradient",
+  "resetToDefaults": "Reset to Defaults",
+  "resetAppearance": "Reset Appearance",
+  "gradient": "Gradient",
+  "setColor": "Set Color",
+  "addColor": "Add Color",
+  "removeColor": "Remove Color",
+  "rotateGradient": "Rotate Gradient",
+  "pattern": "Pattern",
+  "intensity": "Intensity",
+  "chooseAnImageUpTo20": "Choose an image up to 20 MB.",
+  "uploadWallpaper": "Upload Wallpaper",
+  "blurWallpaperImage": "Blur Wallpaper Image",
+  "themeClassic": "Classic",
+  "themeNight": "Night",
+  "themeDay": "Day",
+  "themeDark": "Dark",
+  "themeSystemDefault": "System Default",
+  "emojiCategorySmileysPeople": "Smileys & People",
+  "emojiCategoryAnimalsNature": "Animals & Nature",
+  "emojiCategoryFoodDrink": "Food & Drink",
+  "emojiCategoryTravelPlaces": "Travel & Places",
+  "emojiCategoryActivities": "Activities",
+  "emojiCategoryObjectsSymbols": "Objects & Symbols",
+  "emojiCategoryFlags": "Flags",
+  "radarActionDislike": "Dislike",
+  "matchFilterLiked": "Liked",
+  "matchFilterPassed": "Passed",
+  "uploadStatusUploaded": "Uploaded",
+  "uploadStatusQueued": "Queued",
+  "uploadStatusUploading": "Uploading",
+  "uploadStatusFailed": "Failed",
+  "profileFollow": "Follow",
+  "profileFollowing": "Following",
+  "n5Minutes": "5 Minutes",
+  "n20Minutes": "20 Minutes",
+  "voiceSlideToCancel": "Slide to cancel · Slide up to lock",
+  "voiceRecordingLocked": "Recording locked",
+  "chooseLocation": "Choose Location",
+  "currentLocation": "Current Location",
+  "article": "Article",
+  "articlePlaceholder": "Start writing…",
+  "redo": "Redo",
+  "articleBold": "Bold",
+  "articleItalic": "Italic",
+  "articleUnderline": "Underline",
+  "articleStrike": "Strikethrough",
+  "articleSpoiler": "Spoiler",
+  "articleLink": "Link",
+  "articleParagraph": "Text",
+  "articleHeading": "Heading",
+  "articleQuote": "Blockquote",
+  "articleCode": "Code",
+  "articleList": "List",
+  "articleBullets": "Bullets",
+  "articleNumbered": "Numbered",
+  "articleChecklist": "Checklist",
+  "articleTable": "Table",
+  "articleAddRow": "Add row",
+  "articleAddColumn": "Add column",
+  "articleDeleteRow": "Delete row",
+  "articleDeleteColumn": "Delete column",
+  "articleDeleteTable": "Delete table",
+  "articleRemoveLink": "Remove link",
+  "articleInvalidLink": "Enter an http, https, mailto or tel link.",
+  "articleKeyboard": "Keyboard",
+  "expandEmojiPanel": "Expand emoji panel",
+  "collapseEmojiPanel": "Collapse emoji panel",
+  "profileUnblock": "Unblock",
+  "profileUnavailable": "This profile is unavailable.",
+  "profileJoined": "Joined",
+  "profileActivityPrivate": "This profile’s activity is private.",
+  "profilePublicPhotos": "Public",
+  "profileMakePublic": "Show on profile",
+  "profileMakePrivate": "Move to private album",
+  "profilePublicPhotoNotice": "This photo will be visible on your profile.",
+  "profilePrivateUploadNotice": "New photos are added to your private album.",
+  "profileAccessPending": "Your access request is pending.",
+  "profileAlbumLocked": "Request permission to view this album.",
+  "profileRevokeAccess": "Revoke access",
+  "profileAccessApproved": "Can view your private photos",
+  "profileAccessDenied": "Access not granted",
+  "profileSetPhoto": "Set New Photo",
+  "profileIdentityHelp": "Enter your name and add an optional profile photo.",
+  "profileBioHelp": "You can add a few lines about yourself.",
+  "profileDetails": "Profile details",
+  "profileNotSet": "Not set",
+  "profilePrivacy": "Privacy Level",
+  "profilePrivacyPublic": "Public",
+  "profilePrivacyFollowers": "Followers only",
+  "profilePrivacyFriends": "Friends only",
+  "profilePrivacyMutuals": "Mutual followers only",
+  "profilePrivacyPrivate": "Private",
+  "profilePrivacyHelp": "Choose who can see your profile. Only public profiles appear in Nearby and Radar. Your private album requires separate approval.",
+  "profileCoverPhoto": "Cover Photo",
+  "menuCommunity": "Community",
+  "menuAccount": "Account",
+  "profileDisplayName": "Display Name",
+  "profilePersonalDetails": "Details",
+  "profilePhotoAdjust": "Drag to reposition. Pinch to zoom.",
+  "authWelcomeTitle": "Your next connection starts here.",
+  "authWelcomeSubtitle": "Already a member? Log in to your account. New to CoolVibes? Create your account and start meeting the community.",
+  "authLoginTitle": "Log in",
+  "authRegisterTitle": "Create an account",
+  "authLoginSubtitle": "Use the username and password you chose when you created your account.",
+  "authRegisterChoiceSubtitle": "New here? Choose your username and password, then complete a quick security check.",
+  "authRegisterSubtitle": "Choose how people will find you. Create a username and password, confirm your password, then continue to the security check.",
+  "authAccountNote": "For adults aged 18 and over. Your profile, your identity, your pace.",
+  "authContinue": "Continue",
+  "authBack": "Back",
+  "authNickname": "Username",
+  "authNicknamePlaceholder": "Your username",
+  "authPasswordPlaceholder": "Enter your password",
+  "authConfirmPasswordPlaceholder": "Confirm your password",
+  "authReferralPlaceholder": "Enter an invite code, if you have one",
+  "authNicknameHint": "At least 3 characters: lowercase letters (a–z), numbers, or underscores (_).",
+  "authNicknameTooShort": "Username must be at least 3 characters.",
+  "authNicknameInvalid": "Use only lowercase letters (a–z), numbers, and underscores (_).",
+  "authSigningIn": "Signing in...",
+  "authCreatingAccount": "Creating account...",
+  "profilePhotoRotate": "Rotate left",
+  "profilePhotoMirror": "Mirror photo",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "errorDetails": "Error details",
+  "errorConnectionTitle": "Couldn’t connect",
+  "errorStorageTitle": "Session couldn’t be saved",
+  "errorRegistrationTitle": "Registration couldn’t be completed",
+  "errorRequestTitle": "Couldn’t complete this action",
+  "errorServerMessage": "The server couldn’t process your request. Please try again shortly.",
+  "errorUsernameTaken": "This username is already in use. Choose another one, or sign in if the account is yours.",
+  "errorEmailTaken": "This email is already in use. Sign in with your existing account.",
+  "errorReferral": "The referral code isn’t valid. Check it or leave the optional field empty.",
+  "errorCaptcha": "Verification couldn’t be completed. Please try again.",
+  "errorInvalidInput": "Some information wasn’t accepted. Check the form and try again.",
+  "errorRateLimited": "Too many attempts. Wait a little before trying again.",
+  "errorForbidden": "This action isn’t available for your account.",
+  "errorNotFound": "This content is no longer available.",
+  "errorStorageMessage": "The device couldn’t access secure session storage. Reopen the app. If this continues, the app’s Keychain configuration needs to be corrected.",
+  "errorUnexpectedMessage": "An unexpected error occurred. Your entered information is still here. Please try again.",
+  "errorAccountCreatedTitle": "Account created",
+  "errorAccountCreatedMessage": "Your account was created, but sign-in couldn’t finish on this device. Continue to sign in with the same information.",
+  "forwardCommentPlaceholder": "Add a comment…",
+  "forwardToRecipients": "Forward to {count} chats",
+  "forwardPartialFailure": "Sent to {sent} chats. {remaining} chats couldn’t be completed. Only these remain selected.",
+  "@forwardToRecipients": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@forwardPartialFailure": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "forwardedToChats": "Forwarded to {count} chats",
+  "@forwardedToChats": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccount": "Delete my account",
+  "deleteAccountTitle": "Delete your account?",
+  "deleteAccountConfirmation": "Your account will be deleted and you will be signed out. Are you sure you want to continue?",
+  "deleteMessagesScopeInfo": "You can delete these messages just for you or for everyone.",
+  "deleteMessagesForMeInfo": "These messages will only be removed from your view of the conversation.",
+  "profileInfo": "Profile Info",
+  "profileImage": "Profile Image",
+  "profileImageHint": "Click the camera icon to upload a new image",
+  "chatViewOncePhoto": "View-once photo",
+  "chatHiddenMessage": "Hidden message",
+  "placeDetails": "Place details",
+  "placeDetailsUnavailable": "This place could not be loaded.",
+  "placeDirections": "Directions",
+  "placeCall": "Call",
+  "placeContact": "Contact",
+  "placePhone": "Phone",
+  "placeNoContact": "No contact information available.",
+  "placeAddedBy": "Added by",
+  "placeDislike": "Dislike",
+  "placeReactionSaved": "Your reaction was saved.",
+  "premiumSubtitle": "Discover more. Stand out. Expand your Coolvibes experience.",
+  "premiumActiveTitle": "Your Premium membership is active",
+  "premiumActiveBody": "Enjoy Premium benefits with this account.",
+  "premiumBenefits": "Premium benefits",
+  "premiumLiveTitle": "Live broadcasts",
+  "premiumLiveBody": "Host your own broadcast and request to join live rooms.",
+  "premiumNearbyTitle": "More ways to discover",
+  "premiumNearbyBody": "Explore Bubble and Dome views in Nearby.",
+  "premiumVisibilityTitle": "Priority visibility",
+  "premiumVisibilityBody": "Stand out across supported discovery surfaces.",
+  "premiumBadgeTitle": "Premium badge",
+  "premiumBadgeBody": "Show your membership badge on supported surfaces.",
+  "premiumAccountNote": "Review current plans, prices and membership options on your account page.",
+  "premiumTerms": "Terms and privacy",
+  "premiumExplore": "Explore Premium",
+  "premiumManage": "Manage membership",
+  "classifiedDetails": "Listing details",
+  "classifiedUnavailable": "This listing could not be loaded. Please try again.",
+  "classifiedIntro": "Community listings for work, roommates and new opportunities.",
+  "classifiedSearch": "Search listings",
+  "classifiedEmpty": "No listings yet",
+  "classifiedEmptyBody": "Share the first listing with the community.",
+  "classifiedNoResults": "No matching listings",
+  "classifiedSearchHint": "Try another title or keyword.",
+  "classifiedIncompleteDetail": "Enter both a label and a value for each detail.",
+  "classifiedCreateHint": "Add a title and details, then write your description below.",
+  "classifiedTitleHint": "For example: Looking for a roommate",
+  "classifiedExtraDetails": "Additional details",
+  "classifiedDetailHint": "Add details such as location, price or working arrangements.",
+  "classifiedLabelHint": "For example: Location",
+  "classifiedValueHint": "For example: Central London",
+  "classifiedDescriptionHint": "Describe your listing…",
+  "legalUnavailable": "Documents could not be loaded. Please try again.",
+  "notificationTitle": "Notifications",
+  "notificationReactions": "Interactions",
+  "notificationPeople": "Follows and friends",
+  "notificationGifts": "Gifts",
+  "notificationOther": "Other",
+  "notificationFilter": "Notification type",
+  "notificationUnread": "Unread",
+  "notificationEmpty": "No notifications here",
+  "notificationEmptyBody": "New activity in this category will appear here."
+}

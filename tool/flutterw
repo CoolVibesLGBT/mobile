@@ -1,0 +1,18 @@
+#!/bin/sh
+# Project SDK: the iOS WebView blur clip fix requires Flutter 3.41 or later.
+set -eu
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+version=$(cat "$project_dir/.flutter-version")
+case "$(uname -s)" in
+  Darwin) sdk_cache="${COOLVIBES_SDK_CACHE:-$HOME/Library/Caches/coolvibes}" ;;
+  *) sdk_cache="${COOLVIBES_SDK_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/coolvibes}" ;;
+esac
+sdk_dir="$sdk_cache/flutter-$version"
+if [ ! -x "$sdk_dir/bin/flutter" ]; then
+  mkdir -p "$sdk_cache"
+  git clone --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$sdk_dir"
+fi
+if [ ! -e "$project_dir/.flutter-sdk" ] && [ ! -L "$project_dir/.flutter-sdk" ]; then
+  ln -s "$sdk_dir" "$project_dir/.flutter-sdk"
+fi
+exec "$sdk_dir/bin/flutter" "$@"

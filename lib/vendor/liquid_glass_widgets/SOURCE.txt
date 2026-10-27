@@ -1,0 +1,88 @@
+Coolvibes source integration
+
+Source: /Users/ersanyakit/Downloads/liquid_glass_widgets-main
+Upstream pubspec version: 1.15.0
+Runtime dependency: Flutter SDK only. No pub/path/git dependency is added.
+Public entry point: lib/vendor/liquid_glass_widgets/liquid_glass_widgets.dart
+Application adapter: lib/components/glass_surface.dart
+All Dart library sources and shader includes are retained. Existing application
+controls keep their APIs and gesture ownership; GlassSurface uses GlassContainer
+and GlassGlow. General controls use premium refraction where supported. Chat
+header controls, attachment/mic buttons and the input share the same frosted
+material; modal surfaces use a stronger white tint (a dark tint in dark mode).
+There is no claim of native UIGlassEffect or pixel-verified Telegram parity.
+
+Local changes:
+- Shader asset keys resolve to shaders/liquid_glass/ in both tests and runtime.
+- Fixed two invalid relative imports in src/engine/glass_glow.dart.
+- The project now pins Flutter 3.41.9 via .flutter-version and tool/flutterw.
+  Flutter 3.41 includes iOS PlatformView rounded backdrop clipping (#177551);
+  3.38 rendered rectangular blur over the WebView regardless of Dart clips.
+  The previously adapted sampler calls still use SDK default filtering.
+- PlatformView clips resolve capsule sentinel radii to real bounds before
+  reaching the compositor (a 48pt circle has a 24pt corner radius).
+- AppDesign owns one outer shadow for controls and input surfaces, based on
+  Telegram GlassBackgroundView.generateLegacyShadowImage. Dark mode omits it.
+- Input surfaces use the optical renderer with nonzero thickness, edge light
+  and Fresnel, retaining their white blur tint. The role owns quality for both
+  the field and adjacent/header controls; sheets retain their blur material.
+- AppPressable owns the composer's passive press feedback: it observes pointer
+  events without registering a competing tap or text-selection recognizer.
+  Lift/release springs and directional stretch follow the local Telegram
+  GlassBackgroundComponent/TouchEffect.swift reference. Reduce Motion suppresses
+  the transform; up/cancel restore it. MessageField retains text-field semantics.
+- AppTabBar forwards platformViewBackdrop over active maps; it no longer paints
+  an opaque backplate. The shared control material maps its frost radius to the
+  live backdrop filter over platform views, keeping the tint and shadow shared
+  with map controls. The tab indicator retains its own icon-capture lens.
+- iOS reserved-region bridge is compiled into Runner and registered manually;
+  future SDK APIs remain guarded by upstream availability checks.
+- Shader warmup runs before runApp; startup reports failures and keeps fallback.
+- Action-sheet cards use shaped GlassContainer surfaces: the layer-only wrapper
+  did not draw any backdrop blur at minimal quality. Tint is applied once.
+- Application sheets share navigation.sheet, retain blur at the full detent,
+  and let the sheet surface own the page backdrop.
+- MIT notices: assets/licenses/liquid_glass_widgets.txt and
+  assets/licenses/liquid_glass_engine.txt, also registered with LicenseRegistry.
+  Engine attribution retained at src/engine/ATTRIBUTION.md.
+
+Use the application's shared components for screens. The local public entry
+point exposes the full set for extending those components without a package.
+Do not introduce a second app-level button, header or glass renderer.
+
+Verification:
+./tool/flutterw test test/glass_source_integration_test.dart test/interaction_test.dart
+./tool/flutterw analyze --no-pub
+
+Observed verification (2026-10-25):
+- All five shader programs compiled and preloaded in the integration widget test.
+- Full test suite, concurrency 2: 233 passed, 2 skipped, no failures.
+- Analyzer: no errors; 35 infos and one unused-import warning remain.
+- iOS source bridge: swiftc -typecheck passed for arm64 iOS simulator.
+- iOS 26.1 simulator build and input_runtime_test passed: chat chrome shares
+  the input frost and shadow, a cancelled press did not send, a tap sent once,
+  the full-height forwarding sheet retained its blur, and the nearby map's
+  controls passed round-clip checks over a mounted WebView. The API is a
+  fixture; this does not prove production backend delivery or pixel parity.
+- No screenshot or pixel comparison was performed.
+- Android arm64 debug APK built successfully. Android device interaction was
+  not exercised; the APK build is compilation evidence only.
+
+Nearby tab-bar follow-up (2026-10-25):
+- 3 discovery-map tests passed, including light/dark real-Shell navigation,
+  full-screen map bounds, translucent track, capsule blur clip and returning
+  from another tab. Hidden check-in maps do not change the grid's glass mode.
+- 15 shared chat-chrome, glass integration and press interaction tests passed.
+- iOS input_runtime_test passed with the real Shell and mounted map WebView:
+  dragging the tab indicator away from Nearby and tapping back retains the
+  correct backdrop mode. Fixture API; no pixel comparison or Android device
+  interaction was performed for this follow-up.
+
+Input optics and pressure follow-up (2026-10-25):
+- 25 chat-chrome, shared glass, press and composer-context tests passed.
+  Coverage includes lift/stretch/release/cancel, text selection, focus, reduced
+  motion, white tint, shared header/input material, send and voice gestures.
+- The chat optical-input test in input_runtime_test passed on iOS 26.1 with
+  preloaded shaders, measured press/drag geometry, one send, cancelled-send
+  protection and the forwarding modal's blur. Installed Flutter SDK: 3.47.8.
+- Analyzer reported no errors or warnings. No screenshot or pixel comparison.

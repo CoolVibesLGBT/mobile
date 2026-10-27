@@ -1,0 +1,27 @@
+{
+  "chat_action_pin.svg": {
+    "source": "/Users/ersanyakit/Downloads/Telegram-iOS-master/submodules/TelegramUI/Images.xcassets/Chat/Context Menu/Pin.imageset/ic_lt_pin.pdf",
+    "sha256": "b82f105ab48c39c2301d20cb4483e239d89908f1ed3ed7137aa367eb516f4b93",
+    "conversion": "pdftocairo -svg (original vector paths)"
+  },
+  "chat_action_unpin.svg": {
+    "source": "/Users/ersanyakit/Downloads/Telegram-iOS-master/submodules/TelegramUI/Images.xcassets/Chat/Context Menu/Unpin.imageset/ic_lt_unpin.pdf",
+    "sha256": "09888df749e03fdbe77b55f42bf69fe2d660b0791cac5bd5e02974193596f280",
+    "conversion": "pdftocairo -svg (original vector paths)"
+  },
+  "chat_action_muted.svg": {
+    "source": "/Users/ersanyakit/Downloads/Telegram-iOS-master/submodules/TelegramUI/Images.xcassets/Chat/Context Menu/Muted.imageset/ic_mute.pdf",
+    "sha256": "8e9531190bda6c83f1d5c48a53faade33f88f6d1ff4fe4538433cc9768009627",
+    "conversion": "pdftocairo -svg (original vector paths)"
+  },
+  "chat_action_unmute.svg": {
+    "source": "/Users/ersanyakit/Downloads/Telegram-iOS-master/submodules/TelegramUI/Images.xcassets/Chat/Context Menu/Unmute.imageset/ic_lt_unmuted.pdf",
+    "sha256": "b64bd8eab49423dc5c51d1417a43ab6faf80e0080da8f638ff14a5a1542b1d38",
+    "conversion": "pdftocairo -svg (original vector paths)"
+  },
+  "chat_action_delete.svg": {
+    "source": "/Users/ersanyakit/Downloads/Telegram-iOS-master/submodules/TelegramUI/Images.xcassets/Chat/Context Menu/Delete.imageset/ic_lt_delete.pdf",
+    "sha256": "6752d1d7f6c45967967778b787854a38073b39723a919de2e3a57bfa94f380c8",
+    "conversion": "pdftocairo -svg (original vector paths)"
+  }
+}

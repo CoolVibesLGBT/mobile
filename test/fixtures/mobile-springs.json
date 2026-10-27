@@ -1,0 +1,187 @@
+[
+  {
+    "name": "pan",
+    "stiffness": 90,
+    "damping": 18,
+    "mass": 4,
+    "useDuration": false,
+    "start": 300,
+    "target": -150,
+    "velocity": 120,
+    "samples": [
+      {
+        "position": 300.5858881624499,
+        "velocity": -44.821071594707405,
+        "t": 0.016
+      },
+      {
+        "position": 266.28223181681545,
+        "velocity": -718.5553483598078,
+        "t": 0.1
+      },
+      {
+        "position": 112.49376006897774,
+        "velocity": -1191.6664809385056,
+        "t": 0.25
+      },
+      {
+        "position": -145.69018021131964,
+        "velocity": -721.7582461510543,
+        "t": 0.5
+      },
+      {
+        "position": -198.81310286847247,
+        "velocity": 219.0364337084721,
+        "t": 1
+      }
+    ]
+  },
+  {
+    "name": "focus",
+    "stiffness": 100,
+    "damping": 18,
+    "mass": 4,
+    "useDuration": false,
+    "start": 90,
+    "target": 0,
+    "velocity": 0,
+    "samples": [
+      {
+        "position": 89.71893857740567,
+        "velocity": -34.697516959028746,
+        "t": 0.016
+      },
+      {
+        "position": 80.45848408399229,
+        "velocity": -173.7552260626218,
+        "t": 0.1
+      },
+      {
+        "position": 45.730250497221576,
+        "velocity": -257.96631056177154,
+        "t": 0.25
+      },
+      {
+        "position": -6.340098720616226,
+        "velocity": -129.05929860438124,
+        "t": 0.5
+      },
+      {
+        "position": -6.956169449589271,
+        "velocity": 51.49590942284891,
+        "t": 1
+      }
+    ]
+  },
+  {
+    "name": "zoom",
+    "stiffness": 150,
+    "damping": 20,
+    "mass": 4,
+    "useDuration": false,
+    "start": 1,
+    "target": 0.5,
+    "velocity": 0,
+    "samples": [
+      {
+        "position": 0.9976645993866817,
+        "velocity": -0.28785266966706824,
+        "t": 0.016
+      },
+      {
+        "position": 0.9224830585392807,
+        "velocity": -1.3853762563095675,
+        "t": 0.1
+      },
+      {
+        "position": 0.6640326767612413,
+        "velocity": -1.7684437571838312,
+        "t": 0.25
+      },
+      {
+        "position": 0.387019127567051,
+        "velocity": -0.32635870015095797,
+        "t": 0.5
+      },
+      {
+        "position": 0.5198488216759953,
+        "velocity": 0.17589182965367983,
+        "t": 1
+      }
+    ]
+  },
+  {
+    "name": "return",
+    "stiffness": 900,
+    "damping": 120,
+    "mass": 4,
+    "useDuration": false,
+    "start": 0.5,
+    "target": 1,
+    "velocity": 0,
+    "samples": [
+      {
+        "position": 0.5122907261387369,
+        "velocity": 1.415930149919796,
+        "t": 0.016
+      },
+      {
+        "position": 0.7210872998144627,
+        "velocity": 2.5102143016698353,
+        "t": 0.1
+      },
+      {
+        "position": 0.9441453535919784,
+        "velocity": 0.6614366022002561,
+        "t": 0.25
+      },
+      {
+        "position": 0.9976493914268717,
+        "velocity": 0.031110995820815647,
+        "t": 0.5
+      },
+      {
+        "position": 1,
+        "velocity": 0,
+        "t": 1
+      }
+    ]
+  },
+  {
+    "name": "profile",
+    "stiffness": 120,
+    "damping": 20,
+    "mass": 4,
+    "useDuration": false,
+    "start": 0,
+    "target": 1,
+    "velocity": 0,
+    "samples": [
+      {
+        "position": 0.003737235765886693,
+        "velocity": 0.46071174485705413,
+        "t": 0.016
+      },
+      {
+        "position": 0.1247815380817191,
+        "velocity": 2.2450117972235786,
+        "t": 0.1
+      },
+      {
+        "position": 0.5575252801639705,
+        "velocity": 3.0924588883467603,
+        "t": 0.25
+      },
+      {
+        "position": 1.1229928548431898,
+        "velocity": 1.1427860977655309,
+        "t": 0.5
+      },
+      {
+        "position": 1.0284047598323944,
+        "velocity": -0.498769060152944,
+        "t": 1
+      }
+    ]
+  }
+]

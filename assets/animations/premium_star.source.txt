@@ -1,0 +1,2 @@
+Telegram-iOS/submodules/TelegramUI/Resources/Animations/PremiumStar.tgs
+Decoded without changes from the local Telegram-iOS reference; Telegram-iOS GPL-2.0 license.

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24pt" height="24pt" viewBox="0 0 24 24">
+<defs>
+<clipPath id="clip-0">
+<path clip-rule="nonzero" d="M 4 4 L 20 4 L 20 20 L 4 20 Z M 4 4 "/>
+</clipPath>
+<clipPath id="clip-1">
+<path clip-rule="nonzero" d="M 12.75 11.25 L 19 11.25 C 19.414062 11.25 19.75 11.585938 19.75 12 C 19.75 12.414062 19.414062 12.75 19 12.75 L 12.75 12.75 L 12.75 19 C 12.75 19.414062 12.414062 19.75 12 19.75 C 11.585938 19.75 11.25 19.414062 11.25 19 L 11.25 12.75 L 5 12.75 C 4.585938 12.75 4.25 12.414062 4.25 12 C 4.25 11.585938 4.585938 11.25 5 11.25 L 11.25 11.25 L 11.25 5 C 11.25 4.585938 11.585938 4.25 12 4.25 C 12.414062 4.25 12.75 4.585938 12.75 5 Z M 12.75 11.25 "/>
+</clipPath>
+</defs>
+<g clip-path="url(#clip-0)">
+<g clip-path="url(#clip-1)">
+<rect x="-2.4" y="-2.4" width="28.8" height="28.8" fill="rgb(0%, 0%, 0%)" fill-opacity="1"/>
+</g>
+</g>
+</svg>

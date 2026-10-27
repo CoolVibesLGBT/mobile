@@ -1,0 +1,81 @@
+{
+  "source": "https://t.me/addemoji/EmojiCategories",
+  "icons": {
+    "love": {
+      "emoji": "❤️",
+      "sha256": "f9a8b59fd777fa17df5d834211e6c8a63d98e7a214f2300f22d2f6d56a14759e",
+      "width": 512,
+      "height": 512
+    },
+    "like": {
+      "emoji": "👍",
+      "sha256": "b05f0d5d3d970e734f487512ead0aec43b7645521532a77630dec38f420930f0",
+      "width": 512,
+      "height": 512
+    },
+    "dislike": {
+      "emoji": "👎",
+      "sha256": "431b0d4914649698bdf766533173436767a018ffe13dab83471810514707c05d",
+      "width": 512,
+      "height": 512
+    },
+    "party": {
+      "emoji": "🎉",
+      "sha256": "8026b6f5265de76b76bad33b34a0346664fc4d79c404b6cb9363fc2cef6fc715",
+      "width": 512,
+      "height": 512
+    },
+    "laugh": {
+      "emoji": "😄",
+      "sha256": "4a0e0f949587dae0bd5efb45a03e648c6409d85b018ff2bb9657f962b747f837",
+      "width": 512,
+      "height": 512
+    },
+    "surprised": {
+      "emoji": "😦",
+      "sha256": "568e85241748f6b193a5f9abab241f8f2b5bda7041cb0be5abe8d6b594497c0b",
+      "width": 512,
+      "height": 512
+    },
+    "sad": {
+      "emoji": "😔",
+      "sha256": "ae44a38db6fcd7aad42e69f8ab17d5f616979da73e29af104413ce3d9292e15e",
+      "width": 512,
+      "height": 512
+    },
+    "angry": {
+      "emoji": "😡",
+      "sha256": "fa4bd37dd659883f1da2badf0810004bef6c2183cfbe9ab10fa69c9764836a29",
+      "width": 512,
+      "height": 512
+    },
+    "neutral": {
+      "emoji": "😐",
+      "sha256": "6214dedaa8e4a09e847cb6399f183ac23848aa6b3e095e222773df874ba7c6ad",
+      "width": 512,
+      "height": 512
+    },
+    "thinking": {
+      "emoji": "🤔",
+      "sha256": "5adab8ce1fc8391bfc7b7df78421865d23e27ca26028aa8383d703f37e8da817",
+      "width": 512,
+      "height": 512
+    },
+    "playful": {
+      "emoji": "🤪",
+      "sha256": "487bc6138e66295c5efd1fc52d1e126e18ed4cd5cc64007fc89c0d03261d5313",
+      "width": 512,
+      "height": 512
+    }
+  },
+  "transitions": {
+    "emoji_search_to_arrow": {
+      "source": "submodules/TelegramUI/Resources/Animations/emoji_search_to_arrow.tgs",
+      "sha256": "a91fd2a95a0e388887034fc01c8484367e45d7140cc3282e02f69636475b7a46"
+    },
+    "emoji_arrow_to_search": {
+      "source": "submodules/TelegramUI/Resources/Animations/emoji_arrow_to_search.tgs",
+      "sha256": "393435f6d5496cab138738213e9e7a773292d065cb375dd7cf5fbf8c46352a77"
+    }
+  }
+}
