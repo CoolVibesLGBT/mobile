@@ -117,6 +117,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
       ? const RadarScreen()
       : AppScaffold(
           extendBodyBehindAppBar: true,
+          backgroundColor: AppPalette.of(context).row,
           appBar: AppHeader(
             edge: view == 'map' ? AppHeaderEdge.none : null,
             leading: const WorkspaceMenuButton(),
@@ -195,42 +196,45 @@ class _NearbyScreenState extends State<NearbyScreen> {
                     ? ScreenStatus(error: locationError, retry: locate)
                     : locating
                     ? const ScreenStatus(loading: true)
-                    : LayoutBuilder(
-                        builder: (context, box) {
-                          final count = view == 'list'
-                              ? 1
-                              : columns.clamp(
-                                  1,
-                                  (box.maxWidth /
-                                          (84 *
-                                              MediaQuery.textScalerOf(
-                                                context,
-                                              ).scale(1)))
-                                      .floor()
-                                      .clamp(1, 8),
+                    : ColoredBox(
+                        color: AppPalette.of(context).row,
+                        child: LayoutBuilder(
+                          builder: (context, box) {
+                            final count = view == 'list'
+                                ? 1
+                                : columns.clamp(
+                                    1,
+                                    (box.maxWidth /
+                                            (84 *
+                                                MediaQuery.textScalerOf(
+                                                  context,
+                                                ).scale(1)))
+                                        .floor()
+                                        .clamp(1, 8),
+                                  );
+                            return RecordList(
+                              action: 'user.fetch.nearby.users',
+                              params: coordinates,
+                              columns: count,
+                              // List rows carry their own hairline separators.
+                              gap: view == 'list' ? 0 : 8,
+                              itemBuilder: (context, raw, reload) {
+                                final user = nearbyPerson(raw, coordinates);
+                                return PersonTile(
+                                  person: user,
+                                  grid: view == 'grid',
+                                  subtitle: string(user['distance']).isEmpty
+                                      ? null
+                                      : '${user['distance']} km',
+                                  onTap: () => person(user),
+                                  onChat: () => message(user),
+                                  onLike: () => react(user, 'like', reload),
+                                  onDislike: () => react(user, 'dislike', reload),
                                 );
-                          return RecordList(
-                            action: 'user.fetch.nearby.users',
-                            params: coordinates,
-                            columns: count,
-                            // List rows carry their own hairline separators.
-                            gap: view == 'list' ? 0 : 8,
-                            itemBuilder: (context, raw, reload) {
-                              final user = nearbyPerson(raw, coordinates);
-                              return PersonTile(
-                                person: user,
-                                grid: view == 'grid',
-                                subtitle: string(user['distance']).isEmpty
-                                    ? null
-                                    : '${user['distance']} km',
-                                onTap: () => person(user),
-                                onChat: () => message(user),
-                                onLike: () => react(user, 'like', reload),
-                                onDislike: () => react(user, 'dislike', reload),
-                              );
-                            },
-                          );
-                        },
+                              },
+                            );
+                          },
+                        ),
                       ),
               ),
             ],
@@ -282,7 +286,10 @@ class _CheckInsScreenState extends State<CheckInsScreen> {
 
   @override
   Widget build(BuildContext context) => AppScaffold(
+    extendBodyBehindAppBar: true,
+    backgroundColor: AppPalette.of(context).row,
     appBar: AppHeader(
+      edge: map ? AppHeaderEdge.none : null,
       leading: const WorkspaceMenuButton(),
       title: AppSegments<bool>(
         header: true,
@@ -335,12 +342,15 @@ class _CheckInsScreenState extends State<CheckInsScreen> {
             limit: 50,
             coordinates: coordinates,
           )
-        : RecordList(
-            key: ValueKey(revision),
-            action: 'user.check_in_fetch',
-            params: {...coordinates, 'limit': 50},
-            itemBuilder: (_, post, reload) =>
-                PostTile(post: post, reload: reload),
+        : ColoredBox(
+            color: AppPalette.of(context).row,
+            child: RecordList(
+              key: ValueKey(revision),
+              action: 'user.check_in_fetch',
+              params: {...coordinates, 'limit': 50},
+              itemBuilder: (_, post, reload) =>
+                  PostTile(post: post, reload: reload),
+            ),
           ),
   );
 }
