@@ -206,7 +206,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   });
 
   Future<void> block(Json user) => action('block', () async {
-    final blocked = profileBlocked(user);
+    final session = AppScope.of(context);
+    final blocked = session.isBlocked(user);
     if (!await confirmAction(
       context,
       action: blocked ? context.l10n.profileUnblock : context.l10n.block,
@@ -216,10 +217,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       return;
     }
     if (!mounted) return;
-    await AppScope.of(
-      context,
-    ).api.call('user.block.toggle', body: {'blocked_id': recordId(user)});
+    await session.api.call(
+      'user.block.toggle',
+      body: {'blocked_id': recordId(user)},
+    );
     if (!mounted) return;
+    session.setBlocked(user, !blocked);
     AppScope.of(context).invalidateMedia();
     if (blocked) {
       await load();
@@ -261,7 +264,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       language: Localizations.localeOf(context).languageCode,
     ).replaceAll(RegExp(r'<[^>]*>'), '').trim();
     final joined = DateTime.tryParse(string(user['created_at']));
-    final following = profileFollowing(user), blocked = profileBlocked(user);
+    final following = profileFollowing(user),
+        blocked = AppScope.of(context).isBlocked(user);
     final avatar = user['avatar'] ?? user['avatar_url'];
     return Column(
       children: [

@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import '../core/api.dart';
 import '../core/session.dart';
 import '../core/realtime.dart';
-import 'navigation.dart';
 import 'screen_status.dart';
 
 class RecordList extends StatefulWidget {
@@ -117,6 +116,24 @@ class RecordListState extends State<RecordList> {
     }
   }
 
+  void _continueIfNeeded({required bool filtered, String? previousCursor}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || loading || error != null || cursor == null) return;
+      if (cursor == previousCursor) return;
+      if (filtered) {
+        load();
+        return;
+      }
+      final controller = widget.primary
+          ? PrimaryScrollController.maybeOf(context)
+          : scroll;
+      if (controller?.positions.length == 1 &&
+          controller!.positions.single.extentAfter < 400) {
+        load();
+      }
+    });
+  }
+
   @override
   void didUpdateWidget(RecordList oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -188,15 +205,14 @@ class RecordListState extends State<RecordList> {
     } finally {
       if (mounted && requestGeneration == generation) {
         setState(() => loading = false);
-        // Recipient search filters the authorized conversation pages locally.
-        // Continue paging so a match beyond the first page is not lost.
-        if (widget.filter != null &&
-            error == null &&
-            cursor != null &&
-            cursor != previousCursor) {
-          scheduleMicrotask(() {
-            if (mounted) load();
-          });
+        // Continue local filtering until it can be resolved, and fill the
+        // viewport when a page is too short to produce a scroll event that
+        // would otherwise request the next page.
+        if (error == null && cursor != null && cursor != previousCursor) {
+          _continueIfNeeded(
+            filtered: widget.filter != null,
+            previousCursor: previousCursor,
+          );
         }
       }
     }

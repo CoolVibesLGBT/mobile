@@ -74,6 +74,9 @@ class _ChatsScreenState extends State<ChatsScreen> {
       color: AppPalette.of(context).row,
       child: RecordList(
         key: list,
+        // Keep the chat list on its own scroll controller so the shared
+        // Cupertino pull-to-refresh sliver is active on this screen.
+        primary: false,
         action: 'chat.fetch_chats',
         itemBuilder: (context, chat, reload) {
           final id = chatEntityId(chat);
@@ -580,7 +583,10 @@ class _ChatScreenState extends State<ChatScreen> {
           event(update.data);
         }
       });
-      if (!widget.preview) restoreDraft();
+      if (!widget.preview) {
+        restoreDraft();
+        inputFocus.requestFocus();
+      }
       uploadEvents = session!.uploads.completed.stream.listen(uploadCompleted);
       session!.uploads.addListener(uploadChanged);
       uploadChanged();

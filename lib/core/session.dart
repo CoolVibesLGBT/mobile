@@ -15,6 +15,9 @@ class Session extends ChangeNotifier with WidgetsBindingObserver {
   final bool persistPreferences;
   late final UploadQueue uploads = UploadQueue(api);
   Json user = {};
+  final blockedUserIds = <String>{};
+  String _blockedOwnerId = '';
+  bool blockedUsersLoaded = false;
   final recentEmoji = <String>[];
   int emojiSkinTone = 0;
   final recentStickers = <Json>[];
@@ -69,6 +72,9 @@ class Session extends ChangeNotifier with WidgetsBindingObserver {
         await uploads.attach('');
         this.realtime.disconnect();
         user = {};
+        blockedUserIds.clear();
+        _blockedOwnerId = '';
+        blockedUsersLoaded = false;
         _clearRecents();
         mediaRevision++;
         notifyListeners();
@@ -217,8 +223,120 @@ class Session extends ChangeNotifier with WidgetsBindingObserver {
     if (restored.isEmpty) throw ApiException('Invalid user response');
     user = restored;
     final owner = string(user['public_id'] ?? user['id']);
+    if (owner != _blockedOwnerId) {
+      blockedUserIds.clear();
+      _blockedOwnerId = owner;
+      blockedUsersLoaded = false;
+    }
     if (owner != uploads.owner) await uploads.attach(owner);
     notifyListeners();
+    unawaited(loadBlockedUsers());
+  }
+
+  bool isBlocked(Json profile) {
+    if ([true, 1, '1', 'true'].contains(
+      profile['is_blocked'] ?? profile['is_blocking'] ?? profile['blocked'],
+    )) {
+      return true;
+    }
+    return [
+      profile['id'],
+      profile['public_id'],
+      profile['user_id'],
+    ].map(string).any(blockedUserIds.contains);
+  }
+
+  void setBlocked(Json profile, bool blocked) {
+    final identities = [
+      profile['id'],
+      profile['public_id'],
+      profile['user_id'],
+    ].map(string).where((id) => id.isNotEmpty);
+    if (blocked) {
+      blockedUserIds.addAll(identities);
+    } else {
+      blockedUserIds.removeAll(identities);
+    }
+    notifyListeners();
+  }
+
+  Future<void> loadBlockedUsers() async {
+    final owner = string(user['public_id'] ?? user['id']);
+    if (owner.isEmpty || api.token == null || blockedUsersLoaded) return;
+    final requestToken = api.token;
+    final ownerIdentities = [
+      user['id'],
+      user['public_id'],
+    ].map(string).where((id) => id.isNotEmpty).toSet();
+
+    Future<Set<String>> fetch(String kind) async {
+      final resultIds = <String>{};
+      final seenCursors = <String>{};
+      String? cursor;
+      do {
+        final response = await api.call(
+          'user.fetch_engagements',
+          body: {
+            'user_id': owner,
+            'engagement_type': kind,
+            'limit': 100,
+            'cursor': ?cursor,
+          },
+        );
+        final page = RecordPage.parse(response, key: 'engagements');
+        for (final row in page.records) {
+          final engager = object(row['engager'] ?? row['user'] ?? row['actor']);
+          final engagee = object(
+            row['engagee'] ?? row['target'] ?? row['profile'],
+          );
+          final other =
+              ownerIdentities
+                  .intersection(
+                    [
+                      engager['id'],
+                      engager['public_id'],
+                    ].map(string).where((id) => id.isNotEmpty).toSet(),
+                  )
+                  .isNotEmpty
+              ? engagee
+              : ownerIdentities
+                    .intersection(
+                      [
+                        engagee['id'],
+                        engagee['public_id'],
+                      ].map(string).where((id) => id.isNotEmpty).toSet(),
+                    )
+                    .isNotEmpty
+              ? engager
+              : engagee;
+          for (final id in [other['id'], other['public_id']].map(string)) {
+            if (id.isNotEmpty) resultIds.add(id);
+          }
+        }
+        cursor = page.next;
+      } while (cursor != null && seenCursors.add(cursor));
+      return resultIds;
+    }
+
+    try {
+      Set<String> ids;
+      try {
+        ids = await fetch('blocking');
+      } catch (_) {
+        ids = await fetch('block');
+      }
+      if (_disposed || requestToken != api.token || owner != _blockedOwnerId) {
+        return;
+      }
+      blockedUserIds
+        ..clear()
+        ..addAll(ids);
+      blockedUsersLoaded = true;
+      notifyListeners();
+    } catch (_) {
+      // Profile controls still honor an explicit server flag and can retry
+      // this lookup the next time the profile is opened.
+    }
   }
 
   Future<void> authenticate(Json fields, {bool register = false}) async {
@@ -245,7 +363,11 @@ class Session extends ChangeNotifier with WidgetsBindingObserver {
         rethrow;
       }
     }
+    blockedUserIds.clear();
+    _blockedOwnerId = string(user['public_id'] ?? user['id']);
+    blockedUsersLoaded = false;
     await uploads.attach(string(user['public_id'] ?? user['id']));
+    unawaited(loadBlockedUsers());
     startupError = null;
     connect();
     notifyListeners();
@@ -277,6 +399,9 @@ class Session extends ChangeNotifier with WidgetsBindingObserver {
     await uploads.attach('');
     await api.clearToken();
     user = {};
+    blockedUserIds.clear();
+    _blockedOwnerId = '';
+    blockedUsersLoaded = false;
     _clearRecents();
     mediaRevision++;
     notifyListeners();
