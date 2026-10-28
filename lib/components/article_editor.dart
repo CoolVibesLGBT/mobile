@@ -339,7 +339,7 @@ class ArticleEditor extends StatelessWidget {
                   padding: EdgeInsets.fromLTRB(
                     16,
                     MediaQuery.paddingOf(context).top +
-                        AppDesign.headerHeight +
+                        AppDesign.headerInset(context) +
                         16,
                     16,
                     MediaQuery.paddingOf(context).bottom + 88,

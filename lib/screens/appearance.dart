@@ -1,5 +1,6 @@
 import '../l10n/l10n.dart';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -67,13 +68,23 @@ class AppearanceScreen extends StatelessWidget {
           value: value,
           onChanged: (color) => setMessages(
             which == 'accent'
-                ? MessageColors(color, messages.colors)
-                : MessageColors(messages.accent, [
-                    for (var i = 0; i < messages.colors.length; i++)
-                      i == (which == 'end' ? 1 : 0)
-                          ? color
-                          : messages.colors[i],
-                  ]),
+                ? MessageColors(
+                    color,
+                    messages.colors,
+                    gradientType: messages.gradientType,
+                    angle: messages.angle,
+                  )
+                : MessageColors(
+                    messages.accent,
+                    [
+                      for (var i = 0; i < messages.colors.length; i++)
+                        i == (which == 'end' ? 1 : 0)
+                            ? color
+                            : messages.colors[i],
+                    ],
+                    gradientType: messages.gradientType,
+                    angle: messages.angle,
+                  ),
           ),
         ),
       );
@@ -85,7 +96,10 @@ class AppearanceScreen extends StatelessWidget {
       appBar: AppHeader(title: Text(context.l10n.appearance)),
       body: ListView(
         padding: EdgeInsets.only(
-          top: MediaQuery.paddingOf(context).top + AppDesign.headerHeight + 16,
+          top:
+              MediaQuery.paddingOf(context).top +
+              AppDesign.headerInset(context) +
+              16,
           bottom: MediaQuery.paddingOf(context).bottom + 24,
         ),
         children: [
@@ -262,9 +276,60 @@ class AppearanceScreen extends StatelessWidget {
                                 ? resolved.sourceMessageColors[1]
                                 : messages.accent,
                           ],
+                    gradientType: messages.gradientType,
+                    angle: messages.angle,
                   ),
                 ),
               ),
+              if (gradient) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: AppSegments<String>(
+                    values: const {
+                      'linear': Text('Linear'),
+                      'radial': Text('Radial'),
+                      'conic': Text('Conic'),
+                    },
+                    selected: messages.gradientType,
+                    onChanged: (type) => setMessages(
+                      MessageColors(
+                        messages.accent,
+                        messages.colors,
+                        gradientType: type,
+                        angle: messages.angle,
+                      ),
+                    ),
+                  ),
+                ),
+                if (messages.gradientType != 'radial')
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        const Text('Angle'),
+                        Expanded(
+                          child: CupertinoSlider(
+                            min: 0,
+                            max: 360,
+                            value: messages.angle.clamp(0, 360),
+                            onChanged: (angle) => setMessages(
+                              MessageColors(
+                                messages.accent,
+                                messages.colors,
+                                gradientType: messages.gradientType,
+                                angle: angle,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Text('${messages.angle.round()}°'),
+                      ],
+                    ),
+                  ),
+              ],
               _ColorRow(
                 title: context.l10n.accentColor,
                 color: messages.accent,
@@ -354,11 +419,38 @@ class _PreviewBubbles extends StatelessWidget {
               decoration: BoxDecoration(
                 color: outgoing ? stops.first : palette.incoming,
                 gradient: outgoing && stops.first != stops.last
-                    ? LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: stops,
-                      )
+                    ? (palette.outgoingGradientType == 'radial'
+                          ? RadialGradient(colors: stops)
+                          : palette.outgoingGradientType == 'conic'
+                          ? SweepGradient(
+                              startAngle:
+                                  palette.outgoingGradientAngle * math.pi / 180,
+                              endAngle:
+                                  palette.outgoingGradientAngle *
+                                      math.pi /
+                                      180 +
+                                  2 * math.pi,
+                              colors: stops,
+                            )
+                          : LinearGradient(
+                              begin: Alignment(
+                                -math.cos(
+                                  palette.outgoingGradientAngle * math.pi / 180,
+                                ),
+                                -math.sin(
+                                  palette.outgoingGradientAngle * math.pi / 180,
+                                ),
+                              ),
+                              end: Alignment(
+                                math.cos(
+                                  palette.outgoingGradientAngle * math.pi / 180,
+                                ),
+                                math.sin(
+                                  palette.outgoingGradientAngle * math.pi / 180,
+                                ),
+                              ),
+                              colors: stops,
+                            ))
                     : null,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
@@ -755,7 +847,10 @@ class _ChatBackgroundScreenState extends State<ChatBackgroundScreen> {
       appBar: AppHeader(title: Text(context.l10n.chatWallpaper)),
       body: ListView(
         padding: EdgeInsets.only(
-          top: MediaQuery.paddingOf(context).top + AppDesign.headerHeight + 16,
+          top:
+              MediaQuery.paddingOf(context).top +
+              AppDesign.headerInset(context) +
+              16,
           bottom: MediaQuery.paddingOf(context).bottom + 24,
         ),
         children: [
@@ -1108,7 +1203,9 @@ class _ColorPickerScreenState extends State<ColorPickerScreen> {
       body: ListView(
         padding: EdgeInsets.fromLTRB(
           16,
-          MediaQuery.paddingOf(context).top + AppDesign.headerHeight + 16,
+          MediaQuery.paddingOf(context).top +
+              AppDesign.headerInset(context) +
+              16,
           16,
           32,
         ),

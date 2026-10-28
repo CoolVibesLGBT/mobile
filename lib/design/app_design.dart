@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../core/appearance.dart';
 
 /// Semantic colours of the source `useNativePalette()` (NativeStyle.ts) over the
@@ -16,6 +17,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// rows; [highlight] is the system list highlight of NativeStyle.
   final Color chatHighlight, outgoingPrimary;
   final List<Color> outgoingStops;
+  final String outgoingGradientType;
+  final double outgoingGradientAngle;
   final double textSize;
 
   /// The full resolved appearance (wallpaper, base) when built from one.
@@ -24,6 +27,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     this.chatHighlight = const Color(0xffe6f1fc),
     this.outgoingPrimary = const Color(0xff5ca853),
     this.outgoingStops = const [Color(0xffe3fee0), Color(0xffe3fee0)],
+    this.outgoingGradientType = 'linear',
+    this.outgoingGradientAngle = 90,
     this.textSize = 16,
     this.resolved,
     required this.background,
@@ -127,6 +132,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       chatHighlight: _hex(r.highlight),
       outgoingPrimary: _hex(r.outgoingPrimary),
       outgoingStops: r.outgoingStops.map(_hex).toList(),
+      outgoingGradientType: r.outgoingGradientType,
+      outgoingGradientAngle: r.outgoingGradientAngle,
       textSize: r.textSize.toDouble(),
       resolved: r,
     );
@@ -373,6 +380,10 @@ abstract final class AppDesign {
   static const articleMenuHeadingSizes = [24.0, 21.0, 19.0, 18.0, 17.0, 16.0];
   static const articleHeadingSizes = [22.0, 20.0, 18.0, 17.0, 16.0, 15.0];
   static const headerHeight = 44.0;
+  static double get headerTitlebarGap =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS ? 10.0 : 0.0;
+  static double headerInset(BuildContext context) =>
+      headerHeight + headerTitlebarGap;
   // Vendored ProgressiveBlur header defaults.
   static const headerBlurSigma = 18.0;
   static const headerBlurFalloff = 1.2;

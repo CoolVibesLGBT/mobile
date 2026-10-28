@@ -177,7 +177,12 @@ class _EmoticonPickerState extends State<EmoticonPicker> {
     });
     final api = AppScope.of(context).api;
     try {
-      const key = String.fromEnvironment('TENOR_API_KEY');
+      // Keep parity with the public Tenor client key used by web's GifPicker;
+      // still allow release/build environments to override it.
+      const key = String.fromEnvironment(
+        'TENOR_API_KEY',
+        defaultValue: 'AIzaSyBjmmwmtWOaK-SVlBEuUwmn0hox-9SDjcs',
+      );
       Json data;
       if (key.isEmpty) {
         final response = await api.call(
@@ -192,25 +197,42 @@ class _EmoticonPickerState extends State<EmoticonPicker> {
           cancelToken: cancelToken,
           queryParameters: {
             'key': key,
-            'client_key': 'coolvibes_mobile',
+            'client_key': 'bifrostapp-web',
             'q': query,
             'pos': offset,
-            'limit': 24,
-            'contentfilter': 'high',
-            'media_filter': 'gif,tinygif',
+            'limit': 32,
+            'contentfilter': 'medium',
+            'media_filter': 'gif,tinygif,nanogif',
           },
         );
         final raw = response.data ?? {};
         data = {
           'documents': [
             for (final item in raw['results'] as List? ?? [])
-              {
-                'kind': 'gif',
-                'id': item['id'],
-                'url': object(object(item['media_formats'])['gif'])['url'],
-                'width': 320,
-                'height': 240,
-              },
+              if (object(object(item['media_formats'])['gif'])['url'] != null ||
+                  object(object(item['media_formats'])['tinygif'])['url'] !=
+                      null)
+                {
+                  'kind': 'gif',
+                  'id': item['id'],
+                  'url':
+                      object(object(item['media_formats'])['gif'])['url'] ??
+                      object(object(item['media_formats'])['tinygif'])['url'],
+                  'width':
+                      ((object(object(item['media_formats'])['gif'])['dims'] ??
+                              object(
+                                object(item['media_formats'])['tinygif'],
+                              )['dims'])
+                          as List?)?[0] ??
+                      320,
+                  'height':
+                      ((object(object(item['media_formats'])['gif'])['dims'] ??
+                              object(
+                                object(item['media_formats'])['tinygif'],
+                              )['dims'])
+                          as List?)?[1] ??
+                      240,
+                },
           ],
           'nextOffset': raw['next'],
         };
@@ -359,7 +381,10 @@ class _EmoticonPickerState extends State<EmoticonPicker> {
         vertical: 1.0,
       );
     }
-    final native = emoji ? 40.0 : 70.0;
+    // Telegram's native emoji keyboard uses roughly 48pt emoji cells. The
+    // previous 40pt target packed too many small glyphs into wide macOS
+    // windows, making the Apple Color Emoji artwork look noticeably weaker.
+    final native = emoji ? 48.0 : 70.0;
     final minPerRow = emoji ? 8 : 5;
     final inset = emoji ? (width >= 420 ? 5.0 : 7.0) : 10.0;
     final minSpacing = emoji ? (width >= 420 ? 2.0 : 9.0) : 12.0;

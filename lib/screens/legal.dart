@@ -117,7 +117,7 @@ class _LegalPageState extends State<_LegalPage> {
                 padding: EdgeInsets.only(
                   top:
                       MediaQuery.paddingOf(context).top +
-                      AppDesign.headerHeight +
+                      AppDesign.headerInset(context) +
                       16,
                   bottom: MediaQuery.paddingOf(context).bottom + 24,
                 ),

@@ -66,6 +66,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final segmentHeight = AppSegments.heightFor(context);
+    final headerBottomHeight = segmentHeight + 20;
     final categories = {
       'all': l.all,
       'messages': l.messages,
@@ -78,6 +80,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return AppScaffold(
       appBar: AppHeader(
         title: Text(l.notificationTitle),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(headerBottomHeight),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: AppSegments<bool>(
+              values: {false: Text(l.all), true: Text(l.notificationUnread)},
+              selected: unread,
+              onChanged: (value) => setState(() => unread = value),
+            ),
+          ),
+        ),
         actions: [
           AppContextMenu(
             pressTrigger: true,
@@ -101,47 +114,33 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: AppSegments<bool>(
-              values: {false: Text(l.all), true: Text(l.notificationUnread)},
-              selected: unread,
-              onChanged: (value) => setState(() => unread = value),
-            ),
-          ),
-          if (category != 'all')
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: AppButton.text(
-                leadingIcon: Icons.close,
-                onPressed: () => setState(() => category = 'all'),
-                child: Text(categories[category]!),
+      body: RecordList(
+        header: category == 'all'
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: AppButton.text(
+                  leadingIcon: Icons.close,
+                  onPressed: () => setState(() => category = 'all'),
+                  child: Text(categories[category]!),
+                ),
               ),
-            ),
-          Expanded(
-            child: RecordList(
-              action: 'user.fetch.notifications',
-              filter: !unread && category == 'all'
-                  ? null
-                  : (item) =>
-                        (!unread || notificationUnread(item)) &&
-                        (category == 'all' ||
-                            notificationCategory(item) == category),
-              empty: ScreenStatus(
-                title: l.notificationEmpty,
-                message: l.notificationEmptyBody,
-                animation: 'messages',
-              ),
-              itemBuilder: (context, item, _) => NotificationRow(
-                key: ValueKey('notification.${recordId(item)}'),
-                item: item,
-                onTap: () => show(item),
-              ),
-            ),
-          ),
-        ],
+        action: 'user.fetch.notifications',
+        filter: !unread && category == 'all'
+            ? null
+            : (item) =>
+                  (!unread || notificationUnread(item)) &&
+                  (category == 'all' || notificationCategory(item) == category),
+        empty: ScreenStatus(
+          title: l.notificationEmpty,
+          message: l.notificationEmptyBody,
+          animation: 'messages',
+        ),
+        itemBuilder: (context, item, _) => NotificationRow(
+          key: ValueKey('notification.${recordId(item)}'),
+          item: item,
+          onTap: () => show(item),
+        ),
       ),
     );
   }

@@ -138,21 +138,31 @@ class _RadarProfileCardState extends State<RadarProfileCard>
     builder: (context, box) => AnimatedBuilder(
       animation: progress,
       builder: (context, _) {
-        final t = progress.value;
+        // The spring can briefly overshoot its target. Keep the layout
+        // interpolation within its endpoints so a small/zero-width host can
+        // never produce a negative avatar dimension.
+        final t = progress.value.clamp(0.0, 1.0);
         final fontScale = MediaQuery.textScalerOf(context).scale(1);
         final dark = Theme.of(context).brightness == Brightness.dark;
         final palette = AppPalette.of(context);
         double lerp(double a, double b) => a + (b - a) * t;
         double clampT(double from, double to) =>
             ((t - from) / (to - from)).clamp(0.0, 1.0);
-        final cardDiameter = box.maxWidth * .8;
         final viewportHeight =
             box.maxHeight - widget.topInset - widget.bottomInset;
+        // The Radar hero is sized from the available screen height, not the
+        // desktop window width. Wide macOS windows otherwise create a huge
+        // avatar that overwhelms the profile and bottom tab bar.
+        final cardDiameter = (viewportHeight * .24)
+            .clamp(150.0, 190.0)
+            .clamp(0.0, box.maxWidth * .8);
         final collapsedY =
             widget.topInset + viewportHeight / 2 - cardDiameter / 2 - 60;
         final expandedY = widget.topInset + 20;
         final top = lerp(collapsedY, expandedY);
-        final diameter = lerp(cardDiameter, 110);
+        // Keep the profile portrait at a stable, screen-centered size while
+        // the surrounding identity and actions animate.
+        final diameter = cardDiameter;
         final user = profile ?? widget.user;
         final dob = DateTime.tryParse(string(user['date_of_birth']));
         final now = DateTime.now();
@@ -214,23 +224,14 @@ class _RadarProfileCardState extends State<RadarProfileCard>
 
         return Stack(
           children: [
-            // The card covers the radar (`pointerEvents="auto"`); a backdrop
-            // tap does not dismiss it in the source.
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                excludeFromSemantics: true,
-                child: const SizedBox.expand(),
-              ),
-            ),
             Positioned.fill(
               child: AppBackdropBlur(
                 key: const ValueKey('radar.profile.canvas'),
-                intensity: 40 * blurOpacity,
+                intensity: 80 * blurOpacity,
                 dark: dark,
-                tint: backdropTint.withValues(
-                  alpha: backdropTint.a * blurOpacity,
-                ),
+                tint: (dark ? AppDesign.glassClearDark : Colors.white)
+                    .withValues(alpha: (dark ? .36 : .28) * blurOpacity),
+                child: const SizedBox.expand(),
               ),
             ),
             Positioned.fill(
@@ -239,20 +240,9 @@ class _RadarProfileCardState extends State<RadarProfileCard>
                 controller: scroll,
                 physics: expanded ? null : const NeverScrollableScrollPhysics(),
                 slivers: [
-                  PinnedHeaderSliver(
+                  SliverToBoxAdapter(
                     child: Stack(
                       children: [
-                        if (t > .4)
-                          const Positioned.fill(
-                            child: IgnorePointer(
-                              child: GlassSurface(
-                                key: ValueKey('radar.profile.backdrop'),
-                                radius: 0,
-                                useOwnLayer: true,
-                                child: SizedBox.expand(),
-                              ),
-                            ),
-                          ),
                         Padding(
                           padding: EdgeInsets.only(
                             top: top.clamp(0.0, double.infinity),
@@ -451,38 +441,6 @@ class _RadarProfileCardState extends State<RadarProfileCard>
                       ),
                     ),
                 ],
-              ),
-            ),
-            Positioned(
-              top: widget.topInset + 15,
-              right: 25,
-              child: IgnorePointer(
-                ignoring: !expanded,
-                child: Opacity(
-                  opacity: clampT(.8, 1),
-                  // IconButton medium default/secondary: surface3, 24pt corners.
-                  child: AppPressable(
-                    key: const ValueKey('radar.profile.close'),
-                    label: context.l10n.close,
-                    style: AppPressStyle.iconButton,
-                    onPressed: widget.onClose,
-                    child: Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: dark
-                            ? const Color(0x1fffffff)
-                            : const Color(0x14131313),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Icon(
-                        Icons.keyboard_arrow_down,
-                        size: 22,
-                        color: dark ? Colors.white : const Color(0xff131313),
-                      ),
-                    ),
-                  ),
-                ),
               ),
             ),
           ],

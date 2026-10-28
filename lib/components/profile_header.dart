@@ -48,7 +48,12 @@ class ProfileHeader extends StatelessWidget {
     List<Widget>? actions,
     bool collapseTitle = true,
   }) => PreferredSize(
-    preferredSize: const Size.fromHeight(AppDesign.headerHeight),
+    // Keep the macOS title bar clearance in the preferred height as well as
+    // in AppHeader's layout. A shorter wrapper constrains AppHeader to 44pt,
+    // removes its clearance, and lets the controls overlap the first row.
+    preferredSize: Size.fromHeight(
+      AppDesign.headerHeight + AppDesign.headerTitlebarGap,
+    ),
     child: ListenableBuilder(
       listenable: controller,
       builder: (context, _) {

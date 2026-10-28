@@ -484,7 +484,7 @@ class _SearchScreenState extends State<SearchScreen> {
         .where((r) => filter == 'all' || r.$1 == filter)
         .toList();
     final media = MediaQuery.of(context);
-    final top = media.padding.top + AppDesign.headerHeight;
+    final top = media.padding.top + AppDesign.headerInset(context);
     final inputHeight = media.textScaler.scale(17) * 1.3 + 24;
     final footerHeight = inputHeight + 16 + media.padding.bottom;
     final filters = [

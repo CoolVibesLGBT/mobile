@@ -12,6 +12,12 @@ import 'captcha.dart';
 
 enum _AuthStage { choice, login, register }
 
+Widget _withoutAuthScrollbar(BuildContext context, Widget child) =>
+    ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: child,
+    );
+
 class AuthScreen extends StatefulWidget {
   final bool initialRegister, showChoices;
   const AuthScreen({
@@ -433,7 +439,10 @@ class _AuthScreenState extends State<AuthScreen> {
             backgroundColor: p.row,
             appBar: AppHeader(
               automaticallyImplyLeading: false,
-              leading: const Flexible(child: BrandMark(compact: true)),
+              leading: const SizedBox(
+                width: 260,
+                child: BrandMark(compact: true),
+              ),
               actions: [
                 AppContextMenu(
                   key: languageMenu,
@@ -443,30 +452,27 @@ class _AuthScreenState extends State<AuthScreen> {
                   align: AppMenuAlign.right,
                   label: l.language,
                   items: [
-                    for (final (code, name) in [
-                      ('tr', 'Türkçe'),
-                      ('en', 'English'),
-                      ('ar', 'العربية'),
+                    for (final (code, name, flag) in [
+                      ('tr', 'Türkçe', 'assets/flags/flutter/tr.svg'),
+                      ('en', 'English', 'assets/flags/flutter/en.svg'),
+                      ('ar', 'العربية', 'assets/flags/flutter/ar.svg'),
                     ])
                       AppMenuItem(
                         title: name,
+                        iconAsset: flag,
                         checked: session.locale.languageCode == code,
                         onPressed: () => session.language(Locale(code)),
                       ),
                   ],
-                  child: AppButton.text(
-                    solid: true,
+                  child: AppIconButton(
+                    tooltip:
+                        '${l.language} · ${session.locale.languageCode.toUpperCase()}',
+                    dimension: 44,
+                    glass: true,
                     onPressed: busy
                         ? null
                         : () => languageMenu.currentState?.open(),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.language, size: 18),
-                        const SizedBox(width: 6),
-                        Text(session.locale.languageCode.toUpperCase()),
-                      ],
-                    ),
+                    icon: const Icon(Icons.language),
                   ),
                 ),
               ],
@@ -482,144 +488,160 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: Form(
                         key: form,
                         child: AutofillGroup(
-                          child: ListView(
-                            key: const ValueKey('auth.scroll'),
-                            controller: scroll,
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
-                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                            children: [
-                              if (!choosing) ...[
-                                Center(
-                                  child: illustration(
-                                    register,
-                                    AppDesign.authHeadingImageSize,
+                          child: _withoutAuthScrollbar(
+                            context,
+                            ListView(
+                              key: const ValueKey('auth.scroll'),
+                              controller: scroll,
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              padding: const EdgeInsets.fromLTRB(
+                                24,
+                                24,
+                                24,
+                                16,
+                              ),
+                              children: [
+                                if (!choosing) ...[
+                                  Center(
+                                    child: illustration(
+                                      register,
+                                      AppDesign.authHeadingImageSize,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                ],
+                                Semantics(
+                                  header: true,
+                                  child: Text(
+                                    title,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.25,
+                                      letterSpacing: -.6,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                              ],
-                              Semantics(
-                                header: true,
-                                child: Text(
-                                  title,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.25,
-                                    letterSpacing: -.6,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                subtitle,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  height: 1.5,
-                                  color: p.secondaryLabel,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              if (!choosing) ...[
-                                Row(
-                                  children: [
-                                    for (var i = 0; i < (register ? 3 : 2); i++)
-                                      Expanded(
-                                        child: Container(
-                                          margin: EdgeInsetsDirectional.only(
-                                            end: i == (register ? 2 : 1)
-                                                ? 0
-                                                : 6,
-                                          ),
-                                          height: 3,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              2,
-                                            ),
-                                            color: i <= 1 ? p.accent : p.border,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 20),
-                                fields(),
-                              ] else ...[
-                                LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final stacked =
-                                        MediaQuery.sizeOf(context).width <
-                                            479 ||
-                                        MediaQuery.textScalerOf(
-                                              context,
-                                            ).scale(1) >
-                                            1.4;
-                                    final compact =
-                                        MediaQuery.textScalerOf(
-                                          context,
-                                        ).scale(1) <=
-                                        1.4;
-                                    return stacked
-                                        ? Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.stretch,
-                                            children: [
-                                              choice(_AuthStage.login, compact),
-                                              const SizedBox(height: 12),
-                                              choice(
-                                                _AuthStage.register,
-                                                compact,
-                                              ),
-                                            ],
-                                          )
-                                        : Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: choice(
-                                                  _AuthStage.login,
-                                                  false,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: choice(
-                                                  _AuthStage.register,
-                                                  false,
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                  },
-                                ),
-                                const SizedBox(height: 20),
                                 Text(
-                                  l.authAccountNote,
+                                  subtitle,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 15,
                                     height: 1.5,
                                     color: p.secondaryLabel,
                                   ),
                                 ),
-                              ],
-                              if (kDebugMode)
-                                Align(
-                                  alignment: AlignmentDirectional.centerEnd,
-                                  child: AppIconButton(
-                                    tooltip: 'Ekran kataloğu',
-                                    icon: const Icon(Icons.developer_mode),
-                                    onPressed: busy
-                                        ? null
-                                        : () => Navigator.of(
-                                            context,
-                                          ).pushNamed('/debug'),
+                                const SizedBox(height: 24),
+                                if (!choosing) ...[
+                                  Row(
+                                    children: [
+                                      for (
+                                        var i = 0;
+                                        i < (register ? 3 : 2);
+                                        i++
+                                      )
+                                        Expanded(
+                                          child: Container(
+                                            margin: EdgeInsetsDirectional.only(
+                                              end: i == (register ? 2 : 1)
+                                                  ? 0
+                                                  : 6,
+                                            ),
+                                            height: 3,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(2),
+                                              color: i <= 1
+                                                  ? p.accent
+                                                  : p.border,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                ),
-                            ],
+                                  const SizedBox(height: 20),
+                                  fields(),
+                                ] else ...[
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final stacked =
+                                          MediaQuery.sizeOf(context).width <
+                                              479 ||
+                                          MediaQuery.textScalerOf(
+                                                context,
+                                              ).scale(1) >
+                                              1.4;
+                                      final compact =
+                                          MediaQuery.textScalerOf(
+                                            context,
+                                          ).scale(1) <=
+                                          1.4;
+                                      return stacked
+                                          ? Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                choice(
+                                                  _AuthStage.login,
+                                                  compact,
+                                                ),
+                                                const SizedBox(height: 12),
+                                                choice(
+                                                  _AuthStage.register,
+                                                  compact,
+                                                ),
+                                              ],
+                                            )
+                                          : Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: choice(
+                                                    _AuthStage.login,
+                                                    false,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: choice(
+                                                    _AuthStage.register,
+                                                    false,
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                    },
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    l.authAccountNote,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      height: 1.5,
+                                      color: p.secondaryLabel,
+                                    ),
+                                  ),
+                                ],
+                                if (kDebugMode)
+                                  Align(
+                                    alignment: AlignmentDirectional.centerEnd,
+                                    child: AppIconButton(
+                                      tooltip: 'Ekran kataloğu',
+                                      icon: const Icon(Icons.developer_mode),
+                                      onPressed: busy
+                                          ? null
+                                          : () => Navigator.of(
+                                              context,
+                                            ).pushNamed('/debug'),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

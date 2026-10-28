@@ -294,6 +294,9 @@ class GlassSurface extends StatelessWidget {
             bottomRadius: 0,
           )
         : liquid.LiquidRoundedSuperellipse(borderRadius: radius);
+    final effectiveSettings = !circular && radius == 0
+        ? settings.copyWith(lightIntensity: 0, fresnelStrength: 0)
+        : settings;
     final Widget surface = PlatformBackdropUnderlay(
       shape: circular
           ? const CircleBorder()
@@ -302,27 +305,28 @@ class GlassSurface extends StatelessWidget {
                   ? BorderRadius.vertical(top: Radius.circular(radius))
                   : BorderRadius.circular(radius),
             ),
-      child: liquid.GlassContainer(
-        useOwnLayer: useOwnLayer,
-        platformViewBackdrop: overPlatformView,
-        shape: shape,
+      child: liquid.InheritedLiquidGlass(
+        settings: effectiveSettings,
         quality: role.quality,
-        clipBehavior: Clip.antiAlias,
-        settings: !circular && radius == 0
-            ? settings.copyWith(lightIntensity: 0, fresnelStrength: 0)
-            : settings,
-        child: interactive
-            ? liquid.GlassGlow(
-                enabled:
-                    !MediaQuery.disableAnimationsOf(context) &&
-                    !MediaQuery.highContrastOf(context),
-                clipper: ShapeBorderClipper(shape: shape),
-                glowRadius: 1.6,
-                glowBlurRadius: 16,
-                glowOnTapOnly: true,
-                child: child,
-              )
-            : child,
+        child: liquid.GlassContainer(
+          useOwnLayer: useOwnLayer,
+          platformViewBackdrop: overPlatformView,
+          shape: shape,
+          quality: role.quality,
+          clipBehavior: Clip.antiAlias,
+          child: interactive
+              ? liquid.GlassGlow(
+                  enabled:
+                      !MediaQuery.disableAnimationsOf(context) &&
+                      !MediaQuery.highContrastOf(context),
+                  clipper: ShapeBorderClipper(shape: shape),
+                  glowRadius: 1.6,
+                  glowBlurRadius: 16,
+                  glowOnTapOnly: true,
+                  child: child,
+                )
+              : child,
+        ),
       ),
     );
     return onPressed == null

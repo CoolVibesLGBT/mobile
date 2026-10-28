@@ -76,7 +76,10 @@ class _PremiumScreenState extends State<PremiumScreen> {
       body: ListView(
         key: const PageStorageKey('premium.scroll'),
         padding: EdgeInsets.only(
-          top: MediaQuery.paddingOf(context).top + AppDesign.headerHeight + 12,
+          top:
+              MediaQuery.paddingOf(context).top +
+              AppDesign.headerInset(context) +
+              12,
           bottom: 180,
         ),
         children: [

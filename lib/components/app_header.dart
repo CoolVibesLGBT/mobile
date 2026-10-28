@@ -46,7 +46,9 @@ class AppHeader extends StatefulWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(
-    AppDesign.headerHeight + (bottom?.preferredSize.height ?? 0),
+    AppDesign.headerHeight +
+        AppDesign.headerTitlebarGap +
+        (bottom?.preferredSize.height ?? 0),
   );
 
   @override
@@ -187,13 +189,28 @@ class _AppHeaderState extends State<AppHeader> {
       surfaceRole: widget.surfaceRole,
       child: IconTheme.merge(
         data: IconThemeData(color: color),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(height: top),
-            row,
-            ?widget.bottom,
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final requestedGap = AppDesign.headerTitlebarGap;
+            final requiredHeight =
+                top +
+                AppDesign.headerHeight +
+                requestedGap +
+                (widget.bottom?.preferredSize.height ?? 0);
+            final gap =
+                !constraints.hasBoundedHeight ||
+                    constraints.maxHeight >= requiredHeight
+                ? requestedGap
+                : 0.0;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: top + gap),
+                row,
+                ?widget.bottom,
+              ],
+            );
+          },
         ),
       ),
     );

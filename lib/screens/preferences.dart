@@ -28,7 +28,9 @@ class PreferencesScreen extends StatelessWidget {
         SliverPadding(
           padding: EdgeInsets.only(
             top:
-                MediaQuery.paddingOf(context).top + AppDesign.headerHeight + 12,
+                MediaQuery.paddingOf(context).top +
+                AppDesign.headerInset(context) +
+                12,
             bottom: MediaQuery.paddingOf(context).bottom + 24,
           ),
           sliver: PreferencesSliver(kind: kind),
@@ -140,18 +142,29 @@ class _PreferencesSliverState extends State<PreferencesSliver> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: Column(
               children: [
-                AppRow(
-                  leading: IllustratedIcon(switch (widget.kind) {
-                    'interests' => 'interest-category-lifestyle',
-                    'fantasies' => 'fantasy-category-amusement',
-                    _ => 'system-user',
-                  }, size: 40),
-                  title: Semantics(
-                    header: true,
-                    child: Text(preferenceTitle(context, widget.kind)),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    AppDesign.profileEditCardRadius,
                   ),
-                  value: '$chosenCount / $totalCount',
-                  contentPadding: EdgeInsets.zero,
+                  child: ColoredBox(
+                    color: palette.row,
+                    child: AppRow(
+                      leading: IllustratedIcon(switch (widget.kind) {
+                        'interests' => 'interest-category-lifestyle',
+                        'fantasies' => 'fantasy-category-amusement',
+                        _ => 'system-user',
+                      }, size: 40),
+                      title: Semantics(
+                        header: true,
+                        child: Text(preferenceTitle(context, widget.kind)),
+                      ),
+                      value: '$chosenCount / $totalCount',
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 11,
+                      ),
+                    ),
+                  ),
                 ),
                 if (session.updatingPreferences)
                   const LinearProgressIndicator(),

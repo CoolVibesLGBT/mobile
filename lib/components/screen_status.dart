@@ -3,6 +3,7 @@ import '../l10n/l10n.dart';
 import 'app_button.dart';
 import 'package:flutter/material.dart';
 import 'app_lottie.dart';
+import 'emoticon_view.dart';
 import 'app_pressable.dart';
 import '../design/app_design.dart';
 import '../core/app_failure.dart';
@@ -65,6 +66,25 @@ class ScreenStatus extends StatelessWidget {
     // message and a plain accent "Try again".
     final palette = AppPalette.of(context);
     final kind = animation ?? (error != null ? 'error' : 'empty');
+    final Map<String, dynamic>? duckSticker = switch (kind) {
+      'duck_fantasies' => {
+        'kind': 'sticker',
+        'id': '4fccb7cee6ad0f05',
+        'url': '/animations/telegram/packs/4fccb7cee6ad0f05.tgs',
+        'emoji': '😘',
+        'width': 512,
+        'height': 512,
+      },
+      'duck_interests' => {
+        'kind': 'sticker',
+        'id': 'a60b07ed596c2937',
+        'url': '/animations/telegram/packs/a60b07ed596c2937.tgs',
+        'emoji': '🌈',
+        'width': 512,
+        'height': 512,
+      },
+      _ => null,
+    };
     final asset =
         const {
           'search': 'assets/animations/search.json',
@@ -89,12 +109,14 @@ class ScreenStatus extends StatelessWidget {
               else ...[
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: AppLottie(
-                    asset: asset,
-                    size: 132,
-                    loop: kind != 'error',
-                    staticProgress: .5,
-                  ),
+                  child: duckSticker == null
+                      ? AppLottie(
+                          asset: asset,
+                          size: 132,
+                          loop: kind != 'error',
+                          staticProgress: .5,
+                        )
+                      : EmoticonView(document: duckSticker, size: 156),
                 ),
                 const SizedBox(height: 8),
                 Semantics(
@@ -188,7 +210,7 @@ class AppInfoSheet extends StatelessWidget {
   Widget build(BuildContext context) => Material(
     type: MaterialType.transparency,
     child: SafeArea(
-      top: false,
+      top: true,
       child: Column(
         children: [
           Align(

@@ -316,9 +316,11 @@ class ProfileAbout extends StatelessWidget {
       children: [
         if (includeIdentity && bio.isNotEmpty)
           AppSection(children: [AppRow(title: Text(bio))]),
+        heading(
+          '${context.l10n.attributes} · $filled/${userAttributes.length}',
+        ),
         AppSection(
-          title:
-              '${context.l10n.attributes} · $filled/${userAttributes.length}',
+          margin: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12),
           children: [
             for (final (label, values, field) in rows)
               AppRow(
@@ -337,7 +339,7 @@ class ProfileAbout extends StatelessWidget {
           ScreenStatus(
             compact: false,
             title: context.l10n.noFantasiesAddedYet,
-            animation: 'empty',
+            animation: 'duck_fantasies',
           ),
         heading(
           '${context.l10n.interests}${count(interests) > 0 ? ' · ${count(interests)}' : ''}',
@@ -347,7 +349,7 @@ class ProfileAbout extends StatelessWidget {
         else
           ScreenStatus(
             title: context.l10n.noInterestsAddedYet,
-            animation: 'empty',
+            animation: 'duck_interests',
           ),
       ],
     );

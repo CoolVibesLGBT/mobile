@@ -1392,7 +1392,8 @@ class _ChatScreenState extends State<ChatScreen> {
     void openPeer() => group
         ? open(context, GroupScreen(chat: widget.chat))
         : open(context, ProfileScreen(user: peer));
-    final top = MediaQuery.paddingOf(context).top + AppDesign.headerHeight;
+    final top =
+        MediaQuery.paddingOf(context).top + AppDesign.headerInset(context);
     measureFooter();
     // The list reads its own inset below; keep `top` for the reversed list.
     return AppScaffold(
@@ -2318,7 +2319,7 @@ class _ScheduledMessagesScreenState extends State<ScheduledMessagesScreen> {
               padding: EdgeInsets.only(
                 top:
                     MediaQuery.paddingOf(context).top +
-                    AppDesign.headerHeight +
+                    AppDesign.headerInset(context) +
                     8,
                 bottom: MediaQuery.paddingOf(context).bottom + 16,
               ),

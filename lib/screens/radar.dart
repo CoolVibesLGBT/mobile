@@ -16,6 +16,7 @@ import '../core/api.dart';
 import '../core/radar_geometry.dart';
 import '../core/session.dart';
 import 'discover.dart';
+import 'profile.dart';
 import 'settings.dart';
 
 class RadarScreen extends StatefulWidget {
@@ -168,26 +169,48 @@ class _RadarScreenState extends State<RadarScreen>
   @override
   Widget build(BuildContext context) {
     final chrome =
-        MediaQuery.viewPaddingOf(context).top + AppDesign.headerHeight;
+        MediaQuery.viewPaddingOf(context).top + AppDesign.headerInset(context);
     return AppScaffold(
       extendBodyBehindAppBar: true,
       appBar: AppHeader(
         edge: selected == null ? AppHeaderEdge.none : AppHeaderEdge.soft,
-        leading: const WorkspaceMenuButton(),
-        actions: [
-          AppIconButton(
-            dimension: 44,
-            tooltip: context.l10n.search,
-            icon: const Icon(Icons.search),
-            onPressed: () => open(context, const SearchScreen()),
-          ),
-          AppIconButton(
-            dimension: 44,
-            tooltip: context.l10n.activity,
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () => open(context, const ActivityScreen()),
-          ),
-        ],
+        leading: selected == null
+            ? const WorkspaceMenuButton()
+            : AppIconButton(
+                dimension: 44,
+                tooltip: context.l10n.profile,
+                icon: ClipOval(
+                  child: SizedBox.square(
+                    dimension: 40,
+                    child: Avatar(selected!, radius: 20),
+                  ),
+                ),
+                onPressed: () => open(context, ProfileScreen(user: selected!)),
+              ),
+        title: selected == null ? null : Text(personName(selected!)),
+        actions: selected == null
+            ? [
+                AppIconButton(
+                  dimension: 44,
+                  tooltip: context.l10n.search,
+                  icon: const Icon(Icons.search),
+                  onPressed: () => open(context, const SearchScreen()),
+                ),
+                AppIconButton(
+                  dimension: 44,
+                  tooltip: context.l10n.activity,
+                  icon: const Icon(Icons.notifications_none),
+                  onPressed: () => open(context, const ActivityScreen()),
+                ),
+              ]
+            : [
+                AppIconButton(
+                  dimension: 44,
+                  tooltip: context.l10n.close,
+                  icon: const Icon(Icons.keyboard_arrow_down),
+                  onPressed: () => setState(() => selected = null),
+                ),
+              ],
       ),
       body: LayoutBuilder(
         builder: (context, box) {

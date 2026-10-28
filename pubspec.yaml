@@ -122,6 +122,9 @@ flutter:
     - assets/appearance/
     - assets/map/
     - assets/avatars/
+    - assets/flags/
+    - assets/flags/language/
+    - assets/flags/flutter/
     - assets/licenses/
 
   # To add assets to your application, add an assets section, like this:

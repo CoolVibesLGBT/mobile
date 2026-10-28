@@ -60,7 +60,7 @@ class _MenuScreenState extends State<MenuScreen> {
       body: ListView(
         controller: scrollController,
         padding: EdgeInsets.only(
-          top: hasCover ? 0 : topInset + AppDesign.headerHeight,
+          top: hasCover ? 0 : topInset + AppDesign.headerInset(context),
           bottom: MediaQuery.paddingOf(context).bottom + 24,
         ),
         children: [
@@ -259,7 +259,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppHeader(title: Text(context.l10n.settings)),
       body: ListView(
         padding: EdgeInsets.only(
-          top: MediaQuery.paddingOf(context).top + AppDesign.headerHeight + 24,
+          top:
+              MediaQuery.paddingOf(context).top +
+              AppDesign.headerInset(context) +
+              24,
           bottom: MediaQuery.paddingOf(context).bottom + 24,
         ),
         children: [

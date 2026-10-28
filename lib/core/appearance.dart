@@ -269,8 +269,20 @@ class Wallpaper {
 class MessageColors {
   final String accent;
   final List<String> colors;
-  const MessageColors(this.accent, this.colors);
-  Map<String, dynamic> toJson() => {'accent': accent, 'colors': colors};
+  final String gradientType;
+  final double angle;
+  const MessageColors(
+    this.accent,
+    this.colors, {
+    this.gradientType = 'linear',
+    this.angle = 90,
+  });
+  Map<String, dynamic> toJson() => {
+    'accent': accent,
+    'colors': colors,
+    'gradientType': gradientType,
+    'angle': angle,
+  };
 }
 
 class ThemeSelection {
@@ -488,7 +500,15 @@ Appearance readAppearance(String? raw) {
           (m['colors'] as List).isNotEmpty &&
           (m['colors'] as List).length <= 2 &&
           (m['colors'] as List).every(validColor)) {
-        messages = MessageColors(m['accent'], List<String>.from(m['colors']));
+        messages = MessageColors(
+          m['accent'],
+          List<String>.from(m['colors']),
+          gradientType:
+              ['linear', 'radial', 'conic'].contains(m['gradientType'])
+              ? m['gradientType'] as String
+              : 'linear',
+          angle: m['angle'] is num ? (m['angle'] as num).toDouble() % 360 : 90,
+        );
       }
       themes[theme] = ThemeSelection(
         preset: preset,
@@ -578,6 +598,8 @@ class ResolvedAppearance {
       outgoingPrimary;
   final List<String> outgoingStops, sourceMessageColors;
   final bool outgoingGradient;
+  final String outgoingGradientType;
+  final double outgoingGradientAngle;
   final String outgoingMeta; // '#rrggbb' or '#rrggbbaa'
   final int textSize;
   final Wallpaper wallpaper;
@@ -599,6 +621,8 @@ class ResolvedAppearance {
     required this.outgoingStops,
     required this.sourceMessageColors,
     required this.outgoingGradient,
+    required this.outgoingGradientType,
+    required this.outgoingGradientAngle,
     required this.outgoingMeta,
     required this.textSize,
     required this.wallpaper,
@@ -862,6 +886,8 @@ ResolvedAppearance resolveTheme(
         : outgoingPrimary,
     outgoingStops: stops,
     outgoingGradient: custom != null && custom.colors.length > 1,
+    outgoingGradientType: custom?.gradientType ?? 'linear',
+    outgoingGradientAngle: custom?.angle ?? 90,
     textSize: textSize,
     wallpaper: wallpaper,
   );

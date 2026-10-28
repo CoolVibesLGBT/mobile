@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../core/session.dart';
 import '../design/app_design.dart';
 import 'app_button.dart';
@@ -21,6 +22,7 @@ class AppMenuItem {
   final bool destructive;
   final bool? checked;
   final String? symbol;
+  final String? iconAsset;
   final IconData? fallback;
 
   /// Telegram `.separator` before this action (e.g. before "Select").
@@ -34,6 +36,7 @@ class AppMenuItem {
     this.destructive = false,
     this.checked,
     this.symbol,
+    this.iconAsset,
     this.fallback,
     this.separatorBefore = false,
   }) : assert(onPressed != null || children != null);
@@ -181,6 +184,7 @@ class AppContextMenuState extends State<AppContextMenu>
     AppMenuItem guard(AppMenuItem item) => AppMenuItem(
       title: item.title,
       symbol: item.symbol,
+      iconAsset: item.iconAsset,
       fallback: item.fallback,
       checked: item.checked,
       destructive: item.destructive,
@@ -563,7 +567,9 @@ class _ContextMenuLayerState extends State<_ContextMenuLayer>
     final titleHeight = widget.title == null
         ? 0.0
         : (13 * scale).roundToDouble() + 22;
-    final hasIcons = items.any((i) => i.symbol != null || i.fallback != null);
+    final hasIcons = items.any(
+      (i) => i.symbol != null || i.fallback != null || i.iconAsset != null,
+    );
     // Text-measured width between Telegram's 220 and 240pt.
     var textWidth = 0.0;
     for (final item in items) {
@@ -944,7 +950,14 @@ class _MenuRow extends StatelessWidget {
                         child: SizedBox(
                           width: _Menu.iconSlot,
                           child: Center(
-                            child: item.symbol != null
+                            child: item.iconAsset != null
+                                ? SvgPicture.asset(
+                                    item.iconAsset!,
+                                    width: 24,
+                                    height: 24,
+                                    fit: BoxFit.contain,
+                                  )
+                                : item.symbol != null
                                 ? AppSymbol.icon(
                                     item.symbol!,
                                     size: 24,

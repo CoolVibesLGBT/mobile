@@ -43,6 +43,8 @@
 	<string>Fotoğraf ve videolarını paylaşmak için galeri erişimi kullanılır.</string>
 	<key>NSLocationUsageDescription</key>
 	<string>Yakındaki kişileri ve mekânları bulmak, check-in yapmak için konum kullanılır.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Yakındaki kişileri ve mekânları bulmak, check-in yapmak için konum kullanılır.</string>
 	<key>CFBundleDisplayName</key>
 	<string>Coolvibes</string>
 </dict>

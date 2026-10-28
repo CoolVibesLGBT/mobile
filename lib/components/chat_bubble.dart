@@ -1,11 +1,14 @@
-import '../l10n/l10n.dart';
 import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../core/api.dart';
 import '../core/chat_data.dart';
 import '../design/app_design.dart';
+import '../l10n/l10n.dart';
+import '../core/geo.dart';
 import '../screens/media.dart';
 import 'app_button.dart';
 import 'app_context_menu.dart';
@@ -13,7 +16,49 @@ import 'emoticon_view.dart';
 import 'message_preview.dart';
 import 'location_attachment.dart';
 import 'spoiler_overlay.dart';
-import '../core/geo.dart';
+
+int _stableSenderHash(String value) =>
+    value.codeUnits.fold(0, (hash, unit) => (hash * 31 + unit) & 0x7fffffff);
+
+Color _chatColor(String value) {
+  final hex = value.replaceFirst('#', '');
+  final rgb = int.parse(hex.substring(0, 6), radix: 16);
+  final alpha = hex.length == 8
+      ? int.parse(hex.substring(6, 8), radix: 16)
+      : 255;
+  return Color((alpha << 24) | rgb);
+}
+
+List<Color> _groupMessageGradient(AppPalette palette, String senderId) {
+  final configured = palette.outgoingStops.length > 1
+      ? palette.outgoingStops
+      : (palette.resolved?.sourceMessageColors ?? const <String>[])
+            .map(_chatColor)
+            .toList();
+  final source = configured.isEmpty ? <Color>[palette.accent] : configured;
+  final index = _stableSenderHash(senderId) % 360;
+  Color shifted(Color color, double degrees) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl
+        .withHue((hsl.hue + degrees) % 360)
+        .withSaturation(math.max(hsl.saturation, .42))
+        .withLightness(palette.resolved?.dark == true ? .36 : .84)
+        .toColor();
+  }
+
+  if (source.length == 1) {
+    final hueShift = (index * 53.0) % 360;
+    return [
+      shifted(source.first, hueShift + 26),
+      shifted(source.first, hueShift),
+    ];
+  }
+  final paletteIndex = index % source.length;
+  final hueShift = (index ~/ source.length) * 53.0;
+  final first = source[paletteIndex];
+  final second = source[(paletteIndex + 1) % source.length];
+  return [shifted(second, hueShift), shifted(first, hueShift)];
+}
 
 /// Telegram's peer name colours (ChatMessageRow PEER_NAME_COLORS).
 const _peerColors = [
@@ -154,6 +199,28 @@ class _ChatBubbleState extends State<ChatBubble> with TickerProviderStateMixin {
     final scale = MediaQuery.textScalerOf(context).scale(1);
     final width = MediaQuery.sizeOf(context).width;
     final maxBubble = (width - 52).clamp(0.0, 560.0);
+    final author = message['user'] is Map
+        ? object(message['user'])
+        : message['sender'] is Map
+        ? object(message['sender'])
+        : <String, dynamic>{};
+    final senderId = string(
+      author['id'] ??
+          author['user_id'] ??
+          message['user_id'] ??
+          message['sender_id'],
+    );
+    final authorName = string(
+      author['displayname'] ?? author['name'] ?? author['username'],
+    );
+    final incomingGradient = widget.group
+        ? _groupMessageGradient(
+            palette,
+            senderId.isEmpty ? authorName : senderId,
+          )
+        : palette.outgoingStops.reversed.toList();
+    final hasMessageGradient =
+        palette.outgoingStops.first != palette.outgoingStops.last;
     final foreground = me ? palette.outgoingText : palette.text;
     final secondary = me ? palette.outgoingMeta : palette.secondaryLabel;
     final link = me ? palette.outgoingPrimary : palette.accent;
@@ -260,14 +327,6 @@ class _ChatBubbleState extends State<ChatBubble> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(10),
       ),
       child: meta(Colors.white),
-    );
-    final author = message['user'] is Map
-        ? object(message['user'])
-        : message['sender'] is Map
-        ? object(message['sender'])
-        : <String, dynamic>{};
-    final authorName = string(
-      author['displayname'] ?? author['name'] ?? author['username'],
     );
     Widget quote({bool card = false}) => Container(
       constraints: const BoxConstraints(minWidth: 120),
@@ -508,16 +567,27 @@ class _ChatBubbleState extends State<ChatBubble> with TickerProviderStateMixin {
           ),
       ];
       body = _Bubble(
+        gradientType: palette.outgoingGradientType,
+        gradientAngle: palette.outgoingGradientAngle,
         outgoing: me,
         right: right,
         first: widget.first,
         last: widget.last,
         framed: framed,
-        fill: me ? palette.outgoingStops.first : palette.incoming,
-        gradient:
-            me && palette.outgoingStops.first != palette.outgoingStops.last
-            ? palette.outgoingStops
-            : null,
+        fill: me
+            ? palette.outgoingStops.first
+            : widget.group
+            ? incomingGradient.first
+            : hasMessageGradient
+            ? incomingGradient.first
+            : palette.incoming,
+        gradient: me
+            ? (palette.outgoingStops.first != palette.outgoingStops.last
+                  ? palette.outgoingStops
+                  : null)
+            : (hasMessageGradient || widget.group
+                  ? incomingGradient
+                  : null),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -677,9 +747,13 @@ class _Bubble extends StatelessWidget {
   final bool outgoing, right, first, last, framed;
   final Color fill;
   final List<Color>? gradient;
+  final String gradientType;
+  final double gradientAngle;
   final Widget child;
   const _Bubble({
     this.gradient,
+    this.gradientType = 'linear',
+    this.gradientAngle = 90,
     required this.outgoing,
     required this.right,
     required this.first,
@@ -718,9 +792,23 @@ class _Bubble extends StatelessWidget {
             // Two-stop outgoing fill, top to bottom (outgoingStops).
             gradient: gradient == null
                 ? null
+                : gradientType == 'radial'
+                ? RadialGradient(colors: gradient!)
+                : gradientType == 'conic'
+                ? SweepGradient(
+                    startAngle: gradientAngle * math.pi / 180,
+                    endAngle: gradientAngle * math.pi / 180 + 2 * math.pi,
+                    colors: gradient!,
+                  )
                 : LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                    begin: Alignment(
+                      -math.cos(gradientAngle * math.pi / 180),
+                      -math.sin(gradientAngle * math.pi / 180),
+                    ),
+                    end: Alignment(
+                      math.cos(gradientAngle * math.pi / 180),
+                      math.sin(gradientAngle * math.pi / 180),
+                    ),
                     colors: gradient!,
                   ),
             borderRadius: radius,
