@@ -213,13 +213,21 @@ class AppInfoSheet extends StatelessWidget {
       top: true,
       child: Column(
         children: [
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: AppIconButton(
-              key: ValueKey('$id.close'),
-              tooltip: context.l10n.close,
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
+          Padding(
+            // Keep the close control inside the rounded top corners of the
+            // glass sheet, where an edge-aligned button would be clipped.
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              height: 52,
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: AppIconButton(
+                  key: ValueKey('$id.close'),
+                  tooltip: context.l10n.close,
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
             ),
           ),
           Expanded(

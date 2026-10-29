@@ -1,68 +1,65 @@
 import 'package:flutter/material.dart';
 import '../design/app_design.dart';
 
-/// Same horizontal artwork and typography as the source mobile BrandMark.
+/// Brand artwork used by the auth screens and the app navigation header.
 class BrandMark extends StatelessWidget {
   final bool compact, navigation;
   const BrandMark({super.key, this.compact = false, this.navigation = false});
   @override
-  Widget build(BuildContext context) => Semantics(
-    label: 'Coolvibes',
-    image: true,
-    child: ExcludeSemantics(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        textDirection: TextDirection.ltr,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(navigation ? 6 : 0),
-            child: Image.asset(
-              'assets/images/brand.png',
-              width: navigation
-                  ? 24
-                  : compact
-                  ? 36
-                  : 56,
-              height: navigation
-                  ? 24
-                  : compact
-                  ? 36
-                  : 56,
-            ),
+  Widget build(BuildContext context) {
+    if (navigation) {
+      return Semantics(
+        label: 'Coolvibes',
+        image: true,
+        child: ExcludeSemantics(
+          child: Image.asset(
+            'assets/images/wordmark-master.png',
+            width: 118,
+            height: 40,
+            fit: BoxFit.contain,
+            alignment: Alignment.centerLeft,
           ),
-          SizedBox(width: navigation ? 7 : 12),
-          Flexible(
-            child: Text.rich(
-              TextSpan(
-                text: navigation ? 'CoolVibes' : 'coolvibes',
-                children: [
-                  if (!navigation)
+        ),
+      );
+    }
+    return Semantics(
+      label: 'Coolvibes',
+      image: true,
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          textDirection: TextDirection.ltr,
+          children: [
+            Image.asset(
+              'assets/images/brand.png',
+              width: compact ? 36 : 56,
+              height: compact ? 36 : 56,
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text.rich(
+                TextSpan(
+                  text: 'coolvibes',
+                  children: [
                     TextSpan(
                       text: '.',
                       style: TextStyle(color: AppPalette.of(context).accent),
                     ),
-                ],
-              ),
-              textDirection: TextDirection.ltr,
-              maxLines: navigation ? 1 : null,
-              overflow: navigation ? TextOverflow.ellipsis : TextOverflow.clip,
-              style: TextStyle(
-                fontFamily: navigation
-                    ? 'CupertinoSystemText'
-                    : 'CupertinoSystemDisplay',
-                color: AppPalette.of(context).text,
-                fontSize: navigation
-                    ? 17
-                    : compact
-                    ? 24
-                    : 32,
-                fontWeight: navigation ? FontWeight.w600 : FontWeight.w700,
-                letterSpacing: navigation ? -.3 : -1.2,
+                  ],
+                ),
+                textDirection: TextDirection.ltr,
+                style: TextStyle(
+                  fontFamily: 'CupertinoSystemDisplay',
+                  color: AppPalette.of(context).text,
+                  fontSize: compact ? 24 : 32,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -1.2,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

@@ -26,6 +26,7 @@ import '../components/message_preview.dart';
 import '../components/chat_list_row.dart';
 import 'app_forms.dart';
 import 'settings.dart';
+import 'media.dart' show MediaScreen, mediaOf;
 
 class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key});
@@ -878,8 +879,43 @@ class _ChatScreenState extends State<ChatScreen> {
       body: {'chat_id': id, 'message_id': chatEntityId(message)},
     );
     final data = object(result['data']);
-    final opened = object(data['message'] ?? result['message'] ?? data);
+    final openedData = object(data['message'] ?? result['message'] ?? data);
+    final opened = {
+      ...openedData,
+      if (chatEntityId(openedData).isEmpty) 'id': chatEntityId(message),
+    };
     if (!mounted || chatEntityId(opened).isEmpty) return;
+    final viewOnce = [
+      true,
+      1,
+      '1',
+      'true',
+    ].contains(message['view_once'] ?? messageExtras(message)['view_once']);
+    if (viewOnce) {
+      final items = mediaOf(opened);
+      if (items.isEmpty) {
+        throw ApiException('The one-time photo is no longer available');
+      }
+      await MediaScreen.show(context, {...opened, 'media': items});
+      if (!mounted) return;
+      if (!messageIsMine(message, session!.user)) {
+        setState(() {
+          merge([
+            {
+              ...message,
+              'viewed_once': true,
+              'content_hidden': true,
+              'attachments': const <Json>[],
+              'media': const <Json>[],
+              if (opened['expires_at'] != null)
+                'expires_at': opened['expires_at'],
+            },
+          ]);
+        });
+        scheduleExpiry({...message, ...opened});
+      }
+      return;
+    }
     setState(() => merge([opened]));
     scheduleExpiry(opened);
   });

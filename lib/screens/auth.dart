@@ -6,6 +6,7 @@ import '../design/app_design.dart';
 import '../components/components.dart';
 import '../core/session.dart';
 import '../core/constants.dart';
+import '../core/supported_languages.dart';
 import '../core/app_failure.dart';
 import '../components/brand_mark.dart';
 import 'captcha.dart';
@@ -452,16 +453,13 @@ class _AuthScreenState extends State<AuthScreen> {
                   align: AppMenuAlign.right,
                   label: l.language,
                   items: [
-                    for (final (code, name, flag) in [
-                      ('tr', 'Türkçe', 'assets/flags/flutter/tr.svg'),
-                      ('en', 'English', 'assets/flags/flutter/en.svg'),
-                      ('ar', 'العربية', 'assets/flags/flutter/ar.svg'),
-                    ])
+                    for (final language in SupportedLanguages.all)
                       AppMenuItem(
-                        title: name,
-                        iconAsset: flag,
-                        checked: session.locale.languageCode == code,
-                        onPressed: () => session.language(Locale(code)),
+                        title: language.name,
+                        iconAsset: language.flagAsset,
+                        checked: session.locale.languageCode == language.code,
+                        onPressed: () =>
+                            session.language(Locale(language.code)),
                       ),
                   ],
                   child: AppIconButton(

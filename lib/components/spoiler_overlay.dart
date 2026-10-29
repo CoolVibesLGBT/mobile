@@ -12,7 +12,13 @@ import 'package:flutter/services.dart';
 class SpoilerOverlay extends StatefulWidget {
   final bool hidden;
   final Widget child;
-  const SpoilerOverlay({super.key, required this.hidden, required this.child});
+  final bool revealOnTap;
+  const SpoilerOverlay({
+    super.key,
+    required this.hidden,
+    required this.child,
+    this.revealOnTap = true,
+  });
   @override
   State<SpoilerOverlay> createState() => _SpoilerOverlayState();
 }
@@ -70,50 +76,48 @@ class _SpoilerOverlayState extends State<SpoilerOverlay>
   @override
   Widget build(BuildContext context) {
     if (!hidden) return widget.child;
+    final cover = Stack(
+      fit: StackFit.passthrough,
+      children: [
+        IgnorePointer(child: widget.child),
+        Positioned.fill(
+          child: AnimatedBuilder(
+            animation: reveal,
+            builder: (context, child) => reveal.value == 0
+                ? child!
+                : ClipPath(
+                    clipper: _HoleClipper(
+                      origin,
+                      Curves.easeIn.transform(reveal.value),
+                    ),
+                    child: child,
+                  ),
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                child: ColoredBox(
+                  color: const Color(0x33000000),
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _DustPainter(time),
+                      size: Size.infinite,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+    if (!widget.revealOnTap) return cover;
     return Semantics(
       button: true,
       label: context.l10n.spoilerTapToReveal,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapUp: (details) => show(details.localPosition),
-        child: Builder(
-          builder: (context) {
-            return Stack(
-              fit: StackFit.passthrough,
-              children: [
-                IgnorePointer(child: widget.child),
-                Positioned.fill(
-                  child: AnimatedBuilder(
-                    animation: reveal,
-                    builder: (context, child) => reveal.value == 0
-                        ? child!
-                        : ClipPath(
-                            clipper: _HoleClipper(
-                              origin,
-                              Curves.easeIn.transform(reveal.value),
-                            ),
-                            child: child,
-                          ),
-                    child: ClipRect(
-                      child: BackdropFilter(
-                        filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                        child: ColoredBox(
-                          color: const Color(0x33000000),
-                          child: RepaintBoundary(
-                            child: CustomPaint(
-                              painter: _DustPainter(time),
-                              size: Size.infinite,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+        child: cover,
       ),
     );
   }

@@ -6,6 +6,7 @@ export 'legal.dart' show LegalScreen, LegalDetail;
 export 'premium.dart' show PremiumScreen;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../core/api.dart';
 import '../design/app_design.dart';
 import '../core/session.dart';
@@ -21,6 +22,7 @@ import 'classifieds.dart';
 import 'uploads.dart';
 import '../components/profile_header.dart';
 import '../core/profile_data.dart';
+import '../core/supported_languages.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -255,6 +257,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final session = AppScope.of(context);
+    final language = SupportedLanguages.all.firstWhere(
+      (option) => option.code == session.locale.languageCode,
+      orElse: () => SupportedLanguages.all[1],
+    );
     return AppScaffold(
       appBar: AppHeader(title: Text(context.l10n.settings)),
       body: ListView(
@@ -285,15 +291,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 align: AppMenuAlign.right,
                 label: context.l10n.language,
                 items: [
-                  for (final (code, name) in [
-                    ('tr', 'Türkçe'),
-                    ('en', 'English'),
-                    ('ar', 'العربية'),
-                  ])
+                  for (final language in SupportedLanguages.all)
                     AppMenuItem(
-                      title: name,
-                      checked: session.locale.languageCode == code,
-                      onPressed: () => session.language(Locale(code)),
+                      title: language.name,
+                      iconAsset: language.flagAsset,
+                      checked: session.locale.languageCode == language.code,
+                      onPressed: () => session.language(Locale(language.code)),
                     ),
                 ],
                 child: AppRow(
@@ -303,11 +306,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     symbol: 'globe',
                   ),
                   title: Text(context.l10n.language),
-                  value: const {
-                    'tr': 'Türkçe',
-                    'en': 'English',
-                    'ar': 'العربية',
-                  }[session.locale.languageCode],
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SvgPicture.asset(
+                        language.flagAsset,
+                        width: 22,
+                        height: 22,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        language.name,
+                        style: AppDesign.font(
+                          15,
+                          color: AppPalette.of(context).secondaryLabel,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      AppSymbol.icon(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? 'chevron.left'
+                            : 'chevron.right',
+                        size: 14,
+                        color: AppPalette.of(context).disclosure,
+                        fallback:
+                            Directionality.of(context) == TextDirection.rtl
+                            ? Icons.chevron_left
+                            : Icons.chevron_right,
+                      ),
+                    ],
+                  ),
                   onTap: () => languageMenu.currentState?.open(),
                 ),
               ),

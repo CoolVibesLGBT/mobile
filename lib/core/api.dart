@@ -334,7 +334,17 @@ String assetUrl(dynamic attachment, {String variant = 'original'}) {
     for (final name in [variant, 'small', 'thumbnail', 'medium', 'original']) {
       path ??= object(images[name])['url'];
     }
-    return assetUrl(path ?? file['url'] ?? item['url'] ?? item['src']);
+    // Chat attachments may only expose storage_path (the web client resolves
+    // this after file.url). Resolve it through the same API base so private
+    // media still receives the normal authenticated media headers.
+    return assetUrl(
+      path ??
+          file['url'] ??
+          file['storage_path'] ??
+          item['url'] ??
+          item['storage_path'] ??
+          item['src'],
+    );
   }
   if (attachment.isEmpty) return '';
   final uri = Uri.tryParse(attachment);

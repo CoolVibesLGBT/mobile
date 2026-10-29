@@ -1,4 +1,5 @@
 import '../l10n/l10n.dart';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,13 +28,16 @@ class AttachmentAction {
 /// A picked library item, ready for the outbox.
 class AttachmentPick {
   final String path, name, mime;
-  final bool video, spoiler;
+  final String? viewOncePreview;
+  final bool video, spoiler, viewOnce;
   const AttachmentPick({
     required this.path,
     required this.name,
     required this.mime,
     required this.video,
     this.spoiler = false,
+    this.viewOnce = false,
+    this.viewOncePreview,
   });
 }
 
@@ -49,6 +53,7 @@ Future<void> showAttachmentSheet(
   required List<AttachmentAction> actions,
   required Future<bool> Function(List<AttachmentPick>) onSelect,
   bool allowSpoiler = false,
+  bool allowViewOnce = false,
   bool singlePhoto = false,
   String? title,
 }) async {
@@ -63,6 +68,7 @@ Future<void> showAttachmentSheet(
       key: const ValueKey('media.library'),
       sendLabel: sendLabel,
       allowSpoiler: allowSpoiler,
+      allowViewOnce: allowViewOnce,
       singlePhoto: singlePhoto,
       title: title,
       onSelect: onSelect,
@@ -97,7 +103,7 @@ Future<void> showAttachmentSheet(
 
 class _AttachmentSheet extends StatefulWidget {
   final String sendLabel;
-  final bool allowSpoiler, singlePhoto;
+  final bool allowSpoiler, allowViewOnce, singlePhoto;
   final String? title;
   final List<AttachmentAction> tabs;
   final VoidCallback onLibrary;
@@ -107,6 +113,7 @@ class _AttachmentSheet extends StatefulWidget {
     super.key,
     required this.sendLabel,
     required this.allowSpoiler,
+    required this.allowViewOnce,
     required this.singlePhoto,
     this.title,
     required this.tabs,
@@ -128,7 +135,11 @@ class _AttachmentSheetState extends State<_AttachmentSheet>
   final selected = <String>[];
   AssetPathEntity? album;
   int loadedPages = 0;
-  bool loading = false, more = true, sending = false, spoiler = false;
+  bool loading = false,
+      more = true,
+      sending = false,
+      spoiler = false,
+      viewOnce = false;
   bool failed = false, loadingFailed = false;
   bool requesting = false;
 
@@ -240,6 +251,11 @@ class _AttachmentSheetState extends State<_AttachmentSheet>
       if (!selected.remove(asset.id) && selected.length < 10) {
         selected.add(asset.id);
       }
+      if (selected.length != 1 ||
+          assets.firstWhere((a) => a.id == selected.first).type !=
+              AssetType.image) {
+        viewOnce = false;
+      }
     });
   }
 
@@ -251,11 +267,19 @@ class _AttachmentSheetState extends State<_AttachmentSheet>
     });
     try {
       final picks = <AttachmentPick>[];
+      final sendViewOnce = viewOnce && selected.length == 1;
       for (final id in selected) {
         final asset = assets.firstWhere((item) => item.id == id);
         final file = await (widget.singlePhoto ? asset.file : asset.originFile);
         if (file == null) throw StateError('missing file');
         final video = asset.type == AssetType.video;
+        final previewData = sendViewOnce && !video
+            ? await asset.thumbnailDataWithSize(
+                const ThumbnailSize(12, 12),
+                format: ThumbnailFormat.jpeg,
+                quality: 50,
+              )
+            : null;
         final name = await asset.titleAsync;
         final ext = name.split('.').last.toLowerCase();
         picks.add(
@@ -264,6 +288,10 @@ class _AttachmentSheetState extends State<_AttachmentSheet>
             name: name,
             video: video,
             spoiler: spoiler,
+            viewOnce: sendViewOnce && !video,
+            viewOncePreview: previewData == null
+                ? null
+                : 'data:image/jpeg;base64,${base64Encode(previewData)}',
             mime: video
                 ? (ext == 'mov' ? 'video/quicktime' : 'video/mp4')
                 : ext == 'png'
@@ -625,8 +653,10 @@ class _AttachmentSheetState extends State<_AttachmentSheet>
                                             label: context.l10n.cancel,
                                             symbol: 'xmark',
                                             fallback: Icons.close,
-                                            onTap: () =>
-                                                setState(selected.clear),
+                                            onTap: () => setState(() {
+                                              selected.clear();
+                                              viewOnce = false;
+                                            }),
                                           ),
                                           const SizedBox(width: 8),
                                           Expanded(
@@ -670,6 +700,52 @@ class _AttachmentSheetState extends State<_AttachmentSheet>
                                                         : palette.text,
                                                     fallback: Icons
                                                         .visibility_off_outlined,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ],
+                                          if (widget.allowViewOnce &&
+                                              selected.length == 1 &&
+                                              assets
+                                                      .where(
+                                                        (a) =>
+                                                            a.id ==
+                                                            selected.first,
+                                                      )
+                                                      .firstOrNull
+                                                      ?.type ==
+                                                  AssetType.image) ...[
+                                            Semantics(
+                                              toggled: viewOnce,
+                                              label: context
+                                                  .l10n
+                                                  .chatViewOncePhoto,
+                                              child: GestureDetector(
+                                                onTap: () => setState(
+                                                  () => viewOnce = !viewOnce,
+                                                ),
+                                                child: Container(
+                                                  width: 44,
+                                                  height: 44,
+                                                  alignment: Alignment.center,
+                                                  decoration: BoxDecoration(
+                                                    color: viewOnce
+                                                        ? palette.accent
+                                                        : null,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: AppSymbol.icon(
+                                                    viewOnce
+                                                        ? 'eye.fill'
+                                                        : 'eye',
+                                                    size: 20,
+                                                    color: viewOnce
+                                                        ? palette.accentText
+                                                        : palette.text,
+                                                    fallback: Icons
+                                                        .visibility_outlined,
                                                   ),
                                                 ),
                                               ),

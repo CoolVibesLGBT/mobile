@@ -15,6 +15,10 @@ class AttachmentController extends ChangeNotifier {
 
   /// Telegram "Hide with spoiler" for the next send.
   bool spoiler = false;
+
+  /// Send exactly one image with the service's one-time media flag.
+  bool viewOnce = false;
+  String? viewOncePreview;
   AudioRecorder? _recorder;
   String? _recordingPath;
   Timer? _timer;
@@ -187,6 +191,10 @@ class AttachmentController extends ChangeNotifier {
 
   void remove(Json file) {
     files.remove(file);
+    if (files.isEmpty) {
+      viewOnce = false;
+      viewOncePreview = null;
+    }
     changed();
   }
 
@@ -195,19 +203,23 @@ class AttachmentController extends ChangeNotifier {
     location = null;
     emoticon = null;
     spoiler = false;
+    viewOnce = false;
+    viewOncePreview = null;
     changed();
   }
 
   Json extraFields() => {
+    if (viewOnce) 'view_once': true,
     if (location != null) ...{
       'location[lat]': location!['latitude'],
       'location[lng]': location!['longitude'],
       'location[address]': location!['address'] ?? '',
     },
-    if (emoticon != null || spoiler)
+    if (emoticon != null || spoiler || viewOncePreview != null)
       'extras': {
         if (emoticon != null) 'emoticon': emoticon,
         if (spoiler) 'spoiler': true,
+        if (viewOncePreview != null) 'view_once_preview': viewOncePreview,
       },
   };
   @override

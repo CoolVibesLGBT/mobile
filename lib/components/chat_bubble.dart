@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import 'emoticon_view.dart';
 import 'message_preview.dart';
 import 'location_attachment.dart';
 import 'spoiler_overlay.dart';
+import 'view_once_dust.dart';
 
 int _stableSenderHash(String value) =>
     value.codeUnits.fold(0, (hash, unit) => (hash * 31 + unit) & 0x7fffffff);
@@ -76,6 +78,24 @@ Color peerNameColor(String id) {
     hash = (hash * 31 + unit).toSigned(32);
   }
   return _peerColors[hash.abs() % _peerColors.length];
+}
+
+Widget? _viewOncePreview(Json message) {
+  final value = string(
+    message['view_once_preview'] ?? messageExtras(message)['view_once_preview'],
+  );
+  const prefix = 'data:image/jpeg;base64,';
+  if (!value.startsWith(prefix) || value.length > 8192) return null;
+  try {
+    return Image.memory(
+      base64Decode(value.substring(prefix.length)),
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      filterQuality: FilterQuality.low,
+    );
+  } catch (_) {
+    return null;
+  }
 }
 
 final _emojiOnly = RegExp(
@@ -260,11 +280,16 @@ class _ChatBubbleState extends State<ChatBubble> with TickerProviderStateMixin {
     final disappearing =
         [true, 1, '1', 'true'].contains(message['is_disappearing']) ||
         [true, 1, '1', 'true'].contains(message['view_once']);
-    final locked = hidden && disappearing && !widget.mine;
+    final viewOnce = [
+      true,
+      1,
+      '1',
+      'true',
+    ].contains(message['view_once'] ?? messageExtras(message)['view_once']);
+    final viewedOnce = [true, 1, '1', 'true'].contains(message['viewed_once']);
+    final locked = viewOnce || (hidden && disappearing && !widget.mine);
     final expiresAt = DateTime.tryParse(string(message['expires_at']));
-    final text = locked
-        ? '🔥 ${context.l10n.tapToView}'
-        : locationMessageText(rawText, location);
+    final text = locked ? '' : locationMessageText(rawText, location);
     final emojiCount =
         emoticon == null &&
             !hasMedia &&
@@ -369,7 +394,25 @@ class _ChatBubbleState extends State<ChatBubble> with TickerProviderStateMixin {
     // Appearance text size (web default 16) maps to Telegram's 17pt base.
     final textSize = palette.textSize * 17 / 16 * scale;
     Widget body;
-    if (sticker) {
+    if (locked) {
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(7),
+            child: ViewOnceDust(
+              label: viewedOnce
+                  ? context.l10n.chatViewOncePhoto
+                  : context.l10n.tapToView,
+              tint: me ? link : palette.accent,
+              preview: _viewOncePreview(message),
+            ),
+          ),
+          Align(alignment: AlignmentDirectional.centerEnd, child: capsule),
+        ],
+      );
+    } else if (sticker) {
       body = Column(
         crossAxisAlignment: right
             ? CrossAxisAlignment.end
@@ -585,9 +628,7 @@ class _ChatBubbleState extends State<ChatBubble> with TickerProviderStateMixin {
             ? (palette.outgoingStops.first != palette.outgoingStops.last
                   ? palette.outgoingStops
                   : null)
-            : (hasMessageGradient || widget.group
-                  ? incomingGradient
-                  : null),
+            : (hasMessageGradient || widget.group ? incomingGradient : null),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -650,7 +691,10 @@ class _ChatBubbleState extends State<ChatBubble> with TickerProviderStateMixin {
       color: widget.highlighted
           ? palette.accent.withValues(alpha: .18)
           : palette.accent.withValues(alpha: 0),
-      child: locked && widget.onOpen != null
+      child:
+          locked &&
+              widget.onOpen != null &&
+              (!viewOnce || widget.mine || !viewedOnce)
           ? GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: widget.onOpen,

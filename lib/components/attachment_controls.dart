@@ -25,6 +25,7 @@ Future<void> chooseAttachment(
   context,
   sendLabel: sendNow != null ? context.l10n.send : context.l10n.add,
   allowSpoiler: sendNow != null,
+  allowViewOnce: sendNow != null && controller.files.isEmpty,
   onCamera: () => perform(context, () => controller.pickImages(camera: true)),
   onLibrary: () => perform(context, controller.pickImages),
   actions: [
@@ -53,6 +54,13 @@ Future<void> chooseAttachment(
         );
       }
       if (picks.any((pick) => pick.spoiler)) controller.spoiler = true;
+      controller.viewOnce =
+          controller.files.length == 1 &&
+          picks.length == 1 &&
+          picks.single.viewOnce;
+      controller.viewOncePreview = controller.viewOnce
+          ? picks.single.viewOncePreview
+          : null;
       if (sendNow != null) await sendNow();
       return true;
     } catch (_) {
