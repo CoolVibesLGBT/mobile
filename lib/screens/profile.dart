@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoSliverRefreshControl;
 import 'package:intl/intl.dart';
+import '../core/app_failure.dart';
 import '../core/profile_data.dart';
 import '../design/app_design.dart';
 import '../core/realtime.dart';
@@ -139,7 +140,15 @@ class _ProfileScreenState extends State<ProfileScreen>
           request == loadGeneration &&
           !(e is DioException && CancelToken.isCancel(e))) {
         setState(() {
-          error = '$e';
+          // profileUsernameIsMissing/profileUnavailable above are thrown
+          // locally with an already-specific, localized message (no status,
+          // not a connection failure) — showing those verbatim beats the
+          // generic AppFailure fallback; only real network/server failures
+          // need that reclassification, since their raw text can read like
+          // Dio/backend internals.
+          error = e is ApiException && e.status == null && !e.connectionFailure
+              ? e.message
+              : AppFailure.from(e).message(context.l10n);
           if (e is ApiException && [400, 401, 403, 404].contains(e.status)) {
             profile = null;
           }

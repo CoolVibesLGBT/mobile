@@ -4,6 +4,35 @@ import 'server_endpoints.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Drafts and the upload outbox used to go through [FlutterSecureStorage]
+/// just because it happened to sit on the same `Api` object as the auth
+/// token — on macOS that meant every debounced keystroke re-triggered a
+/// Keychain access prompt. Neither is a secret; this is the same
+/// read/write/delete(key) shape so call sites barely change, backed by
+/// SharedPreferences instead.
+class LocalKeyValueStorage {
+  const LocalKeyValueStorage();
+  Future<String?> read({required String key}) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(key);
+  }
+
+  Future<void> write({required String key, required String? value}) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (value == null) {
+      await prefs.remove(key);
+    } else {
+      await prefs.setString(key, value);
+    }
+  }
+
+  Future<void> delete({required String key}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+  }
+}
 
 typedef Json = Map<String, dynamic>;
 Json object(dynamic value) =>
@@ -47,6 +76,7 @@ class Api {
   final Dio dio;
   final PlaceSearch places;
   final FlutterSecureStorage storage;
+  final LocalKeyValueStorage localStorage;
   String? token;
 
   /// apiService media headers: `/static/uploads` on the API host is served
@@ -80,7 +110,9 @@ class Api {
     Dio? client,
     FlutterSecureStorage? secureStorage,
     PlaceSearch? placeSearch,
+    LocalKeyValueStorage? localStorage,
   }) : places = placeSearch ?? PlaceSearch(),
+       localStorage = localStorage ?? const LocalKeyValueStorage(),
        dio =
            client ??
            Dio(

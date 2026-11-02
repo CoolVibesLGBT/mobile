@@ -111,6 +111,12 @@ class _LegalPageState extends State<_LegalPage> {
             : widget.documentId != null && page.isEmpty
             ? ScreenStatus(error: string(data['not_found_body']))
             : SingleChildScrollView(
+                // This body alternates with ScreenStatus (loading/error
+                // branches above) in the same Scaffold slot; both being
+                // vertical SingleChildScrollViews with no controller would
+                // otherwise default to primary: true and collide on the
+                // ambient PrimaryScrollController as the body switches.
+                primary: false,
                 key: PageStorageKey(
                   'legal.${widget.documentId ?? 'index'}.$language',
                 ),

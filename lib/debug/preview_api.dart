@@ -487,6 +487,14 @@ class PreviewApi extends Api {
         'data': {'chat': previewChat},
       };
     }
+    if (action == 'chat.group.join') {
+      return {
+        'success': true,
+        'data': {
+          'chat': {...previewGroup, 'id': body['public_username'] ?? 'grp1'},
+        },
+      };
+    }
     final peers = [
       previewPeer,
       {
@@ -520,6 +528,38 @@ class PreviewApi extends Api {
         },
       ],
       'user.fetch.posts': [previewPost],
+      'chat.group.list': [
+        {
+          'id': 'grp1',
+          'title': 'İstanbul Kahve Kulübü',
+          'visibility': 'public',
+          'public_username': 'istanbulkahve',
+          'member_count': 482,
+          'localAsset': 'assets/chat/theme-FUtC4daANprHzpNE.png',
+          'localHeroAsset': 'assets/chat/theme-glhuaQsVnm5Ui6H0.png',
+          'localCoverAsset': 'assets/chat/theme-fzyYZ89JqdFc8P1o.png',
+        },
+        {
+          'id': 'grp2',
+          'title': 'Kadıköy Koşu Grubu',
+          'visibility': 'public',
+          'public_username': 'kadikoykosu',
+          'member_count': 156,
+          'localAsset': 'assets/chat/theme-HWyC5JgYOmydc1CH.png',
+          'localHeroAsset': 'assets/chat/theme-OdiX5W17EmeBL4Us.png',
+          'localCoverAsset': 'assets/chat/theme-nmt7Q0OtB9ZaoTYM.png',
+        },
+        {
+          'id': 'grp3',
+          'title': 'Moda Fotoğrafçılık',
+          'visibility': 'public',
+          'public_username': 'modafoto',
+          'member_count': 73,
+          'localAsset': 'assets/chat/theme-ZtE0ghOnKM11pfzD.png',
+          'localHeroAsset': 'assets/chat/theme-mwUbCd6C1Jx6SGmb.png',
+          'localCoverAsset': 'assets/chat/telegram-pattern.png',
+        },
+      ],
       'user.fetch.nearby.users': [
         for (var i = 0; i < 37; i++)
           {

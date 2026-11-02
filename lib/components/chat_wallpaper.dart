@@ -5,6 +5,7 @@ import '../core/appearance.dart';
 import '../core/session.dart';
 import '../core/wallpaper_mesh.dart';
 import '../design/app_design.dart';
+import 'app_image.dart';
 
 /// Source components/chat/ChatWallpaper.tsx (tweb background layers): the
 /// mesh gradient (rotation as phase), an optional photo, and the pattern
@@ -118,9 +119,12 @@ class _ChatWallpaperState extends State<ChatWallpaper> {
                         sigmaY: 10,
                         tileMode: TileMode.mirror,
                       ),
-                      child: Image.file(File(image), fit: BoxFit.cover),
+                      child: AppImage(
+                        source: FileImage(File(image)),
+                        fit: BoxFit.cover,
+                      ),
                     )
-                  : Image.file(File(image), fit: BoxFit.cover),
+                  : AppImage(source: FileImage(File(image)), fit: BoxFit.cover),
             ),
         ],
       ),

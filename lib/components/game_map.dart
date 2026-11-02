@@ -167,8 +167,17 @@ class _GameMapState extends State<GameMap> {
       };
       if (!mounted || version != loadVersion) return;
       final controller = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(Colors.transparent)
+        ..setJavaScriptMode(JavaScriptMode.unrestricted);
+      if (defaultTargetPlatform != TargetPlatform.macOS) {
+        // webview_flutter_wkwebview has no macOS implementation of
+        // setOpaque yet — calling this here threw UnimplementedError and
+        // aborted the whole setup chain below it, so the map never loaded
+        // on macOS at all. iOS/Android keep the transparent background.
+        try {
+          controller.setBackgroundColor(Colors.transparent);
+        } catch (_) {}
+      }
+      controller
         ..addJavaScriptChannel(
           'CoolvibesMap',
           onMessageReceived: (message) {
@@ -228,7 +237,11 @@ class _GameMapState extends State<GameMap> {
           setState(() => error = context.l10n.mapCouldNotLoadCheckYour);
         }
       });
-    } catch (e) {
+    } catch (e, stack) {
+      // This swallowed the real exception entirely — "unavailable on this
+      // device" fires for every WebViewController setup failure with no way
+      // to tell a genuine platform limitation from a real bug.
+      debugPrint('GameMap init failed: $e\n$stack');
       if (mounted) {
         setState(() => error = context.l10n.mapIsUnavailableOnThisDevice);
       }
@@ -297,6 +310,11 @@ class _GameMapState extends State<GameMap> {
   @override
   Widget build(BuildContext context) => Stack(
     children: [
+      // The WebView starts transparent and only paints the themed ground
+      // once its page actually loads; without this, whatever sits behind
+      // this widget (usually a plain white scaffold) showed through as a
+      // white flash before the dark/light map caught up.
+      Positioned.fill(child: ColoredBox(color: AppPalette.of(context).row)),
       if (web != null)
         Positioned.fill(
           child: Opacity(

@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import '../core/api.dart';
+import '../core/app_failure.dart';
 import '../core/session.dart';
 import '../core/realtime.dart';
+import '../l10n/l10n.dart';
 import 'screen_status.dart';
 
 class RecordList extends StatefulWidget {
@@ -198,7 +200,7 @@ class RecordListState extends State<RecordList> {
     } catch (e) {
       if (mounted && requestGeneration == generation) {
         setState(() {
-          error = '$e';
+          error = AppFailure.from(e).message(context.l10n);
           if (widget.clearOnError) records.clear();
         });
       }

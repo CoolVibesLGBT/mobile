@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'api.dart';
+import '../l10n/generated/app_localizations.dart';
 
 enum FailureKind {
   connection,
@@ -118,4 +119,24 @@ class AppFailure {
 
   String get diagnostic =>
       [if (httpStatus != null) 'HTTP $httpStatus', ?code].join(' · ');
+
+  /// The one user-facing message per [FailureKind] — never the raw
+  /// exception text (which can read like Dio/platform internals, e.g.
+  /// "The connection errored: Connection refused..."), always a localized,
+  /// on-brand sentence.
+  String message(AppLocalizations l) => switch (kind) {
+    FailureKind.connection => l.unableToReachTheServiceCheck,
+    FailureKind.server => l.errorServerMessage,
+    FailureKind.credentials => l.loginFailedPleaseCheckYourCredentials,
+    FailureKind.usernameTaken => l.errorUsernameTaken,
+    FailureKind.emailTaken => l.errorEmailTaken,
+    FailureKind.referral => l.errorReferral,
+    FailureKind.captcha => l.errorCaptcha,
+    FailureKind.invalidInput => l.errorInvalidInput,
+    FailureKind.rateLimited => l.errorRateLimited,
+    FailureKind.forbidden => l.errorForbidden,
+    FailureKind.notFound => l.errorNotFound,
+    FailureKind.storage => l.errorStorageMessage,
+    FailureKind.unknown => l.errorUnexpectedMessage,
+  };
 }

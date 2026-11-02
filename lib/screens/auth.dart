@@ -442,7 +442,7 @@ class _AuthScreenState extends State<AuthScreen> {
               automaticallyImplyLeading: false,
               leading: const SizedBox(
                 width: 260,
-                child: BrandMark(compact: true),
+                child: BrandMark(),
               ),
               actions: [
                 AppContextMenu(

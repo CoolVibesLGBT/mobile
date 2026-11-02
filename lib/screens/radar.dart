@@ -1,5 +1,4 @@
 import '../l10n/l10n.dart';
-import '../core/geo.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -11,12 +10,14 @@ import '../components/chat_wallpaper.dart';
 import '../components/glass_surface.dart';
 import '../design/app_design.dart';
 import '../components/workspace_menu.dart';
-import '../components/radar_profile_card.dart';
+import '../components/radar_group_card.dart';
+import '../components/living_background.dart';
 import '../core/api.dart';
+import '../core/app_failure.dart';
+import '../core/chat_data.dart';
 import '../core/radar_geometry.dart';
 import '../core/session.dart';
 import 'discover.dart';
-import 'profile.dart';
 import 'settings.dart';
 
 class RadarScreen extends StatefulWidget {
@@ -30,10 +31,10 @@ class _RadarScreenState extends State<RadarScreen>
   late final x = AnimationController.unbounded(vsync: this),
       y = AnimationController.unbounded(vsync: this),
       zoom = AnimationController.unbounded(vsync: this, value: 1);
-  final users = <Json>[], positions = <Offset>[];
+  late final motion = RadarMotion(this);
+  final groups = <Json>[], positions = <Offset>[];
   final seen = <String>{};
-  Json? selected;
-  Json coordinates = {'latitude': 41.0082, 'longitude': 28.9784};
+  Json? selected, activeGroup;
   String? cursor, error;
   bool loading = false, loaded = false, started = false;
   Offset startPan = Offset.zero, pointerOrigin = Offset.zero;
@@ -46,53 +47,40 @@ class _RadarScreenState extends State<RadarScreen>
     if (!started && TickerMode.of(context)) {
       started = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) fetch(locate: !AppScope.of(context).api.isPreview);
+        if (mounted) fetch();
       });
     }
   }
 
-  Future<void> fetch({bool reset = false, bool locate = false}) async {
+  Future<void> fetch({bool reset = false}) async {
     if (loading) return;
     final api = AppScope.of(context).api;
     setState(() {
       loading = true;
       error = null;
       if (reset) {
-        users.clear();
+        groups.clear();
         positions.clear();
         seen.clear();
         cursor = null;
       }
     });
     try {
-      if (locate) {
-        try {
-          final p = await currentPosition();
-          coordinates = {'latitude': p.latitude, 'longitude': p.longitude};
-        } catch (_) {
-          // The source also falls back to Istanbul when location is unavailable.
-        }
-        if (!mounted) return;
-      }
+      final language = AppScope.of(context).locale.languageCode;
       final response = await api.call(
-        'user.fetch.nearby.users',
-        body: {
-          ...coordinates,
-          if (cursor != null) 'cursor': cursor,
-          'limit': 60,
-        },
+        'chat.group.list',
+        body: {if (cursor != null) 'cursor': cursor, 'limit': 30},
       );
       final page = RecordPage.parse(response);
       if (!mounted) return;
       setState(() {
-        for (final user in page.records) {
-          if (recordId(user).isNotEmpty &&
-              seen.add(recordId(user)) &&
-              user['is_blocked'] != true) {
-            users.add(nearbyPerson(user, coordinates));
+        for (final raw in page.records) {
+          final group = groupRadarRecord(raw, language: language);
+          if (recordId(group).isNotEmpty && seen.add(recordId(group))) {
+            groups.add(group);
           }
         }
-        final cells = RadarGeometry.spiral().take(users.length).toList();
+        final cells = RadarGeometry.spiral().take(groups.length).toList();
         positions
           ..clear()
           ..addAll(
@@ -100,9 +88,12 @@ class _RadarScreenState extends State<RadarScreen>
           );
         cursor = page.next;
         loaded = true;
+        activeGroup ??= nearestGroup(Offset(x.value, y.value));
       });
     } catch (e) {
-      if (mounted) setState(() => error = '$e');
+      if (mounted) {
+        setState(() => error = AppFailure.from(e).message(context.l10n));
+      }
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -150,11 +141,33 @@ class _RadarScreenState extends State<RadarScreen>
     }
   }
 
-  void focus(int index) {
+  void openGroup(int index) {
     hold?.cancel();
     animatePan(-positions[index], Offset.zero, stiffness: 100);
     HapticFeedback.mediumImpact();
-    setState(() => selected = users[index]);
+    setState(() {
+      selected = groups[index];
+      activeGroup = groups[index];
+    });
+  }
+
+  /// The group nearest a given pan offset — used to update [activeGroup] at
+  /// discrete moments (load, tap, settle) rather than live every pan frame.
+  /// A continuously recomputed value fed a keyed AnimatedSwitcher flickers
+  /// between neighbors while dragging, which crashed with "Duplicate keys
+  /// found" as the switcher tried to re-enter a key mid-transition.
+  Json? nearestGroup(Offset pan) {
+    if (positions.isEmpty) return null;
+    var bestIndex = 0;
+    var bestDistance = double.infinity;
+    for (var i = 0; i < positions.length && i < groups.length; i++) {
+      final distance = (positions[i] + pan).distance;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = i;
+      }
+    }
+    return groups[bestIndex];
   }
 
   @override
@@ -163,6 +176,7 @@ class _RadarScreenState extends State<RadarScreen>
     x.dispose();
     y.dispose();
     zoom.dispose();
+    motion.dispose();
     super.dispose();
   }
 
@@ -176,16 +190,11 @@ class _RadarScreenState extends State<RadarScreen>
         edge: selected == null ? AppHeaderEdge.none : AppHeaderEdge.soft,
         leading: selected == null
             ? const WorkspaceMenuButton()
-            : AppIconButton(
-                dimension: 44,
-                tooltip: context.l10n.profile,
-                icon: ClipOval(
-                  child: SizedBox.square(
-                    dimension: 40,
-                    child: Avatar(selected!, radius: 20),
-                  ),
+            : ClipOval(
+                child: SizedBox.square(
+                  dimension: 40,
+                  child: Avatar(selected!, radius: 20),
                 ),
-                onPressed: () => open(context, ProfileScreen(user: selected!)),
               ),
         title: selected == null ? null : Text(personName(selected!)),
         actions: selected == null
@@ -228,7 +237,14 @@ class _RadarScreenState extends State<RadarScreen>
           );
           return Stack(
             children: [
-              const Positioned.fill(child: ChatWallpaper()),
+              Positioned.fill(
+                child: _RadarWallpaper(
+                  group: activeGroup,
+                  motion: motion,
+                  pan: Listenable.merge([x, y]),
+                  panOffset: () => Offset(x.value, y.value) * .06,
+                ),
+              ),
               Positioned.fill(
                 child: Listener(
                   onPointerDown: (event) {
@@ -289,37 +305,42 @@ class _RadarScreenState extends State<RadarScreen>
                     },
                     child: AnimatedBuilder(
                       animation: Listenable.merge([x, y, zoom]),
-                      builder: (context, _) => Transform.scale(
-                        scale: zoom.value,
-                        alignment: Alignment.center,
-                        child: _RadarCanvas(
-                          users: users,
-                          positions: positions,
-                          pan: Offset(x.value, y.value),
-                          center: center,
-                          size: box.biggest,
-                          accent: AppPalette.of(context).accent,
-                          text: AppPalette.of(context).text,
-                          onSelect: focus,
-                        ),
+                      // zoomScale shrinks each bubble individually instead
+                      // of wrapping the whole canvas in Transform.scale:
+                      // that used to shrink the canvas's own clip bounds
+                      // along with it, so the grid read as a small floating
+                      // "window" instead of pulling back within the full
+                      // screen. The backdrop grid/crosshair stay full-size.
+                      builder: (context, _) => _RadarCanvas(
+                        groups: groups,
+                        positions: positions,
+                        pan: Offset(x.value, y.value),
+                        center: center,
+                        size: box.biggest,
+                        accent: AppPalette.of(context).accent,
+                        text: AppPalette.of(context).text,
+                        motion: motion,
+                        zoomScale: zoom.value,
+                        onSelect: openGroup,
                       ),
                     ),
                   ),
                 ),
               ),
-              if (loading && users.isEmpty)
+              if (loading && groups.isEmpty)
                 const Center(child: CircularProgressIndicator.adaptive()),
-              if (error != null && users.isEmpty)
+              if (error != null && groups.isEmpty)
                 Center(
                   child: ScreenStatus(error: error, retry: () => fetch()),
                 ),
-              if (loaded && users.isEmpty && error == null)
+              if (loaded && groups.isEmpty && error == null)
                 const Center(child: ScreenStatus()),
               if (selected != null)
                 Positioned.fill(
-                  child: RadarProfileCard(
+                  child: RadarGroupCard(
                     key: ValueKey(recordId(selected!)),
-                    user: selected!,
+                    group: selected!,
+                    motion: motion,
                     topInset: chrome,
                     onClose: () => setState(() => selected = null),
                   ),
@@ -359,6 +380,13 @@ class _RadarScreenState extends State<RadarScreen>
       velocity,
     );
     animatePan(target, velocity);
+    // Where the spring will land, not the live drag position — settling
+    // once here (instead of live every frame) is what avoids the rapid
+    // key-flicker crash in _RadarWallpaper's AnimatedSwitcher.
+    final next = nearestGroup(target);
+    if (next != null && recordId(next) != recordId(activeGroup ?? const {})) {
+      setState(() => activeGroup = next);
+    }
     var minX = double.infinity, maxX = -double.infinity;
     var minY = double.infinity, maxY = -double.infinity;
     for (final p in positions) {
@@ -380,22 +408,77 @@ class _RadarScreenState extends State<RadarScreen>
   }
 }
 
+/// The default textured wallpaper, or — once a group is centered — that
+/// group's hero photo (sharp, just dimmed) drifting slowly behind the
+/// honeycomb so the backdrop reads as alive rather than a static photo.
+class _RadarWallpaper extends StatelessWidget {
+  final Json? group;
+  final RadarMotion motion;
+  final Listenable pan;
+  final Offset Function() panOffset;
+  const _RadarWallpaper({
+    required this.group,
+    required this.motion,
+    required this.pan,
+    required this.panOffset,
+  });
+  @override
+  Widget build(BuildContext context) => FlashFreeCrossFade(
+    child: group == null
+        ? const ChatWallpaper(key: ValueKey('radar.wallpaper.default'))
+        : Stack(
+            key: ValueKey('radar.wallpaper.${recordId(group!)}'),
+            fit: StackFit.expand,
+            children: [
+              DriftingImage(
+                motion: motion,
+                // More overscan than the default — clamped against this by
+                // DriftingImage itself, but a bigger budget means the pan
+                // parallax actually has room to move before it clamps.
+                scale: 1.3,
+                extra: pan,
+                extraOffset: panOffset,
+                child: AppImage(
+                  source: group!['localHeroAsset'] != null
+                      ? AssetImage('${group!['localHeroAsset']}')
+                      : (group!['hero'] ?? group!['cover']),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color:
+                      (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.black
+                              : Colors.white)
+                          .withValues(alpha: .25),
+                ),
+              ),
+            ],
+          ),
+  );
+}
+
 /// The honeycomb, backdrop and fixed crosshair of Match/index.tsx.
 class _RadarCanvas extends StatelessWidget {
-  final List<Json> users;
+  final List<Json> groups;
   final List<Offset> positions;
   final Offset pan, center;
   final Size size;
   final Color accent, text;
+  final RadarMotion motion;
+  final double zoomScale;
   final ValueChanged<int> onSelect;
   const _RadarCanvas({
-    required this.users,
+    required this.groups,
     required this.positions,
     required this.pan,
     required this.center,
     required this.size,
     required this.accent,
     required this.text,
+    required this.motion,
+    required this.zoomScale,
     required this.onSelect,
   });
   @override
@@ -403,7 +486,7 @@ class _RadarCanvas extends StatelessWidget {
     // Culling and zIndex = round(1000 - dist): nearer bubbles paint on top.
     final visible =
         <int>[
-          for (var i = 0; i < positions.length && i < users.length; i++)
+          for (var i = 0; i < positions.length && i < groups.length; i++)
             if (() {
               final point = positions[i] + pan + center;
               return point.dx > -RadarGeometry.itemSize &&
@@ -429,7 +512,7 @@ class _RadarCanvas extends StatelessWidget {
         ),
         for (final i in visible)
           Positioned(
-            key: ValueKey(recordId(users[i])),
+            key: ValueKey(recordId(groups[i])),
             left:
                 positions[i].dx +
                 pan.dx +
@@ -443,9 +526,11 @@ class _RadarCanvas extends StatelessWidget {
             width: RadarGeometry.itemSize,
             height: RadarGeometry.itemSize,
             child: Transform.scale(
-              scale: RadarGeometry.scale((positions[i] + pan).distance),
+              scale:
+                  RadarGeometry.scale((positions[i] + pan).distance) *
+                  zoomScale,
               child: _RadarBubble(
-                user: users[i],
+                group: groups[i],
                 opacity: RadarGeometry.opacity((positions[i] + pan).distance),
                 onTap: () => onSelect(i),
               ),
@@ -464,11 +549,11 @@ class _RadarCanvas extends StatelessWidget {
 }
 
 class _RadarBubble extends StatelessWidget {
-  final Json user;
+  final Json group;
   final double opacity;
   final VoidCallback onTap;
   const _RadarBubble({
-    required this.user,
+    required this.group,
     required this.opacity,
     required this.onTap,
   });
@@ -478,7 +563,7 @@ class _RadarBubble extends StatelessWidget {
     clear: true,
     interactive: true,
     child: AppPressable(
-      label: personName(user),
+      label: personName(group),
       style: AppPressStyle.radar,
       onPressed: onTap,
       child: SizedBox.square(
@@ -486,26 +571,13 @@ class _RadarBubble extends StatelessWidget {
         child: Center(
           child: Opacity(
             opacity: opacity,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Avatar(user, radius: 39, glass: false),
-                if (user['online'] == true || user['is_online'] == true)
-                  Positioned(
-                    bottom: -1,
-                    right: -1,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: const Color(0xff34c759),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            // Circular to match the glass bubble around it; a rounded
+            // square here reads as a mistake against the round surface.
+            // Static (not drift-animated like the background): this cell is
+            // rebuilt from scratch every pan frame since bubbles reorder and
+            // cull as you drag, which made a live-motion subscription here
+            // churn its listener every frame and crash the element tree.
+            child: Avatar(group, radius: 39, glass: false),
           ),
         ),
       ),
@@ -519,7 +591,10 @@ class _RadarBackdrop extends CustomPainter {
   const _RadarBackdrop({required this.center, required this.accent});
   @override
   void paint(Canvas canvas, Size size) {
-    // RadarBackdrop: four 1040pt grid lines, three rings and a 120pt glow.
+    // RadarBackdrop: four 1040pt grid lines and a 120pt glow. The three
+    // concentric ring circles used to live here too, but they stacked up
+    // into a messy layered-circle look (worse once the canvas is scaled
+    // for the long-press zoom), so they're gone.
     for (final (angle, opacity) in [
       (0.0, .06),
       (math.pi / 2, .06),
@@ -534,20 +609,6 @@ class _RadarBackdrop extends CustomPainter {
         Paint()..color = accent.withValues(alpha: opacity),
       );
       canvas.restore();
-    }
-    for (final (diameter, opacity) in [
-      (220.0, .08),
-      (420.0, .06),
-      (640.0, .045),
-    ]) {
-      canvas.drawCircle(
-        center,
-        diameter / 2 - .5,
-        Paint()
-          ..color = Colors.black.withValues(alpha: opacity)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
-      );
     }
     canvas.drawCircle(
       center,
@@ -576,14 +637,6 @@ class _RadarCrosshair extends CustomPainter {
     canvas.drawRect(
       Rect.fromCenter(center: center, width: 60, height: 1),
       line,
-    );
-    canvas.drawCircle(
-      center,
-      159.5,
-      Paint()
-        ..color = color.withValues(alpha: .03)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
     );
   }
 

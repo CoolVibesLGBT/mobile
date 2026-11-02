@@ -200,8 +200,16 @@ class _PlaceDetailsState extends State<_PlaceDetails> {
       key: PageStorageKey('place.detail.${recordId(place)}'),
       slivers: [
         SliverToBoxAdapter(
+          // RemoteContent (AppScaffold's body here) isn't a ScrollView, so
+          // only the bare safe-area inset was applied, not the header's own
+          // height — the image/title started behind the floating header.
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              AppDesign.headerInset(context) + 16,
+              16,
+              24,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -405,8 +413,8 @@ class _PlaceDetailsState extends State<_PlaceDetails> {
             itemCount: children.length,
             itemBuilder: (context, index) => PostTile(
               post: children[index],
-              comment: true,
               detail: true,
+              isReply: true,
               reload: widget.reload,
             ),
           ),

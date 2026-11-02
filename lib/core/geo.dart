@@ -44,7 +44,11 @@ const defaultDiscoveryCoordinates = <String, dynamic>{
 };
 Future<Position> currentPosition() async {
   if (!await Geolocator.isLocationServiceEnabled()) {
-    throw ApiException('Location services are disabled');
+    throw ApiException(
+      'Location services are disabled',
+      null,
+      'location_services_disabled',
+    );
   }
   var permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied) {
@@ -52,7 +56,11 @@ Future<Position> currentPosition() async {
   }
   if (permission == LocationPermission.denied ||
       permission == LocationPermission.deniedForever) {
-    throw ApiException('Location permission is required');
+    throw ApiException(
+      'Location permission is required',
+      null,
+      'location_permission_denied',
+    );
   }
   return Geolocator.getCurrentPosition(
     locationSettings: const LocationSettings(

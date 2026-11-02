@@ -544,6 +544,78 @@ abstract class AppLocalizations {
   /// **'Dislike'**
   String get dislike;
 
+  /// No description provided for @banana.
+  ///
+  /// In en, this message translates to:
+  /// **'Banana'**
+  String get banana;
+
+  /// No description provided for @tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip'**
+  String get tip;
+
+  /// No description provided for @amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get amount;
+
+  /// No description provided for @tipSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Tip'**
+  String get tipSendTitle;
+
+  /// No description provided for @tipSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip sent'**
+  String get tipSent;
+
+  /// No description provided for @tipFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to send tip. Please try again.'**
+  String get tipFailed;
+
+  /// No description provided for @tipInsufficientBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient balance'**
+  String get tipInsufficientBalance;
+
+  /// No description provided for @walletAvailableBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Balance'**
+  String get walletAvailableBalance;
+
+  /// No description provided for @walletDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit'**
+  String get walletDeposit;
+
+  /// No description provided for @walletSelectAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Amount'**
+  String get walletSelectAmount;
+
+  /// No description provided for @walletCustomAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Custom Amount'**
+  String get walletCustomAmount;
+
+  /// No description provided for @walletProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing…'**
+  String get walletProcessing;
+
   /// No description provided for @attributes.
   ///
   /// In en, this message translates to:
@@ -1066,6 +1138,24 @@ abstract class AppLocalizations {
   /// **'Group Info'**
   String get groupInfo;
 
+  /// No description provided for @joinGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Join group'**
+  String get joinGroup;
+
+  /// No description provided for @groupMembersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} members'**
+  String groupMembersCount(Object count);
+
+  /// No description provided for @reportDescriptionMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more characters needed'**
+  String reportDescriptionMinLength(Object count);
+
   /// No description provided for @loadEarlierMessages.
   ///
   /// In en, this message translates to:
@@ -1203,6 +1293,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove participant'**
   String get removeParticipant;
+
+  /// No description provided for @groupOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get groupOwner;
 
   /// No description provided for @today2.
   ///
@@ -1366,6 +1462,12 @@ abstract class AppLocalizations {
   /// **'Your location is unavailable. Check location permission and try again.'**
   String get yourLocationIsUnavailableCheckLocation;
 
+  /// No description provided for @locationUnavailableTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t get your location. Try again in a moment.'**
+  String get locationUnavailableTryAgain;
+
   /// No description provided for @columns.
   ///
   /// In en, this message translates to:
@@ -1431,6 +1533,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'People'**
   String get people;
+
+  /// No description provided for @groups.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get groups;
 
   /// No description provided for @events.
   ///
@@ -1827,6 +1935,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Likes'**
   String get likes;
+
+  /// No description provided for @postLikers.
+  ///
+  /// In en, this message translates to:
+  /// **'People who liked'**
+  String get postLikers;
+
+  /// No description provided for @postDislikeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Dislike'**
+  String get postDislikeAction;
+
+  /// No description provided for @postDislikers.
+  ///
+  /// In en, this message translates to:
+  /// **'People who disliked'**
+  String get postDislikers;
+
+  /// No description provided for @postBananaReactors.
+  ///
+  /// In en, this message translates to:
+  /// **'Banana senders'**
+  String get postBananaReactors;
+
+  /// No description provided for @postTippers.
+  ///
+  /// In en, this message translates to:
+  /// **'Tippers'**
+  String get postTippers;
+
+  /// No description provided for @postBookmarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'People who saved'**
+  String get postBookmarkers;
 
   /// No description provided for @upload.
   ///
@@ -2937,6 +3081,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your account will be deleted and you will be signed out. Are you sure you want to continue?'**
   String get deleteAccountConfirmation;
+
+  /// No description provided for @deletePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Post'**
+  String get deletePost;
+
+  /// No description provided for @deletePostConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this post? This action cannot be undone and the post will be permanently removed.'**
+  String get deletePostConfirmation;
 
   /// No description provided for @deleteMessagesScopeInfo.
   ///

@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import '../design/app_design.dart';
 import 'package:video_player/video_player.dart';
 import '../core/api.dart';
+import '../core/app_failure.dart';
 import '../core/audio_source.dart';
 import '../core/session.dart';
 import '../components/components.dart';
@@ -356,7 +357,9 @@ class _VideoViewState extends State<VideoView> {
           if (mounted) setState(() {});
         })
         .catchError((Object e) {
-          if (mounted) setState(() => error = '$e');
+          if (mounted) {
+            setState(() => error = AppFailure.from(e).message(context.l10n));
+          }
         });
   }
 

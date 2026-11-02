@@ -54,7 +54,16 @@ class _ClassifiedsScreenState extends State<ClassifiedsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            // AppScaffold only gives a non-ScrollView body the bare
+            // safe-area inset, not the header's own height — without this,
+            // the intro/search block started under the status bar and sat
+            // behind the floating blurred header instead of below it.
+            padding: EdgeInsets.fromLTRB(
+              16,
+              AppDesign.headerInset(context) + 12,
+              16,
+              8,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -175,7 +184,14 @@ class _ClassifiedScreenState extends State<ClassifiedScreen> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 slivers: [
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  // Column (not a ScrollView) is AppScaffold's body here, so
+                  // only the bare safe-area inset was applied — the card
+                  // started under the status bar, behind the floating header.
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: AppDesign.headerInset(context) + 16,
+                    ),
+                  ),
                   SliverToBoxAdapter(
                     child: ClassifiedCard(post: item, detail: true),
                   ),
@@ -207,8 +223,8 @@ class _ClassifiedScreenState extends State<ClassifiedScreen> {
                       itemCount: children.length,
                       itemBuilder: (_, index) => PostTile(
                         post: children[index],
-                        comment: true,
                         detail: true,
+                        isReply: true,
                         reload: reload,
                       ),
                     ),

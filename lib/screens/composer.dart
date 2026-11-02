@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart';
 import '../core/geo.dart';
 import '../components/components.dart';
 import '../components/attachment_controls.dart';
+import '../components/emoticon_view.dart';
 import '../components/message_field.dart';
 import '../components/chat_input.dart';
 import '../components/composer_author.dart';
@@ -20,6 +21,7 @@ import '../core/session.dart';
 import '../core/upload_queue.dart';
 import 'app_forms.dart';
 import '../components/checkin_radar.dart';
+import '../components/glass_surface.dart';
 
 class ComposerScreen extends StatefulWidget {
   final bool story, checkIn, inline;
@@ -115,7 +117,7 @@ class _ComposerScreenState extends State<ComposerScreen>
       }
       if (!session!.api.isPreview) {
         try {
-          final raw = await session!.api.storage.read(key: draftKey);
+          final raw = await session!.api.localStorage.read(key: draftKey);
           if (raw != null &&
               mounted &&
               (!isArticle ||
@@ -168,7 +170,7 @@ class _ComposerScreenState extends State<ComposerScreen>
 
   Future<void> persistDraft({bool clear = false}) {
     if (session == null || session!.api.isPreview) return Future<void>.value();
-    final storage = session!.api.storage, key = draftKey;
+    final storage = session!.api.localStorage, key = draftKey;
     final value = clear
         ? null
         : jsonEncode({
@@ -379,6 +381,19 @@ class _ComposerScreenState extends State<ComposerScreen>
     }
   }
 
+  /// A story has exactly one background: picking a new photo replaces
+  /// whatever was already attached, same single-slot semantics as the
+  /// flat-colour swatches it steps in front of.
+  Future<void> pickStoryBackground(BuildContext context) async {
+    await chooseAttachment(context, attachments);
+    if (attachments.files.length > 1) {
+      final kept = attachments.files.removeLast();
+      attachments.files.clear();
+      attachments.files.add(kept);
+      attachments.changed();
+    }
+  }
+
   Widget editor(BuildContext context) => MessageField(
     controller: text,
     minLines: widget.story ? 2 : 6,
@@ -548,24 +563,134 @@ class _ComposerScreenState extends State<ComposerScreen>
                       child: ListView(
                         children: [
                           if (widget.story)
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: RepaintBoundary(
-                                key: storyBoundary,
-                                child: AspectRatio(
-                                  aspectRatio: 9 / 16,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: palettes[storyColor],
+                            ListenableBuilder(
+                              listenable: attachments,
+                              builder: (context, _) {
+                                final background = attachments.files
+                                    .where(
+                                      (f) =>
+                                          '${f['mime']}'.startsWith('image/'),
+                                    )
+                                    .firstOrNull;
+                                return Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Stack(
+                                    children: [
+                                      RepaintBoundary(
+                                        key: storyBoundary,
+                                        child: AspectRatio(
+                                          aspectRatio: 9 / 16,
+                                          child: DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              gradient: background == null
+                                                  ? LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end:
+                                                          Alignment.bottomRight,
+                                                      colors:
+                                                          palettes[storyColor],
+                                                    )
+                                                  : null,
+                                            ),
+                                            child: Stack(
+                                              fit: StackFit.expand,
+                                              children: [
+                                                if (background != null)
+                                                  Image.file(
+                                                    File(
+                                                      '${background['path']}',
+                                                    ),
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                Center(child: editor(context)),
+                                                if (attachments.emoticon !=
+                                                    null)
+                                                  Align(
+                                                    alignment: const Alignment(
+                                                      0,
+                                                      .72,
+                                                    ),
+                                                    child: GestureDetector(
+                                                      onTap: busy
+                                                          ? null
+                                                          : () => setState(() {
+                                                              attachments
+                                                                      .emoticon =
+                                                                  null;
+                                                              attachments
+                                                                  .changed();
+                                                            }),
+                                                      child: EmoticonView(
+                                                        document: attachments
+                                                            .emoticon!,
+                                                        size: 96,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                    child: Center(child: editor(context)),
+                                      PositionedDirectional(
+                                        top: 8,
+                                        end: 8,
+                                        child: GlassSurface(
+                                          radius: 20,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              AppIconButton(
+                                                embedded: true,
+                                                tooltip: context
+                                                    .l10n
+                                                    .emojiStickersAndGifs,
+                                                icon: const Icon(
+                                                  Icons.emoji_emotions_outlined,
+                                                ),
+                                                color: Colors.white,
+                                                onPressed: busy
+                                                    ? null
+                                                    : () => openEmoticons(
+                                                        context,
+                                                        attachments,
+                                                      ),
+                                              ),
+                                              AppIconButton(
+                                                embedded: true,
+                                                tooltip: background == null
+                                                    ? context.l10n.attach
+                                                    : context.l10n.remove,
+                                                icon: Icon(
+                                                  background == null
+                                                      ? Icons
+                                                            .add_photo_alternate_outlined
+                                                      : Icons.close,
+                                                ),
+                                                color: Colors.white,
+                                                onPressed: busy
+                                                    ? null
+                                                    : () => background == null
+                                                          ? pickStoryBackground(
+                                                              context,
+                                                            )
+                                                          : setState(() {
+                                                              attachments.files
+                                                                  .remove(
+                                                                    background,
+                                                                  );
+                                                              attachments
+                                                                  .changed();
+                                                            }),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             )
                           else
                             Padding(
@@ -573,25 +698,38 @@ class _ComposerScreenState extends State<ComposerScreen>
                               child: editor(context),
                             ),
                           if (widget.story)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Wrap(
-                                spacing: 8,
-                                children: [
-                                  for (var i = 0; i < palettes.length; i++)
-                                    AppIconButton(
-                                      tooltip: '${i + 1}',
-                                      icon: Icon(
-                                        Icons.circle,
-                                        color: palettes[i][0],
+                            ListenableBuilder(
+                              listenable: attachments,
+                              builder: (context, _) =>
+                                  attachments.files.any(
+                                    (f) => '${f['mime']}'.startsWith('image/'),
+                                  )
+                                  ? const SizedBox.shrink()
+                                  : Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
                                       ),
-                                      onPressed: () =>
-                                          setState(() => storyColor = i),
+                                      child: Wrap(
+                                        spacing: 8,
+                                        children: [
+                                          for (
+                                            var i = 0;
+                                            i < palettes.length;
+                                            i++
+                                          )
+                                            AppIconButton(
+                                              tooltip: '${i + 1}',
+                                              icon: Icon(
+                                                Icons.circle,
+                                                color: palettes[i][0],
+                                              ),
+                                              onPressed: () => setState(
+                                                () => storyColor = i,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
-                                ],
-                              ),
                             ),
                           if (widget.checkIn)
                             AppSection(
@@ -681,126 +819,145 @@ class _ComposerScreenState extends State<ComposerScreen>
           ),
         ],
       ),
-      body: Column(
+      body: ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(
+          0,
+          MediaQuery.paddingOf(context).top +
+              AppDesign.headerInset(context) +
+              16,
+          0,
+          MediaQuery.paddingOf(context).bottom + 24,
+        ),
         children: [
-          Expanded(
-            child: ListView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.only(top: 16, bottom: 12),
-              children: [
-                AppSection(
-                  children: [
-                    AppRow(
-                      leading: AppSettingIcon(
-                        Icons.work_outline,
-                        color: p.accent,
-                        symbol: 'briefcase.fill',
-                      ),
-                      title: Text(
-                        widget.kind == 'job_search' ? l.seeking : l.offers,
-                      ),
-                      subtitle: Text(l.classifiedCreateHint),
-                      disclosure: false,
-                    ),
-                  ],
+          AppSection(
+            children: [
+              AppRow(
+                leading: AppSettingIcon(
+                  Icons.work_outline,
+                  color: p.accent,
+                  symbol: 'briefcase.fill',
                 ),
+                title: Text(widget.kind == 'job_search' ? l.seeking : l.offers),
+                subtitle: Text(l.classifiedCreateHint),
+                disclosure: false,
+              ),
+            ],
+          ),
+          // Kept near the top, above the rest of the (now longer) form, so a
+          // submission failure stays visible without the viewer needing to
+          // scroll back down past Description/Attach/Extra Details to find it.
+          if (error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  error!,
+                  style: AppDesign.font(15, color: p.destructive),
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: AppField(
+              key: const ValueKey('classified.title'),
+              controller: title,
+              enabled: !busy,
+              label: l.title,
+              placeholder: l.classifiedTitleHint,
+              labelAbove: true,
+              outlined: true,
+              maxLines: 2,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: AppField(
+              key: const ValueKey('classified.description'),
+              controller: text,
+              enabled: !busy,
+              label: l.description,
+              placeholder: l.classifiedDescriptionHint,
+              labelAbove: true,
+              outlined: true,
+              minLines: 4,
+              maxLines: 10,
+              onChanged: (_) => scheduleDraft(),
+            ),
+          ),
+          AttachmentPreview(controller: attachments),
+          AppSection(
+            children: [
+              AppRow(
+                leading: Icon(Icons.image_outlined, color: p.accent),
+                title: Text(l.attach, style: TextStyle(color: p.accent)),
+                disclosure: false,
+                onTap: busy
+                    ? null
+                    : () => chooseAttachment(context, attachments),
+              ),
+            ],
+          ),
+          AppSection(
+            title: l.classifiedExtraDetails,
+            footer: l.classifiedDetailHint,
+            children: [
+              for (var index = 0; index < metadata.length; index++)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  child: AppField(
-                    key: const ValueKey('classified.title'),
-                    controller: title,
-                    enabled: !busy,
-                    label: l.title,
-                    placeholder: l.classifiedTitleHint,
-                    labelAbove: true,
-                    outlined: true,
-                    maxLines: 2,
-                  ),
-                ),
-                AppSection(
-                  title: l.classifiedExtraDetails,
-                  footer: l.classifiedDetailHint,
-                  children: [
-                    for (var index = 0; index < metadata.length; index++)
-                      Padding(
-                        key: ObjectKey(metadata[index].$1),
-                        padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  key: ObjectKey(metadata[index].$1),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  AppField(
-                                    key: ValueKey('classified.label.$index'),
-                                    controller: metadata[index].$1,
-                                    label: l.label,
-                                    placeholder: l.classifiedLabelHint,
-                                    enabled: !busy,
-                                  ),
-                                  AppField(
-                                    key: ValueKey('classified.value.$index'),
-                                    controller: metadata[index].$2,
-                                    label: l.value,
-                                    placeholder: l.classifiedValueHint,
-                                    enabled: !busy,
-                                  ),
-                                ],
-                              ),
+                            AppField(
+                              key: ValueKey('classified.label.$index'),
+                              controller: metadata[index].$1,
+                              label: l.label,
+                              placeholder: l.classifiedLabelHint,
+                              enabled: !busy,
                             ),
-                            AppIconButton(
-                              tooltip: l.remove,
-                              icon: const Icon(Icons.remove_circle_outline),
-                              onPressed: busy
-                                  ? null
-                                  : () {
-                                      final pair = metadata[index];
-                                      setState(() => metadata.removeAt(index));
-                                      pair.$1.dispose();
-                                      pair.$2.dispose();
-                                      scheduleDraft();
-                                    },
+                            AppField(
+                              key: ValueKey('classified.value.$index'),
+                              controller: metadata[index].$2,
+                              label: l.value,
+                              placeholder: l.classifiedValueHint,
+                              enabled: !busy,
                             ),
                           ],
                         ),
                       ),
-                    AppRow(
-                      leading: Icon(Icons.add_circle_outline, color: p.accent),
-                      title: Text(
-                        l.addDetail,
-                        style: TextStyle(color: p.accent),
+                      AppIconButton(
+                        tooltip: l.remove,
+                        icon: const Icon(Icons.remove_circle_outline),
+                        onPressed: busy
+                            ? null
+                            : () {
+                                final pair = metadata[index];
+                                setState(() => metadata.removeAt(index));
+                                pair.$1.dispose();
+                                pair.$2.dispose();
+                                scheduleDraft();
+                              },
                       ),
-                      disclosure: false,
-                      onTap: busy
-                          ? null
-                          : () {
-                              setState(() => addMetadata());
-                              scheduleDraft();
-                            },
-                    ),
-                  ],
-                ),
-                if (error != null)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        error!,
-                        style: AppDesign.font(15, color: p.destructive),
-                      ),
-                    ),
+                    ],
                   ),
-              ],
-            ),
-          ),
-          ChatInput(
-            controller: text,
-            attachments: attachments,
-            sending: busy,
-            placeholder: l.classifiedDescriptionHint,
-            onSend: send,
-            onChanged: (_) => scheduleDraft(),
+                ),
+              AppRow(
+                leading: Icon(Icons.add_circle_outline, color: p.accent),
+                title: Text(l.addDetail, style: TextStyle(color: p.accent)),
+                disclosure: false,
+                onTap: busy
+                    ? null
+                    : () {
+                        setState(() => addMetadata());
+                        scheduleDraft();
+                      },
+              ),
+            ],
           ),
         ],
       ),

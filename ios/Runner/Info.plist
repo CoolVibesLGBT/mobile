@@ -41,6 +41,8 @@
 	<string>Video ve sesli mesaj kaydı için mikrofon kullanılır.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Fotoğraf ve videolarını paylaşmak için galeri erişimi kullanılır.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Radar ekranındaki arka plan fotoğrafını telefonun eğimine göre hareket ettirmek için hareket sensörleri kullanılır.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

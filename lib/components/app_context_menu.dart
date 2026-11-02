@@ -951,12 +951,19 @@ class _MenuRow extends StatelessWidget {
                           width: _Menu.iconSlot,
                           child: Center(
                             child: item.iconAsset != null
-                                ? SvgPicture.asset(
-                                    item.iconAsset!,
-                                    width: 24,
-                                    height: 24,
-                                    fit: BoxFit.contain,
-                                  )
+                                ? item.iconAsset!.endsWith('.avif')
+                                      ? Image.asset(
+                                          item.iconAsset!,
+                                          width: 24,
+                                          height: 24,
+                                          fit: BoxFit.contain,
+                                        )
+                                      : SvgPicture.asset(
+                                          item.iconAsset!,
+                                          width: 24,
+                                          height: 24,
+                                          fit: BoxFit.contain,
+                                        )
                                 : item.symbol != null
                                 ? AppSymbol.icon(
                                     item.symbol!,

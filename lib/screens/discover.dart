@@ -68,11 +68,13 @@ class _NearbyScreenState extends State<NearbyScreen> {
           locationError = null;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(
           () => locationError =
-              context.l10n.yourLocationIsUnavailableCheckLocation,
+              e is ApiException && e.code == 'location_permission_denied'
+              ? context.l10n.yourLocationIsUnavailableCheckLocation
+              : context.l10n.locationUnavailableTryAgain,
         );
       }
     } finally {
@@ -443,6 +445,7 @@ class _SearchScreenState extends State<SearchScreen> {
       ];
       setState(
         () => results = [
+          ...pick('groups', 'groups'),
           ...pick('users', 'people'),
           ...pick('events', 'events'),
           ...pick('posts', 'posts'),
@@ -471,6 +474,14 @@ class _SearchScreenState extends State<SearchScreen> {
       open(context, ProfileScreen(user: data));
     } else if (type == 'places') {
       open(context, PlaceScreen(place: data));
+    } else if (type == 'groups') {
+      // Search returns the same ChatGroupPreview shape the radar honeycomb
+      // does; joining is idempotent server-side, so this both joins (if
+      // needed) and opens the chat, same as tapping a group there.
+      perform(context, () async {
+        final chat = await joinGroup(AppScope.of(context).api, data);
+        if (mounted) open(context, ChatScreen(chat: chat));
+      });
     } else {
       open(context, PostDetailScreen(post: data));
     }
@@ -484,11 +495,15 @@ class _SearchScreenState extends State<SearchScreen> {
         .where((r) => filter == 'all' || r.$1 == filter)
         .toList();
     final media = MediaQuery.of(context);
-    final top = media.padding.top + AppDesign.headerInset(context);
+    final segmentHeight = AppSegments.heightFor(context);
+    final headerBottomHeight = segmentHeight + 13;
+    final top =
+        media.padding.top + AppDesign.headerInset(context) + headerBottomHeight;
     final inputHeight = media.textScaler.scale(17) * 1.3 + 24;
     final footerHeight = inputHeight + 16 + media.padding.bottom;
     final filters = [
       ('all', context.l10n.all),
+      ('groups', context.l10n.groups),
       ('people', context.l10n.people),
       ('events', context.l10n.events),
       ('posts', context.l10n.posts),
@@ -499,6 +514,32 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppHeader(
         title: Text(context.l10n.search),
         edge: AppHeaderEdge.none,
+        // The old empty space below "Search" is this filter row now,
+        // instead of a separate strip pushed down inside the scrolling
+        // body — the same AppHeader.bottom slot notifications.dart uses
+        // for its own filter segments.
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(headerBottomHeight),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 5, 16, 8),
+            // AppFolderTabs drew its selection pill on a plain GlassSurface
+            // — no elastic drag/press physics, which read as cheap next to
+            // the rest of the glass UI. AppSegments is the same
+            // liquid.GlassSegmentedControl the profile tabs use;
+            // contentSized keeps it a scrollable row sized to its labels.
+            child: AppSegments<String>(
+              contentSized: true,
+              fontSize: 14,
+              values: {for (final (key, label) in filters) key: Text(label)},
+              selected: filter,
+              onChanged: (value) {
+                setState(() => filter = value);
+                changed();
+                search();
+              },
+            ),
+          ),
+        ),
       ),
       bottomOverlayHeight: footerHeight,
       bottomOverlay: SafeArea(
@@ -517,16 +558,6 @@ class _SearchScreenState extends State<SearchScreen> {
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.only(top: top, bottom: footerHeight + 24),
         children: [
-          if (term.length >= 2)
-            AppFolderTabs<String>(
-              items: filters,
-              value: filter,
-              onChanged: (value) {
-                setState(() => filter = value);
-                changed();
-                search();
-              },
-            ),
           if (loading && visible.isEmpty)
             const Padding(
               padding: EdgeInsets.all(40),
@@ -592,6 +623,8 @@ class _SearchRow extends StatelessWidget {
         ? string(data['displayname'] ?? data['username'])
         : type == 'places'
         ? placeTitle(data, language)
+        : type == 'groups'
+        ? readable(data['title'])
         : [
             string(author['displayname']),
             string(author['username']),
@@ -599,6 +632,10 @@ class _SearchRow extends StatelessWidget {
           ].firstWhere((v) => v.isNotEmpty, orElse: () => context.l10n.post);
     final subtitle = type == 'people'
         ? (string(data['username']).isEmpty ? '' : '@${data['username']}')
+        : type == 'groups'
+        ? (string(data['public_username']).isEmpty
+              ? readable(data['description'])
+              : '@${data['public_username']}')
         : type == 'places'
         ? [
             placeAddress(data, language),
@@ -646,7 +683,10 @@ class _SearchRow extends StatelessWidget {
                     ),
                   )
                 else
-                  Avatar(type == 'people' ? data : author, radius: 22),
+                  Avatar(
+                    type == 'people' || type == 'groups' ? data : author,
+                    radius: 22,
+                  ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -708,7 +748,15 @@ class _MatchesScreenState extends State<MatchesScreen> {
     body: Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          // Column (not a ScrollView) is AppScaffold's body here, so only
+          // the bare safe-area inset was applied, not the header's own
+          // height — the filter dropdown started behind the floating header.
+          padding: EdgeInsets.fromLTRB(
+            16,
+            AppDesign.headerInset(context) + 16,
+            16,
+            16,
+          ),
           child: DropdownButtonFormField<String>(
             initialValue: filter,
             isExpanded: true,

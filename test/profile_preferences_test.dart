@@ -101,7 +101,7 @@ void main() {
     () async {
       final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
       final assets = manifest.listAssets().toSet();
-      expect(illustratedIconAliases.values.toSet().length, 467);
+      expect(illustratedIconAliases.values.toSet().length, 506);
       for (final key in illustratedIconAliases.values.toSet()) {
         expect(
           assets,

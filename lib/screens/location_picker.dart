@@ -265,7 +265,13 @@ class _LocationPickerScreenState extends State<LocationPickerScreen>
     } catch (e) {
       if (mounted && !initial) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.allowLocationAccessToUseYour)),
+          SnackBar(
+            content: Text(
+              e is ApiException && e.code == 'location_permission_denied'
+                  ? context.l10n.allowLocationAccessToUseYour
+                  : context.l10n.locationUnavailableTryAgain,
+            ),
+          ),
         );
       }
     } finally {
@@ -699,6 +705,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen>
         child: Stack(
           children: [
             ListView(
+              // This overlay mounts alongside _list's ListView (which opts
+              // out of primary via its own `controller: scroll`) whenever
+              // search is active; it has no reason to claim the ambient
+              // PrimaryScrollController either.
+              primary: false,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: EdgeInsets.only(
                 top: media.padding.top + _Picker.edge * 2 + _Picker.button,

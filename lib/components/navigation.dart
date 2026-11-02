@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 export '../core/api.dart' show recordId;
+import '../core/app_failure.dart';
 import '../design/app_design.dart';
+import '../l10n/l10n.dart';
 import 'glass_surface.dart';
 import 'screen_status.dart';
 import '../vendor/liquid_glass_widgets/liquid_glass_widgets.dart' as liquid;
@@ -76,7 +78,9 @@ Future<void> perform(BuildContext context, Future<void> Function() task) async {
     await task();
   } catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppFailure.from(e).message(context.l10n))),
+      );
     }
   }
 }

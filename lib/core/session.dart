@@ -28,6 +28,14 @@ class Session extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Json system = {};
+  // A local, persisted rollout switch for the post engagement row (dislike,
+  // banana, views, inline bookmark, share, tip) while it's still settling —
+  // not a remote-config system, just a Settings > debug toggle so it can be
+  // turned on/off without a rebuild. Report stays unconditional: it's a fix
+  // to something already exposed, not new surface area.
+  static const _postEngagementActionsKey =
+      'coolvibes.flags.post_engagement_actions';
+  bool postEngagementActionsEnabled = false;
   bool updatingPreferences = false;
   bool _disposed = false;
   int mediaRevision = 0;
@@ -86,6 +94,8 @@ class Session extends ChangeNotifier with WidgetsBindingObserver {
       final prefs = await SharedPreferences.getInstance();
       final language = prefs.getString('language');
       if (language != null) locale = Locale(language);
+      postEngagementActionsEnabled =
+          prefs.getBool(_postEngagementActionsKey) ?? false;
       await AppearanceCatalog.load();
       final saved = prefs.getString(appearanceKey);
       if (saved != null) {
@@ -459,6 +469,23 @@ class Session extends ChangeNotifier with WidgetsBindingObserver {
         (prefs) => prefs.setString('language', value.languageCode),
       );
     }
+    notifyListeners();
+  }
+
+  void setPostEngagementActionsEnabled(bool value) {
+    postEngagementActionsEnabled = value;
+    if (persistPreferences) {
+      SharedPreferences.getInstance().then(
+        (prefs) => prefs.setBool(_postEngagementActionsKey, value),
+      );
+    }
+    notifyListeners();
+  }
+
+  /// Applies a `post.tip` response's `balance` (the one real field web reads
+  /// off that call) onto the signed-in user, without a full refetch.
+  void applyBalance(num balance) {
+    user = {...user, 'balance': balance};
     notifyListeners();
   }
 

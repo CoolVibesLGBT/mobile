@@ -8,7 +8,7 @@
 html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:__COOLVIBES_BG_COLOR__}
 #map{position:absolute;inset:0;width:100%;height:100%}
 
-.gm-marker-root{position:relative;width:76px;display:flex;flex-direction:column;align-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.gm-marker-root{position:relative;width:76px;display:flex;flex-direction:column;align-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;transform-origin:center bottom;will-change:transform}
 .gm-bubble-stack{display:flex;flex-direction:column;align-items:center;margin-bottom:7px;max-width:176px}
 .gm-bubble{position:relative;color:#111827;font-size:12px;line-height:15px;font-weight:700;white-space:nowrap;padding:6px 11px;border-radius:9999px;max-width:176px;overflow:hidden;text-overflow:ellipsis;background:var(--gm-glass-fill);-webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);border:1px solid var(--gm-glass-edge);box-shadow:inset 0 1px 0 var(--gm-glass-hi),0 4px 14px rgba(0,0,0,.18)}
 .gm-bubble-caret{width:10px;height:10px;margin-top:-6px;transform:rotate(45deg);border-radius:2px;background:var(--gm-glass-fill);-webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);border-right:1px solid var(--gm-glass-edge);border-bottom:1px solid var(--gm-glass-edge)}
@@ -206,6 +206,48 @@ function applyInteractive(cfg){
   } catch (e) {}
 }
 
+// Press feedback: same lift as AppPressable's AppPressStyle.glass (Telegram
+// GlassBackgroundComponent/TouchEffect), ported from AppDesign's
+// glassPressGrowth/glassLiftOn/glassLiftOff so the marker lifts and settles
+// like the app's liquid-glass buttons instead of a flat click.
+var GLASS_GROWTH = 20;
+var GLASS_LIFT_ON = { mass: 1.36, stiffness: 568, damping: 39.7 };
+var GLASS_LIFT_OFF = { mass: 2, stiffness: 460, damping: 21.8 };
+var REDUCE_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+function springValue(t, spring){
+  var wn = Math.sqrt(spring.stiffness / spring.mass);
+  var zeta = spring.damping / (2 * Math.sqrt(spring.mass * spring.stiffness));
+  if (zeta < 1) {
+    var wd = wn * Math.sqrt(1 - zeta * zeta);
+    var env = Math.exp(-zeta * wn * t);
+    return 1 - env * (Math.cos(wd * t) + (zeta * wn / wd) * Math.sin(wd * t));
+  }
+  var env2 = Math.exp(-wn * t);
+  return 1 - env2 * (1 + wn * t);
+}
+function markerPress(root){
+  var raf = null, start = 0, from = 1, to = 1, spring = GLASS_LIFT_OFF, current = 1;
+  function frame(now){
+    var t = (now - start) / 1000;
+    current = from + (to - from) * springValue(t, spring);
+    root.style.transform = 'scale(' + current + ')';
+    if (t < 0.8) { raf = requestAnimationFrame(frame); }
+    else { current = to; root.style.transform = 'scale(' + to + ')'; raf = null; }
+  }
+  function animate(target, nextSpring){
+    if (REDUCE_MOTION) { current = from = to = target; root.style.transform = target === 1 ? '' : 'scale(' + target + ')'; return; }
+    if (raf) cancelAnimationFrame(raf);
+    from = current; to = target; spring = nextSpring; start = performance.now();
+    raf = requestAnimationFrame(frame);
+  }
+  return {
+    down: function(){
+      var r = root.getBoundingClientRect();
+      animate(1 + GLASS_GROWTH / Math.max(r.width, r.height, 1), GLASS_LIFT_ON);
+    },
+    up: function(){ animate(1, GLASS_LIFT_OFF); },
+  };
+}
 var markers = {};
 function esc(s){
   return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -243,6 +285,13 @@ function setMarkers(list){
     var el = document.createElement('div');
     el.innerHTML = markerHtml(m);
     (function(id){
+      var press = markerPress(el.firstElementChild);
+      el.addEventListener('pointerdown', function(ev){
+        try { el.setPointerCapture(ev.pointerId); } catch (e) {}
+        press.down();
+      });
+      el.addEventListener('pointerup', press.up);
+      el.addEventListener('pointercancel', press.up);
       el.addEventListener('click', function(ev){
         ev.stopPropagation();
         post({ type: 'marker', id: String(id) });

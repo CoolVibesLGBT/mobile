@@ -215,7 +215,11 @@ abstract final class AppDesign {
   static const profileCoverOverlap = 50.0;
   static const profileAvatarBorder = 3.0;
   static const profileIdentityGap = 9.0;
-  static const profileCoverShade = Color(0xff000000);
+  // Fully opaque black made the profile header read as a solid black bar
+  // over the cover photo instead of a legibility scrim — AppHeader's own
+  // gradient curve (.75 down to 0) only scales this color's own alpha, so
+  // 0xff here meant the strongest stop was ~75% opaque black.
+  static const profileCoverShade = Color(0x80000000);
   // Web ProfileScreen edit view: h-48 cover, w-32 avatar, rounded-2xl cards.
   static const profileEditCoverRadius = 20.0;
   static const profileEditCoverHeight = 192.0;

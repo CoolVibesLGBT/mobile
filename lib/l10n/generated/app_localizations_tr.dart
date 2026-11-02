@@ -243,6 +243,42 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dislike => 'Geç';
 
   @override
+  String get banana => 'Muz';
+
+  @override
+  String get tip => 'Bahşiş';
+
+  @override
+  String get amount => 'Miktar';
+
+  @override
+  String get tipSendTitle => 'Bahşiş gönder';
+
+  @override
+  String get tipSent => 'Bahşiş gönderildi';
+
+  @override
+  String get tipFailed => 'Bahşiş gönderilemedi. Lütfen tekrar dene.';
+
+  @override
+  String get tipInsufficientBalance => 'Yetersiz bakiye';
+
+  @override
+  String get walletAvailableBalance => 'Mevcut Bakiye';
+
+  @override
+  String get walletDeposit => 'Yatır';
+
+  @override
+  String get walletSelectAmount => 'Miktar Seç';
+
+  @override
+  String get walletCustomAmount => 'Özel Miktar Gir';
+
+  @override
+  String get walletProcessing => 'İşleniyor…';
+
+  @override
   String get attributes => 'Özellikler';
 
   @override
@@ -514,6 +550,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get groupInfo => 'Grup bilgisi';
 
   @override
+  String get joinGroup => 'Gruba katıl';
+
+  @override
+  String groupMembersCount(Object count) {
+    return '$count üye';
+  }
+
+  @override
+  String reportDescriptionMinLength(Object count) {
+    return '$count karakter daha gerekli';
+  }
+
+  @override
   String get loadEarlierMessages => 'Önceki mesajları yükle';
 
   @override
@@ -593,6 +642,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get removeParticipant => 'Üyeyi çıkar';
+
+  @override
+  String get groupOwner => 'Sahip';
 
   @override
   String get today2 => 'bugün';
@@ -681,6 +733,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Konumun alınamadı. Konum iznini kontrol edip tekrar dene.';
 
   @override
+  String get locationUnavailableTryAgain =>
+      'Konumun alınamadı. Birazdan tekrar dene.';
+
+  @override
   String get columns => 'Sütunlar';
 
   @override
@@ -714,6 +770,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get people => 'Kişiler';
+
+  @override
+  String get groups => 'Gruplar';
 
   @override
   String get events => 'Etkinlikler';
@@ -926,6 +985,24 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get likes => 'Beğeniler';
+
+  @override
+  String get postLikers => 'Beğenenler';
+
+  @override
+  String get postDislikeAction => 'Beğenme';
+
+  @override
+  String get postDislikers => 'Beğenmeyenler';
+
+  @override
+  String get postBananaReactors => 'Muz gönderenler';
+
+  @override
+  String get postTippers => 'Bahşiş verenler';
+
+  @override
+  String get postBookmarkers => 'Kaydedenler';
 
   @override
   String get upload => 'Yükle';
@@ -1513,6 +1590,13 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get deleteAccountConfirmation =>
       'Hesabın silinecek ve oturumun kapatılacak. Devam etmek istediğine emin misin?';
+
+  @override
+  String get deletePost => 'Gönderiyi Sil';
+
+  @override
+  String get deletePostConfirmation =>
+      'Bu gönderiyi silmek istediğine emin misin? Bu işlem geri alınamaz ve gönderi kalıcı olarak kaldırılır.';
 
   @override
   String get deleteMessagesScopeInfo =>

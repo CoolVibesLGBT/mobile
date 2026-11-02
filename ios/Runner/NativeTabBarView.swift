@@ -40,6 +40,28 @@ private final class TabBarContainer: UIView {
   override init(frame: CGRect) {
     super.init(frame: frame)
     backgroundColor = .clear
+    // A bare UITabBar (not hosted by a UITabBarController) keeps the
+    // pre-iOS 15 opaque appearance unless told otherwise — it does not pick
+    // up translucency on its own. Without this it painted a solid
+    // background instead of refracting whatever sits behind it.
+    tabBar.isTranslucent = true
+    let appearance = UITabBarAppearance()
+    appearance.configureWithTransparentBackground()
+    // configureWithTransparentBackground() clears backgroundEffect to nil —
+    // a bare hole with no material at all, which is why nothing blurred.
+    // backgroundEffect only accepts UIBlurEffect (UIGlassEffect is a plain
+    // UIVisualEffect and won't type-check there), so the true Liquid Glass
+    // shimmer isn't reachable through this bar API; a plain UIVisualEffectView
+    // placed as a sibling behind the bar was tried instead and didn't blur
+    // either, because that view sits inside this platform view's own local
+    // layer tree rather than the window's bar-compositing pass, and a
+    // UIBlurEffect/UIGlassEffect backdrop generally can't see through
+    // Flutter's own Metal-rendered canvas from there. backgroundEffect is
+    // the one bar-native hook Apple gives this exact job, so it is the only
+    // place actually worth setting.
+    appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+    tabBar.standardAppearance = appearance
+    tabBar.scrollEdgeAppearance = appearance
     tabBar.translatesAutoresizingMaskIntoConstraints = false
     addSubview(tabBar)
     NSLayoutConstraint.activate([
@@ -94,20 +116,42 @@ private final class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDel
   private func apply(_ args: [String: Any]) {
     let tabBar = container.tabBar
     let titles = args["titles"] as? [String] ?? []
+    let accessibilityLabels = args["accessibilityLabels"] as? [String] ?? titles
     let symbols = args["symbols"] as? [String] ?? []
     let selectedSymbols = args["selectedSymbols"] as? [String] ?? []
-    let font = UIFont.systemFont(ofSize: 10, weight: .semibold)
+    // Dott catalog artwork for the tabs:
+    // full-colour, so .alwaysOriginal keeps it from being flattened to the
+    // tab bar's tint/unselected colours the way an SF Symbol would be.
+    // The standard codec hands nulls back as NSNull, not Swift nil, so a
+    // direct `as? [String?]` cast silently drops the whole array — map it
+    // through Any? first.
+    let illustrated = (args["illustrated"] as? [Any?] ?? []).map { $0 as? String }
     let current = tabBar.items ?? []
-    if current.map({ $0.title ?? "" }) != titles {
+    let needsNewItems = current.count != titles.count || titles.indices.contains { index in
+      guard current.indices.contains(index) else { return true }
+      let accessibilityLabel = index < accessibilityLabels.count
+        ? accessibilityLabels[index] : titles[index]
+      return (current[index].title ?? "") != titles[index]
+        || (current[index].accessibilityLabel ?? "") != accessibilityLabel
+    }
+    if needsNewItems {
       tabBar.items = titles.enumerated().map { index, title in
+        let custom = index < illustrated.count ? illustrated[index] : nil
+        let image: UIImage?
+        let selectedImage: UIImage?
+        if let custom, let asset = UIImage(named: custom) {
+          image = asset.withRenderingMode(.alwaysOriginal)
+          selectedImage = asset.withRenderingMode(.alwaysOriginal)
+        } else {
+          image = UIImage(systemName: index < symbols.count ? symbols[index] : "circle")
+          selectedImage = UIImage(
+            systemName: index < selectedSymbols.count ? selectedSymbols[index] : "circle.fill")
+        }
         let item = UITabBarItem(
-          title: title,
-          image: UIImage(systemName: index < symbols.count ? symbols[index] : "circle"),
-          selectedImage: UIImage(
-            systemName: index < selectedSymbols.count ? selectedSymbols[index] : "circle.fill"))
+          title: title.isEmpty ? nil : title, image: image, selectedImage: selectedImage)
         item.tag = index
-        item.setTitleTextAttributes([.font: font], for: .normal)
-        item.setTitleTextAttributes([.font: font], for: .selected)
+        item.accessibilityLabel = index < accessibilityLabels.count
+          ? accessibilityLabels[index] : title
         return item
       }
     }

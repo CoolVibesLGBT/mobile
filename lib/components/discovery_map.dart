@@ -2,6 +2,7 @@ import '../l10n/l10n.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/api.dart';
+import '../core/app_failure.dart';
 import '../core/geo.dart';
 import '../core/session.dart';
 import 'components.dart';
@@ -75,7 +76,9 @@ class _DiscoveryMapState extends State<DiscoveryMap> {
         });
       }
     } catch (e) {
-      if (mounted && generation == current) setState(() => error = '$e');
+      if (mounted && generation == current) {
+        setState(() => error = AppFailure.from(e).message(context.l10n));
+      }
     } finally {
       if (mounted && generation == current) setState(() => loading = false);
     }

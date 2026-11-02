@@ -19,11 +19,14 @@ class PlaceRow extends StatelessWidget {
       placeContent(place, language),
     ).replaceAll(RegExp(r'\s+'), ' ').trim();
     final palette = AppPalette.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppDesign.groupCorner),
-        child: AppRow(
+    // ClassifiedCard's own AppSection margin (16/0/16/12): the shared
+    // grouped-row card surface every other list card already gets — this
+    // row had none of its own, so it read as bare text floating on the
+    // page background instead of a card.
+    return AppSection(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      children: [
+        AppRow(
           contentPadding: const EdgeInsets.all(AppDesign.placeRowInset),
           leading: image != null || place['localAsset'] != null
               ? ClipRRect(
@@ -80,7 +83,7 @@ class PlaceRow extends StatelessWidget {
           ),
           onTap: onTap,
         ),
-      ),
+      ],
     );
   }
 }

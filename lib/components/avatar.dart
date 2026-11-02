@@ -8,12 +8,18 @@ class Avatar extends StatelessWidget {
   final Json user;
   final double radius;
   final bool glass, rounded;
+
+  /// Pans the photo within its fixed circular/rounded frame — the radar
+  /// honeycomb's bubbles use this to keep their avatars gently drifting.
+  /// Null (the default) is a no-op: every other call site is unaffected.
+  final Offset? drift;
   const Avatar(
     this.user, {
     super.key,
     this.radius = 23,
     this.glass = false,
     this.rounded = false,
+    this.drift,
   });
 
   dynamic _source(BuildContext context) {
@@ -39,17 +45,23 @@ class Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final source = _source(context);
+    final photo = AppImage(
+      profile: true,
+      source: source,
+      fit: BoxFit.cover,
+      width: radius * 2,
+      height: radius * 2,
+    );
     final image = SizedBox.square(
       dimension: radius * 2,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(rounded ? 12 : radius),
-        child: AppImage(
-          profile: true,
-          source: source,
-          fit: BoxFit.cover,
-          width: radius * 2,
-          height: radius * 2,
-        ),
+        child: drift == null
+            ? photo
+            : Transform.scale(
+                scale: 1.18,
+                child: Transform.translate(offset: drift!, child: photo),
+              ),
       ),
     );
     return glass

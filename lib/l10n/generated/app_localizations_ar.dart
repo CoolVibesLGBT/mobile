@@ -240,6 +240,42 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dislike => 'تخطي';
 
   @override
+  String get banana => 'موزة';
+
+  @override
+  String get tip => 'إكرامية';
+
+  @override
+  String get amount => 'المبلغ';
+
+  @override
+  String get tipSendTitle => 'إرسال إكرامية';
+
+  @override
+  String get tipSent => 'تم إرسال الإكرامية';
+
+  @override
+  String get tipFailed => 'تعذر إرسال الإكرامية. يرجى المحاولة مجددًا.';
+
+  @override
+  String get tipInsufficientBalance => 'الرصيد غير كافٍ';
+
+  @override
+  String get walletAvailableBalance => 'الرصيد المتاح';
+
+  @override
+  String get walletDeposit => 'إيداع';
+
+  @override
+  String get walletSelectAmount => 'اختر المبلغ';
+
+  @override
+  String get walletCustomAmount => 'أدخل مبلغ مخصص';
+
+  @override
+  String get walletProcessing => 'جارٍ المعالجة...';
+
+  @override
   String get attributes => 'الصفات';
 
   @override
@@ -509,6 +545,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get groupInfo => 'معلومات المجموعة';
 
   @override
+  String get joinGroup => 'الانضمام إلى المجموعة';
+
+  @override
+  String groupMembersCount(Object count) {
+    return '$count عضو';
+  }
+
+  @override
+  String reportDescriptionMinLength(Object count) {
+    return 'يلزم $count حرفًا إضافيًا';
+  }
+
+  @override
   String get loadEarlierMessages => 'تحميل الرسائل السابقة';
 
   @override
@@ -588,6 +637,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get removeParticipant => 'إزالة عضو';
+
+  @override
+  String get groupOwner => 'المالك';
 
   @override
   String get today2 => 'اليوم';
@@ -676,6 +728,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذر تحديد موقعك. تحقق من إذن الموقع وحاول مجددًا.';
 
   @override
+  String get locationUnavailableTryAgain =>
+      'تعذر الحصول على موقعك. حاول مرة أخرى بعد قليل.';
+
+  @override
   String get columns => 'أعمدة';
 
   @override
@@ -709,6 +765,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get people => 'الأشخاص';
+
+  @override
+  String get groups => 'المجموعات';
 
   @override
   String get events => 'الفعاليات';
@@ -921,6 +980,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get likes => 'الإعجابات';
+
+  @override
+  String get postLikers => 'الأشخاص الذين أعجبهم المنشور';
+
+  @override
+  String get postDislikeAction => 'عدم الإعجاب';
+
+  @override
+  String get postDislikers => 'الأشخاص الذين لم يعجبهم المنشور';
+
+  @override
+  String get postBananaReactors => 'مرسلو الموز';
+
+  @override
+  String get postTippers => 'مرسلو الإكراميات';
+
+  @override
+  String get postBookmarkers => 'من حفظوا المنشور';
 
   @override
   String get upload => 'رفع';
@@ -1503,6 +1580,13 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get deleteAccountConfirmation =>
       'سيُحذف حسابك وسيتم تسجيل خروجك. هل أنت متأكد من المتابعة؟';
+
+  @override
+  String get deletePost => 'حذف المنشور';
+
+  @override
+  String get deletePostConfirmation =>
+      'هل أنت متأكد أنك تريد حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء وستتم إزالة المنشور نهائيًا.';
 
   @override
   String get deleteMessagesScopeInfo =>

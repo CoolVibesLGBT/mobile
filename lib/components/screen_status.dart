@@ -93,79 +93,113 @@ class ScreenStatus extends StatelessWidget {
         }[kind] ??
         'assets/animations/empty.json';
     final heading = title ?? error ?? context.l10n.noItemsHereYet;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Padding(
-          padding: padding,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (loading)
-                const SizedBox(
-                  height: 132,
-                  child: Center(child: CircularProgressIndicator.adaptive()),
-                )
-              else ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: duckSticker == null
-                      ? AppLottie(
-                          asset: asset,
-                          size: 132,
-                          loop: kind != 'error',
-                          staticProgress: .5,
-                        )
-                      : EmoticonView(document: duckSticker, size: 156),
-                ),
-                const SizedBox(height: 8),
-                Semantics(
-                  header: true,
-                  liveRegion: error != null,
-                  child: Text(
-                    heading,
-                    textAlign: TextAlign.center,
-                    style: AppDesign.font(
-                      20,
-                      weight: FontWeight.w600,
-                      color: palette.text,
-                    ),
-                  ),
-                ),
-                if (message != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    message!,
-                    textAlign: TextAlign.center,
-                    style: AppDesign.font(
-                      15,
-                      color: palette.secondaryLabel,
-                      height: 20 / 15,
-                    ),
-                  ),
-                ],
-                if (retry != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: AppPressable(
-                      label: context.l10n.tryAgain,
-                      onPressed: retry,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+    // The icon + heading + message + retry/details/actions stack has no
+    // fixed height; a long localized message (or a large text scale) can
+    // need more room than a short sheet/body gives it, which used to
+    // overflow with the classic red/black stripes instead of scrolling.
+    return LayoutBuilder(
+      builder: (context, box) => SingleChildScrollView(
+        // Without this a vertical SingleChildScrollView with no controller
+        // defaults to primary: true, attaching to the ambient
+        // PrimaryScrollController — the same one the screen's own main list
+        // is already attached to (ScreenStatus is often that screen's whole
+        // Scaffold body), hence "attached to more than one ScrollPosition".
+        // This is a small, local, incidental scroll region, never the
+        // page's primary one.
+        primary: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: box.hasBoundedHeight ? box.maxHeight : 0,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Padding(
+                padding: padding,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (loading)
+                      const SizedBox(
+                        height: 132,
                         child: Center(
-                          widthFactor: 1,
-                          child: Text(
-                            context.l10n.tryAgain,
-                            style: AppDesign.font(17, color: palette.accent),
+                          child: CircularProgressIndicator.adaptive(),
+                        ),
+                      )
+                    else ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: duckSticker == null
+                            ? AppLottie(
+                                asset: asset,
+                                size: 132,
+                                loop: kind != 'error',
+                                staticProgress: .5,
+                              )
+                            : EmoticonView(document: duckSticker, size: 156),
+                      ),
+                      const SizedBox(height: 8),
+                      Semantics(
+                        header: true,
+                        liveRegion: error != null,
+                        child: Text(
+                          heading,
+                          textAlign: TextAlign.center,
+                          style: AppDesign.font(
+                            20,
+                            weight: FontWeight.w600,
+                            color: palette.text,
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                if (details != null) ...[const SizedBox(height: 20), details!],
-                if (actions != null) ...[const SizedBox(height: 24), actions!],
-              ],
-            ],
+                      if (message != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          message!,
+                          textAlign: TextAlign.center,
+                          style: AppDesign.font(
+                            15,
+                            color: palette.secondaryLabel,
+                            height: 20 / 15,
+                          ),
+                        ),
+                      ],
+                      if (retry != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: AppPressable(
+                            label: context.l10n.tryAgain,
+                            onPressed: retry,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Center(
+                                widthFactor: 1,
+                                child: Text(
+                                  context.l10n.tryAgain,
+                                  style: AppDesign.font(
+                                    17,
+                                    color: palette.accent,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (details != null) ...[
+                        const SizedBox(height: 20),
+                        details!,
+                      ],
+                      if (actions != null) ...[
+                        const SizedBox(height: 24),
+                        actions!,
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -348,21 +382,7 @@ class _AppErrorSheetState extends State<AppErrorSheet> {
     final l = context.l10n,
         p = AppPalette.of(context),
         failure = widget.failure;
-    final message = switch (failure.kind) {
-      FailureKind.connection => l.unableToReachTheServiceCheck,
-      FailureKind.server => l.errorServerMessage,
-      FailureKind.credentials => l.loginFailedPleaseCheckYourCredentials,
-      FailureKind.usernameTaken => l.errorUsernameTaken,
-      FailureKind.emailTaken => l.errorEmailTaken,
-      FailureKind.referral => l.errorReferral,
-      FailureKind.captcha => l.errorCaptcha,
-      FailureKind.invalidInput => l.errorInvalidInput,
-      FailureKind.rateLimited => l.errorRateLimited,
-      FailureKind.forbidden => l.errorForbidden,
-      FailureKind.notFound => l.errorNotFound,
-      FailureKind.storage => l.errorStorageMessage,
-      FailureKind.unknown => l.errorUnexpectedMessage,
-    };
+    final message = failure.message(l);
     final retryable =
         widget.allowRetry &&
         !widget.registration &&

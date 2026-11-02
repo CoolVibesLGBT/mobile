@@ -244,6 +244,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dislike => 'Dislike';
 
   @override
+  String get banana => 'Banana';
+
+  @override
+  String get tip => 'Tip';
+
+  @override
+  String get amount => 'Amount';
+
+  @override
+  String get tipSendTitle => 'Send Tip';
+
+  @override
+  String get tipSent => 'Tip sent';
+
+  @override
+  String get tipFailed => 'Unable to send tip. Please try again.';
+
+  @override
+  String get tipInsufficientBalance => 'Insufficient balance';
+
+  @override
+  String get walletAvailableBalance => 'Available Balance';
+
+  @override
+  String get walletDeposit => 'Deposit';
+
+  @override
+  String get walletSelectAmount => 'Select Amount';
+
+  @override
+  String get walletCustomAmount => 'Enter Custom Amount';
+
+  @override
+  String get walletProcessing => 'Processing…';
+
+  @override
   String get attributes => 'Attributes';
 
   @override
@@ -515,6 +551,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupInfo => 'Group Info';
 
   @override
+  String get joinGroup => 'Join group';
+
+  @override
+  String groupMembersCount(Object count) {
+    return '$count members';
+  }
+
+  @override
+  String reportDescriptionMinLength(Object count) {
+    return '$count more characters needed';
+  }
+
+  @override
   String get loadEarlierMessages => 'Load earlier messages';
 
   @override
@@ -594,6 +643,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeParticipant => 'Remove participant';
+
+  @override
+  String get groupOwner => 'Owner';
 
   @override
   String get today2 => 'today';
@@ -682,6 +734,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your location is unavailable. Check location permission and try again.';
 
   @override
+  String get locationUnavailableTryAgain =>
+      'We couldn\'t get your location. Try again in a moment.';
+
+  @override
   String get columns => 'Columns';
 
   @override
@@ -715,6 +771,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get people => 'People';
+
+  @override
+  String get groups => 'Groups';
 
   @override
   String get events => 'Events';
@@ -927,6 +986,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get likes => 'Likes';
+
+  @override
+  String get postLikers => 'People who liked';
+
+  @override
+  String get postDislikeAction => 'Dislike';
+
+  @override
+  String get postDislikers => 'People who disliked';
+
+  @override
+  String get postBananaReactors => 'Banana senders';
+
+  @override
+  String get postTippers => 'Tippers';
+
+  @override
+  String get postBookmarkers => 'People who saved';
 
   @override
   String get upload => 'Upload';
@@ -1512,6 +1589,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountConfirmation =>
       'Your account will be deleted and you will be signed out. Are you sure you want to continue?';
+
+  @override
+  String get deletePost => 'Delete Post';
+
+  @override
+  String get deletePostConfirmation =>
+      'Are you sure you want to delete this post? This action cannot be undone and the post will be permanently removed.';
 
   @override
   String get deleteMessagesScopeInfo =>

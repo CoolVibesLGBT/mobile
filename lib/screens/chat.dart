@@ -7,6 +7,8 @@ import '../core/attachments.dart';
 import '../components/chat_input.dart';
 import '../components/message_field.dart';
 import '../components/chat_wallpaper.dart';
+import '../components/profile_header.dart';
+import '../core/profile_data.dart' show profileCover;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -266,6 +268,10 @@ class _NewChatScreenState extends State<NewChatScreen> {
     ),
     body: Column(
       children: [
+        // Column (not a ScrollView) is AppScaffold's body here, so only
+        // the bare safe-area inset was applied, not the header's own
+        // height — the search field started behind the floating header.
+        SizedBox(height: AppDesign.headerInset(context)),
         AppSearchField(
           placeholder: context.l10n.searchUsers,
           onSearch: (value) => setState(() => query = value),
@@ -597,7 +603,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> restoreDraft() async {
     if (session!.api.isPreview) return;
-    final saved = await session!.api.storage.read(key: draftKey);
+    final saved = await session!.api.localStorage.read(key: draftKey);
     if (mounted && input.text.isEmpty && saved != null) input.text = saved;
   }
 
@@ -607,7 +613,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     final key = draftKey,
         value = editing != null ? beforeEditing ?? input.text : input.text;
-    final storage = session!.api.storage;
+    final storage = session!.api.localStorage;
     draftWrites = draftWrites
         .then(
           (_) => clear
@@ -1642,47 +1648,57 @@ class _ChatScreenState extends State<ChatScreen> {
                     ? context.l10n.selectMessages
                     : context.l10n.selected2(selectedMessages.length),
               )
-            : GlassButton(
-                color: palette.text,
-                label: [title, status].where((v) => v.isNotEmpty).join(', '),
-                expand: false,
-                onPressed: openPeer,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: 44,
-                    maxWidth: (MediaQuery.sizeOf(context).width - 152).clamp(
-                      120,
-                      600,
+            // ChatTitleView.swift hardcodes its capsule at a 44pt height
+            // (backgroundFrame height, independent of the nav bar's own
+            // height) with the radius following from that — GlassButton's
+            // height otherwise inherits whatever AppHeader's title slot
+            // gives it (box.hasBoundedHeight ? box.maxHeight : null in
+            // _liquidButton), which can be taller than 44, stretching the
+            // capsule and its radius (maxHeight / 2) well past the
+            // reference's proportions. Pin it to the same 44pt.
+            : SizedBox(
+                height: 44,
+                child: GlassButton(
+                  color: palette.text,
+                  label: [title, status].where((v) => v.isNotEmpty).join(', '),
+                  expand: false,
+                  onPressed: openPeer,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: (MediaQuery.sizeOf(context).width - 152).clamp(
+                        120,
+                        600,
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppDesign.font(
-                            17,
-                            weight: FontWeight.w600,
-                            color: palette.text,
-                          ),
-                        ),
-                        if (status.isNotEmpty)
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                           Text(
-                            status,
+                            title,
                             maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: AppDesign.font(
-                              13,
-                              color: active
-                                  ? palette.accent
-                                  : palette.secondaryLabel,
+                              17,
+                              weight: FontWeight.w600,
+                              color: palette.text,
                             ),
                           ),
-                      ],
+                          if (status.isNotEmpty)
+                            Text(
+                              status,
+                              maxLines: 1,
+                              style: AppDesign.font(
+                                13,
+                                color: active
+                                    ? palette.accent
+                                    : palette.secondaryLabel,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -2088,6 +2104,10 @@ class _ForwardScreenState extends State<ForwardScreen> {
         ),
         body: Column(
           children: [
+            // Column (not a ScrollView) is AppScaffold's body here, so only
+            // the bare safe-area inset was applied, not the header's own
+            // height — the search field started behind the floating header.
+            SizedBox(height: AppDesign.headerInset(context)),
             AppSearchField(
               placeholder: l.search,
               onChanged: (value) => setState(() => query = value.trim()),
@@ -2170,45 +2190,124 @@ class GroupScreen extends StatelessWidget {
   final Json chat;
   const GroupScreen({super.key, required this.chat});
   @override
-  Widget build(BuildContext context) => AppScaffold(
-    appBar: AppHeader(
-      title: Text(
-        chatTitle(
-          chat,
-          AppScope.of(context).user,
-          language: AppScope.of(context).locale.languageCode,
-        ),
+  Widget build(BuildContext context) {
+    // groupChatItem.ts buildGroupChatItem/MessagesScreen.tsx: `canManage` is
+    // strictly `chat.creator_id === viewer.id` — there's no admin/moderator
+    // tier in the actual data model, only the single creator, so that's the
+    // one role this can honestly show or gate on.
+    final self = AppScope.of(context).user;
+    final selfIds = {string(self['id']), string(self['public_id'])}
+      ..removeWhere((id) => id.isEmpty);
+    final creatorId = string(chat['creator_id']);
+    final isOwner = creatorId.isNotEmpty && selfIds.contains(creatorId);
+    final username = string(chat['public_username']);
+    final title = chatTitle(
+      chat,
+      AppScope.of(context).user,
+      language: AppScope.of(context).locale.languageCode,
+    );
+    final hasCover = profileCover(chat) != null;
+    final description = plainText(
+      chat['description'],
+      language: AppScope.of(context).locale.languageCode,
+    ).replaceAll(RegExp(r'<[^>]*>'), '').trim();
+    return AppScaffold(
+      extendBodyBehindAppBar: true,
+      // Soft edge, no edgeTint — the same floating-over-content header
+      // style as the radar screen. ProfileHeader.navigationBar instead
+      // tints this black at rest (AppDesign.profileCoverShade), which read
+      // as a broken solid-black header rather than the intended scrim.
+      appBar: AppHeader(
+        edge: AppHeaderEdge.soft,
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
-      actions: [
-        AppIconButton(
-          tooltip: context.l10n.edit,
-          icon: const Icon(Icons.edit),
-          onPressed: () => sheet(context, AppForms.group(context, chat)),
-        ),
-      ],
-    ),
-    body: RecordList(
-      action: 'chat.participants.fetch',
-      params: {'chat_id': chatEntityId(chat)},
-      itemBuilder: (context, user, reload) => PersonTile(
-        person: user,
-        trailing: AppIconButton(
-          tooltip: context.l10n.removeParticipant,
-          icon: const Icon(Icons.person_remove_outlined),
-          onPressed: () => perform(context, () async {
-            await AppScope.of(context).api.call(
-              'chat.participant.remove',
-              body: {
-                'chat_id': chatEntityId(chat),
-                'participant_id': recordId(user),
-              },
+      body: MediaQuery.removePadding(
+        context: context,
+        // RecordList always adds MediaQuery's own top padding ahead of its
+        // header besides whatever topInset is passed in, which kept the
+        // cover from reaching the true screen top; this is how
+        // profile.dart avoids the same double padding.
+        removeTop: true,
+        child: RecordList(
+          action: 'chat.participants.fetch',
+          params: {'chat_id': chatEntityId(chat)},
+          topInset: hasCover
+              ? 0
+              : MediaQuery.viewPaddingOf(context).top +
+                    AppDesign.headerInset(context),
+          header: Column(
+            children: [
+              ProfileHeader(
+                // personName() (which ProfileHeader's title text reads)
+                // looks for 'displayname'/'name'/'nickname'/'username' —
+                // none of which a chat object has, so the group's name
+                // never rendered below the avatar. 'name' is the first of
+                // those personName() doesn't already read from this
+                // object.
+                user: {...chat, 'name': title},
+                coverTopInset: MediaQuery.viewPaddingOf(context).top,
+                subtitle: username.isEmpty ? null : '@$username',
+                actions: [
+                  if (isOwner)
+                    (
+                      label: context.l10n.edit,
+                      symbol: 'pencil',
+                      icon: Icons.edit_outlined,
+                      onPressed: () =>
+                          sheet(context, AppForms.group(context, chat)),
+                      destructive: false,
+                      busy: false,
+                    ),
+                ],
+              ),
+              if (description.isNotEmpty)
+                AppSection(
+                  children: [
+                    ProfileInfoRow(
+                      label: context.l10n.description,
+                      value: description,
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          itemBuilder: (context, row, reload) {
+            // chat.participants.fetch rows are {user_id, user: {...}, ...};
+            // the displayable person is nested under 'user', not the row.
+            final person = object(row['user']);
+            final isRowOwner =
+                creatorId.isNotEmpty &&
+                (string(row['user_id']) == creatorId ||
+                    string(person['id']) == creatorId ||
+                    string(person['public_id']) == creatorId);
+            // GroupDetails.tsx: remove is both creator-only and never on the
+            // creator's own row (there's nobody to demote them to).
+            final canRemove = isOwner && !isRowOwner;
+            return PersonTile(
+              person: person,
+              subtitle: isRowOwner ? context.l10n.groupOwner : null,
+              trailing: !canRemove
+                  ? null
+                  : AppIconButton(
+                      tooltip: context.l10n.removeParticipant,
+                      icon: const Icon(Icons.person_remove_outlined),
+                      onPressed: () => perform(context, () async {
+                        await AppScope.of(context).api.call(
+                          'chat.participant.remove',
+                          body: {
+                            'chat_id': chatEntityId(chat),
+                            'participant_id': recordId(person),
+                          },
+                        );
+                        reload();
+                      }),
+                    ),
             );
-            reload();
-          }),
+          },
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// Telegram ChatScheduleTimeController: a date and time wheel and one
@@ -2244,6 +2343,10 @@ class _ScheduleMessageSheetState extends State<ScheduleMessageSheet> {
         top: false,
         child: Column(
           children: [
+            // Column (not a ScrollView) is AppScaffold's body here, so only
+            // the bare safe-area inset was applied, not the header's own
+            // height — the date wheel sat partly behind the floating header.
+            SizedBox(height: AppDesign.headerInset(context)),
             Expanded(
               // The date-and-time wheels need about 540pt with localized
               // month names (Turkish); narrower screens scale them down

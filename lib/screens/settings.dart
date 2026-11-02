@@ -185,6 +185,20 @@ class _MenuScreenState extends State<MenuScreen> {
                   title: const Text('Ekran kataloğu'),
                   onTap: () => Navigator.of(context).pushNamed('/debug'),
                 ),
+                AppChoiceRow(
+                  secondary: const AppSettingIcon(
+                    Icons.favorite_border,
+                    color: Color(0xff8e8e93),
+                  ),
+                  title: const Text('Gönderi etkileşim satırı (beta)'),
+                  subtitle: const Text(
+                    'Beğenme, beğenmeme, muz, görüntülenme, bahşiş, paylaş',
+                  ),
+                  value: AppScope.of(context).postEngagementActionsEnabled,
+                  onChanged: (value) => AppScope.of(
+                    context,
+                  ).setPostEngagementActionsEnabled(value ?? false),
+                ),
               ],
             ),
         ],

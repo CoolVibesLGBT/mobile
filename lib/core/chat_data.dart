@@ -88,6 +88,45 @@ Future<Json> createConversation(
   return chat;
 }
 
+/// Projects a `chat.group.list` row into the person-shaped record the radar
+/// honeycomb already knows how to position and draw: Avatar/personName read
+/// 'avatar'/'name', while 'hero'/'cover' drive the group card's backdrop
+/// (hero on open, cover once it's expanded).
+Json groupRadarRecord(Json group, {String? language}) => {
+  'id': group['id'],
+  'public_id': group['id'],
+  'name': plainText(group['title'], language: language),
+  'avatar': group['avatar'],
+  'cover': group['cover'],
+  'hero': group['hero'],
+  'visibility': group['visibility'],
+  'public_username': group['public_username'],
+  'member_count': group['member_count'],
+  // Debug fixtures attach these directly (see preview_api.dart) since they
+  // never carry real media; production rows never set them.
+  if (group['localAsset'] != null) 'localAsset': group['localAsset'],
+  if (group['localHeroAsset'] != null)
+    'localHeroAsset': group['localHeroAsset'],
+  if (group['localCoverAsset'] != null)
+    'localCoverAsset': group['localCoverAsset'],
+};
+
+/// Joining an already-joined public group just returns the existing chat
+/// (ChatService.JoinGroup is idempotent), so this also serves as "open".
+Future<Json> joinGroup(Api api, Json group) async {
+  final username = string(group['public_username']);
+  if (username.isEmpty) throw ApiException('Invalid group');
+  final result = await api.call(
+    'chat.group.join',
+    body: {'public_username': username},
+  );
+  final chat = object(object(result['data'])['chat']);
+  if (chatEntityId(chat).isEmpty) {
+    throw ApiException('Invalid conversation response');
+  }
+  return chat;
+}
+
 /// Message `extras` as stored by the service (JSON string or object).
 Json messageExtras(Json message) {
   final raw = message['extras'];

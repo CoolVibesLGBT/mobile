@@ -1,5 +1,5 @@
 import 'glass_surface.dart';
-import 'package:flutter/cupertino.dart';
+import 'illustrated_icon.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -7,11 +7,12 @@ import 'package:flutter/services.dart';
 import '../design/app_design.dart';
 import '../vendor/liquid_glass_widgets/liquid_glass_widgets.dart' as liquid;
 
-/// The bottom tab bar (Telegram TabBarComponent metrics: 64pt bar, 10pt
-/// semibold titles) on the vendored Liquid Glass GlassTabBar, whose lens
-/// follows a drag and springs onto the tab; identical on iOS and Android.
+/// The icon-only bottom tab bar on the vendored Liquid Glass GlassTabBar,
+/// whose lens follows a drag and springs onto the tab; identical on iOS and
+/// Android.
 class AppTabBar extends StatelessWidget {
   static const height = 64.0;
+  static const _iconSize = 48.0;
 
   /// Room around the bar for the pressed lens, which grows past the bar by
   /// the indicator expansion; without it the lens is cut off and the shader
@@ -46,7 +47,7 @@ class AppTabBar extends StatelessWidget {
   static bool get native =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
-  /// SF Symbols for [_icons], in the same order.
+  /// SF Symbols used if a native catalog image cannot load.
   static const _symbols = [
     ('house', 'house.fill'),
     ('location.circle', 'location.circle.fill'),
@@ -55,15 +56,23 @@ class AppTabBar extends StatelessWidget {
     ('bubble.left.and.bubble.right', 'bubble.left.and.bubble.right.fill'),
   ];
 
-  static const _icons = [
-    (CupertinoIcons.house, CupertinoIcons.house_fill),
-    (CupertinoIcons.location_circle, CupertinoIcons.location_circle_fill),
-    (
-      CupertinoIcons.antenna_radiowaves_left_right,
-      CupertinoIcons.antenna_radiowaves_left_right,
-    ),
-    (CupertinoIcons.placemark, CupertinoIcons.placemark_fill),
-    (CupertinoIcons.chat_bubble_2, CupertinoIcons.chat_bubble_2_fill),
+  /// The vendored Flutter bar hosts these directly as [IllustratedIcon]s;
+  /// NativeTabBarView.swift reads matching bundled asset-catalog images.
+  static const _illustrated = [
+    'interest-funny-films',
+    'system-users',
+    'bubbles',
+    'eye-color',
+    'messagecircleheart',
+  ];
+
+  /// ios/Runner/Assets.xcassets/tab_*.imageset — same order as [_illustrated].
+  static const _illustratedAssets = [
+    'tab_home',
+    'tab_nearby',
+    'tab_bubbles',
+    'tab_eyecolor',
+    'tab_messagecircleheart',
   ];
 
   final int selected;
@@ -95,10 +104,18 @@ class AppTabBar extends StatelessWidget {
         // neither needs an opaque backplate hiding the map.
         child: liquid.GlassTabBar.bottom(
           platformViewBackdrop: overPlatformView,
+          // clear: true + an explicit premium quality match the honeycomb
+          // bubbles/chat button: without both, GlassTabBar falls back to
+          // GlassQuality.standard (no ancestor InheritedLiquidGlass here)
+          // and the opaque frosted-panel tint, so the bar read noticeably
+          // more solid than the rest of the app's clear glass chrome.
           settings: appGlassSettings(
             context,
+            clear: true,
             platformViewBackdrop: overPlatformView,
           ),
+          quality: GlassSurfaceRole.control.quality,
+          backgroundQuality: GlassSurfaceRole.control.quality,
           // Over the map the lens refracts only the captured icon layer;
           // where that capture is empty it takes the lens fill, not black.
           indicatorSettings: overPlatformView
@@ -112,9 +129,12 @@ class AppTabBar extends StatelessWidget {
           tabs: [
             for (var i = 0; i < labels.length; i++)
               liquid.GlassTab(
-                icon: Icon(_icons[i].$1),
-                activeIcon: Icon(_icons[i].$2),
-                label: labels[i],
+                icon: Opacity(
+                  opacity: .55,
+                  child: IllustratedIcon(_illustrated[i], size: _iconSize),
+                ),
+                activeIcon: IllustratedIcon(_illustrated[i], size: _iconSize),
+                label: null,
                 semanticLabel: labels[i],
               ),
           ],
@@ -125,15 +145,9 @@ class AppTabBar extends StatelessWidget {
           verticalPadding: _room.top,
           indicatorExpansion: _room,
           barHeight: height,
-          iconSize: 26,
-          labelFontSize: 10,
-          iconLabelSpacing: 2,
+          iconSize: _iconSize,
           selectedIconColor: accent,
-          selectedLabelColor: accent,
           unselectedIconColor: palette.text,
-          unselectedLabelColor: palette.text,
-          selectedLabelStyle: AppDesign.font(10, weight: FontWeight.w600),
-          unselectedLabelStyle: AppDesign.font(10, weight: FontWeight.w600),
         ),
       ),
     );
@@ -162,9 +176,13 @@ class _NativeTabBarState extends State<_NativeTabBar> {
   Map<String, Object?> params(BuildContext context) {
     final palette = AppPalette.of(context);
     return {
-      'titles': widget.labels,
+      // Keep localized labels available to VoiceOver while rendering the
+      // UITabBar items as icon-only tabs.
+      'titles': List<String>.filled(widget.labels.length, ''),
+      'accessibilityLabels': widget.labels,
       'symbols': [for (final s in AppTabBar._symbols) s.$1],
       'selectedSymbols': [for (final s in AppTabBar._symbols) s.$2],
+      'illustrated': AppTabBar._illustratedAssets,
       'selected': widget.selected,
       'tint': Theme.of(context).colorScheme.primary.toARGB32(),
       'unselected': palette.text.toARGB32(),
