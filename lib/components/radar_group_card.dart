@@ -17,8 +17,8 @@ import '../vendor/liquid_glass_widgets/liquid_glass_widgets.dart' as liquid;
 /// backdrop-blur shell (which now reads the radar's active-group hero photo
 /// behind it, see _RadarWallpaper in radar.dart), but the single action
 /// opens the chat instead of like/dislike, and the expanded content lists
-/// participants instead of the about tab. Joining is idempotent server-side,
-/// so loading this card also quietly makes the viewer a participant.
+/// participants instead of the about tab. Viewing or dismissing a preview is
+/// read-only; joining happens only through the explicit chat action.
 class RadarGroupCard extends StatefulWidget {
   final Json group;
   final RadarMotion motion;
@@ -41,24 +41,6 @@ class _RadarGroupCardState extends State<RadarGroupCard>
   late final progress = AnimationController.unbounded(vsync: this, value: 0);
   final scroll = ScrollController();
   bool expanded = false, pressed = false, busy = false;
-  Json? chat;
-  String? joinError;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => join());
-  }
-
-  Future<void> join() async {
-    setState(() => joinError = null);
-    try {
-      final result = await joinGroup(AppScope.of(context).api, widget.group);
-      if (mounted) setState(() => chat = result);
-    } catch (e) {
-      if (mounted) setState(() => joinError = '$e');
-    }
-  }
 
   void toggle() {
     expanded = !expanded;
@@ -96,13 +78,12 @@ class _RadarGroupCardState extends State<RadarGroupCard>
     setState(() => busy = true);
     try {
       await perform(context, () async {
-        var opened = chat;
-        opened ??= await joinGroup(AppScope.of(context).api, widget.group);
+        final opened = await joinGroup(AppScope.of(context).api, widget.group);
         if (!mounted) return;
         final navigator = Navigator.of(context, rootNavigator: true);
         widget.onClose();
         navigator.push(
-          MaterialPageRoute<void>(builder: (_) => ChatScreen(chat: opened!)),
+          MaterialPageRoute<void>(builder: (_) => ChatScreen(chat: opened)),
         );
       });
     } finally {
@@ -362,48 +343,46 @@ class _RadarGroupCardState extends State<RadarGroupCard>
                               // the settings keeps the same transparent
                               // material as the honeycomb bubbles/tab bar.
                               PlatformBackdrop.listen(
-                                (context, overPlatformView) =>
-                                    PlatformBackdropUnderlay(
-                                      shape: const CircleBorder(),
-                                      child: liquid.GlassButton.custom(
-                                        platformViewBackdrop: overPlatformView,
-                                        label: context.l10n.joinGroup,
-                                        onTap: busy ? () {} : openChat,
-                                        enabled: !busy,
-                                        width: 80,
-                                        height: 80,
-                                        shape: const liquid.LiquidOval(),
-                                        // Without an explicit quality this
-                                        // resolves to GlassButton's own
-                                        // standard default (no ancestor
-                                        // InheritedLiquidGlass here), which
-                                        // skips the 3D refraction shader the
-                                        // clear/near-zero-blur settings below
-                                        // depend on to read as glass at all.
-                                        // Every other control glass button
-                                        // (_liquidButton, GlassSurface, the
-                                        // honeycomb bubbles) forces the same
-                                        // premium tier.
-                                        quality: GlassSurfaceRole.control.quality,
-                                        settings: appGlassSettings(
-                                          context,
-                                          clear: true,
-                                          platformViewBackdrop:
-                                              overPlatformView,
-                                        ),
-                                        child: busy
-                                            ? const SizedBox.square(
-                                                dimension: 20,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                ),
-                                              )
-                                            : const Icon(
-                                                Icons.chat,
-                                                size: 30,
-                                              ),
-                                      ),
+                                (
+                                  context,
+                                  overPlatformView,
+                                ) => PlatformBackdropUnderlay(
+                                  shape: const CircleBorder(),
+                                  child: liquid.GlassButton.custom(
+                                    platformViewBackdrop: overPlatformView,
+                                    label: context.l10n.joinGroup,
+                                    onTap: busy ? () {} : openChat,
+                                    enabled: !busy,
+                                    width: 80,
+                                    height: 80,
+                                    shape: const liquid.LiquidOval(),
+                                    // Without an explicit quality this
+                                    // resolves to GlassButton's own
+                                    // standard default (no ancestor
+                                    // InheritedLiquidGlass here), which
+                                    // skips the 3D refraction shader the
+                                    // clear/near-zero-blur settings below
+                                    // depend on to read as glass at all.
+                                    // Every other control glass button
+                                    // (_liquidButton, GlassSurface, the
+                                    // honeycomb bubbles) forces the same
+                                    // premium tier.
+                                    quality: GlassSurfaceRole.control.quality,
+                                    settings: appGlassSettings(
+                                      context,
+                                      clear: true,
+                                      platformViewBackdrop: overPlatformView,
                                     ),
+                                    child: busy
+                                        ? const SizedBox.square(
+                                            dimension: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Icon(Icons.chat, size: 30),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -428,9 +407,7 @@ class _RadarGroupCardState extends State<RadarGroupCard>
                               opacity: clampT(.4, 1),
                               child: _GroupParticipants(
                                 key: const ValueKey('radar.group.participants'),
-                                chat: chat,
-                                error: joinError,
-                                retry: join,
+                                chat: widget.group,
                               ),
                             ),
                           ),
@@ -438,6 +415,17 @@ class _RadarGroupCardState extends State<RadarGroupCard>
                       ),
                     ),
                 ],
+              ),
+            ),
+            PositionedDirectional(
+              end: AppDesign.inset,
+              top: widget.topInset + AppDesign.radarIdentityGap,
+              child: AppIconButton(
+                key: const ValueKey('radar.group.close'),
+                glass: true,
+                tooltip: context.l10n.close,
+                icon: const Icon(Icons.keyboard_arrow_down),
+                onPressed: widget.onClose,
               ),
             ),
           ],
@@ -449,14 +437,7 @@ class _RadarGroupCardState extends State<RadarGroupCard>
 
 class _GroupParticipants extends StatefulWidget {
   final Json? chat;
-  final String? error;
-  final VoidCallback retry;
-  const _GroupParticipants({
-    super.key,
-    required this.chat,
-    required this.error,
-    required this.retry,
-  });
+  const _GroupParticipants({super.key, required this.chat});
   @override
   State<_GroupParticipants> createState() => _GroupParticipantsState();
 }
@@ -500,12 +481,6 @@ class _GroupParticipantsState extends State<_GroupParticipants> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.error != null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: ScreenStatus(error: widget.error, retry: widget.retry),
-      );
-    }
     if (error != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),

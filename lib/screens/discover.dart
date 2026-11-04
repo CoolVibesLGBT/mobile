@@ -1,16 +1,20 @@
 import '../l10n/l10n.dart';
 import 'places.dart';
 import '../design/app_design.dart';
+
 import 'package:dio/dio.dart';
+
 import '../core/geo.dart';
+
 import 'package:flutter/material.dart';
+
 import '../core/api.dart';
 import '../core/place_data.dart';
 import '../core/session.dart';
 import '../components/components.dart';
 import '../components/workspace_menu.dart';
 import 'profile.dart';
-import 'composer.dart';
+import 'app_forms.dart';
 import 'feed.dart';
 import 'radar.dart';
 import 'settings.dart';
@@ -272,109 +276,85 @@ class PeopleMap extends StatelessWidget {
       DiscoveryMap(action: 'user.fetch.nearby.users', coordinates: params);
 }
 
+/// Check-in discovery shares the app's global search route.
 class CheckInsScreen extends StatefulWidget {
-  const CheckInsScreen({super.key, this.initialView = 'map'});
+  const CheckInsScreen({super.key, this.initialView = 'list'});
   final String initialView;
   @override
   State<CheckInsScreen> createState() => _CheckInsScreenState();
 }
 
 class _CheckInsScreenState extends State<CheckInsScreen> {
-  late bool map = widget.initialView != 'list';
+  late bool map = widget.initialView == 'map';
   Json coordinates = {...defaultDiscoveryCoordinates};
   int revision = 0;
-  bool started = false;
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!started && TickerMode.valuesOf(context).enabled) {
-      started = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted || AppScope.of(context).api.isPreview) return;
-        try {
-          final p = await currentPosition();
-          if (mounted) {
-            setState(
-              () => coordinates = {
-                'latitude': p.latitude,
-                'longitude': p.longitude,
-              },
-            );
-          }
-        } catch (_) {}
+
+  Future<void> compose() async {
+    final result = await sheet<bool>(context, AppForms.checkIn(context));
+    if (result == true && mounted) {
+      setState(() {
+        revision++;
+        map = false;
       });
     }
   }
 
   @override
-  Widget build(BuildContext context) => AppScaffold(
-    extendBodyBehindAppBar: true,
-    backgroundColor: AppPalette.of(context).row,
-    appBar: AppHeader(
-      edge: map ? AppHeaderEdge.none : null,
-      leading: const WorkspaceMenuButton(),
-      title: AppSegments<bool>(
-        header: true,
-        values: {
-          true: Semantics(
-            label: context.l10n.map2,
-            child: const Icon(Icons.map_outlined, size: 22),
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return AppScaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: AppPalette.of(context).row,
+      appBar: AppHeader(
+        leading: const WorkspaceMenuButton(),
+        title: const Text('Check-in'),
+        actions: [
+          AppIconButton(
+            key: const ValueKey('checkins.search'),
+            tooltip: l.search,
+            icon: const Icon(Icons.search),
+            onPressed: () => open(context, const SearchScreen()),
           ),
-          false: Semantics(
-            label: context.l10n.list2,
-            child: const Icon(Icons.list, size: 22),
+          AppIconButton(
+            key: const ValueKey('checkins.view'),
+            tooltip: map ? l.list2 : l.map2,
+            icon: Icon(map ? Icons.list : Icons.map_outlined),
+            onPressed: () => setState(() => map = !map),
           ),
-        },
-        selected: map,
-        onChanged: (value) => setState(() => map = value),
+          AppIconButton(
+            key: const ValueKey('checkins.create'),
+            tooltip: l.checkIn,
+            icon: const Icon(Icons.add),
+            onPressed: compose,
+          ),
+        ],
       ),
-      actions: [
-        AppIconButton(
-          tooltip: context.l10n.search,
-          icon: const Icon(Icons.search),
-          onPressed: () => open(context, const SearchScreen()),
-        ),
-        AppIconButton(
-          tooltip: context.l10n.activity,
-          icon: const Icon(Icons.notifications_none),
-          onPressed: () => open(context, const ActivityScreen()),
-        ),
-        AppIconButton(
-          tooltip: context.l10n.checkIn,
-          icon: const Icon(Icons.add),
-          onPressed: () async {
-            final result = await sheet<bool>(
-              context,
-              const ComposerScreen(checkIn: true),
-            );
-            if (result == true && mounted) {
-              setState(() {
-                revision++;
-                map = false;
-              });
-            }
-          },
-        ),
-      ],
-    ),
-    body: map
-        ? DiscoveryMap(
-            key: ValueKey(revision),
-            action: 'user.check_in_fetch',
-            limit: 50,
-            coordinates: coordinates,
-          )
-        : ColoredBox(
-            color: AppPalette.of(context).row,
-            child: RecordList(
+      body: map
+          ? DiscoveryMap(
               key: ValueKey(revision),
               action: 'user.check_in_fetch',
-              params: {...coordinates, 'limit': 50},
-              itemBuilder: (_, post, reload) =>
-                  PostTile(post: post, reload: reload),
+              limit: 50,
+              coordinates: coordinates,
+              onCoordinatesChanged: (point) => coordinates = point,
+              onRecordSelected: (post) =>
+                  open(context, PostDetailScreen(post: post)),
+            )
+          : RecordList(
+              key: ValueKey(revision),
+              action: 'user.check_in_fetch',
+              empty: ScreenStatus(
+                title: l.checkInsEmpty,
+                message: l.checkInsEmptyMessage,
+                animation: 'search',
+              ),
+              itemBuilder: (_, post, reload) => PostTile(
+                key: ValueKey('checkin.${recordId(post)}'),
+                post: post,
+                reload: reload,
+              ),
             ),
-          ),
-  );
+    );
+  }
 }
 
 /// Global search (source app/search/index.tsx): `search.global` with Telegram

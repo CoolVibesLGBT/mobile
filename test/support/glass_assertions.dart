@@ -64,7 +64,9 @@ void expectMapTabBar(WidgetTester tester) {
   );
   expect(bar.platformViewBackdrop, isTrue);
   expect(bar.settings!.glassColor.a, lessThan(.5));
-  expect(bar.settings!.blur, AppDesign.glassFrost);
+  // The tab bar explicitly requests clear glass; its live blur stays light
+  // even over a platform map (appGlassSettings clear branch).
+  expect(bar.settings!.blur, AppDesign.glassClearBlur);
   final dark = Theme.of(tester.element(target)).brightness == Brightness.dark;
   expect(bar.settings!.effectiveShadow, dark ? isEmpty : AppDesign.glassShadow);
   final mapBounds = tester.getRect(find.byType(GameMap));

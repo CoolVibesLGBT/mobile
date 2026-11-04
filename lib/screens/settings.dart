@@ -320,6 +320,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     symbol: 'globe',
                   ),
                   title: Text(context.l10n.language),
+                  trailingBelow:
+                      MediaQuery.textScalerOf(context).scale(1) > 1.35,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -330,11 +332,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fit: BoxFit.contain,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        language.name,
-                        style: AppDesign.font(
-                          15,
-                          color: AppPalette.of(context).secondaryLabel,
+                      Flexible(
+                        child: Text(
+                          language.name,
+                          style: AppDesign.font(
+                            15,
+                            color: AppPalette.of(context).secondaryLabel,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 14),

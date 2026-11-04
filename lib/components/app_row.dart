@@ -17,6 +17,9 @@ class AppRow extends StatelessWidget {
   final VoidCallback? onTap, onLongPress;
   final EdgeInsetsGeometry? contentPadding;
   final bool dense, destructive, disclosure;
+
+  /// Move a rich trailing value below the title for accessible text sizes.
+  final bool trailingBelow;
   final bool? selected;
   const AppRow({
     super.key,
@@ -32,6 +35,7 @@ class AppRow extends StatelessWidget {
     this.contentPadding,
     this.dense = false,
     this.disclosure = true,
+    this.trailingBelow = false,
     this.destructive = false,
     this.selected,
   });
@@ -82,6 +86,11 @@ class AppRow extends StatelessWidget {
                       child: subtitle!,
                     ),
                   ),
+                if (trailing != null && trailingBelow)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: trailing!,
+                  ),
                 if (value != null && stacked)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -111,7 +120,7 @@ class AppRow extends StatelessWidget {
                 ),
               ),
             ),
-          if (trailing != null) ...[
+          if (trailing != null && !trailingBelow) ...[
             SizedBox(width: leadingGap),
             trailing!,
           ] else if (selected != null) ...[

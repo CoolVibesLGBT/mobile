@@ -9,6 +9,9 @@ import '../core/profile_data.dart';
 
 /// Canonical business form definitions, shared by production and debug routes.
 abstract final class AppForms {
+  static Widget checkIn(BuildContext context, {Json? initialLocation}) =>
+      ComposerScreen(checkIn: true, initialLocation: initialLocation);
+
   static Json postPayload({
     required String text,
     Json attachments = const {},

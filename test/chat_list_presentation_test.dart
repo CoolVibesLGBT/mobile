@@ -13,6 +13,7 @@ import 'package:coolvibes/core/api.dart';
 import 'package:coolvibes/core/session.dart';
 import 'package:coolvibes/debug/preview_api.dart';
 import 'package:coolvibes/screens/chat.dart';
+import 'package:coolvibes/l10n/l10n.dart';
 import 'support/ui_driver.dart';
 
 class PendingChatsApi extends PreviewApi {
@@ -296,10 +297,13 @@ void main() {
       unawaited(list.reload());
       await tester.pump();
       expect(find.text('Yeni mesaj'), findsOneWidget);
-      api.refresh!.completeError(ApiException('Bağlantı kesildi'));
+      api.refresh!.completeError(ApiException.connection('Bağlantı kesildi'));
       await pumpUI(tester);
       expect(find.text('Yeni mesaj'), findsOneWidget);
-      expect(list.error, contains('Bağlantı kesildi'));
+      expect(
+        list.error,
+        tester.element(first).l10n.unableToReachTheServiceCheck,
+      );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       session.dispose();

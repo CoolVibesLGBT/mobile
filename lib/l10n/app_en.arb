@@ -747,5 +747,10 @@
   "notificationFilter": "Notification type",
   "notificationUnread": "Unread",
   "notificationEmpty": "No notifications here",
-  "notificationEmptyBody": "New activity in this category will appear here."
+  "notificationEmptyBody": "New activity in this category will appear here.",
+  "checkInSearchHint": "Search activities, places or check-ins",
+  "checkInsEmpty": "No check-ins yet",
+  "checkInsEmptyMessage": "Choose a place, share what you want to do and meet people.",
+  "checkInActivitySearchHint": "What would you like to do?",
+  "checkInLocationRequired": "Choose a place to check in."
 }

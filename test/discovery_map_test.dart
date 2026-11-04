@@ -6,7 +6,6 @@ import 'package:coolvibes/components/glass_surface.dart';
 import 'package:coolvibes/components/game_map.dart';
 import 'package:coolvibes/components/radar_profile_card.dart';
 import 'package:coolvibes/core/api.dart';
-import 'package:coolvibes/components/navigation.dart';
 import 'package:coolvibes/debug/preview_api.dart';
 import 'package:coolvibes/screens/discover.dart';
 import 'package:coolvibes/screens/location_picker.dart';

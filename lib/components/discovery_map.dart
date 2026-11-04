@@ -13,12 +13,16 @@ import '../screens/location_picker.dart';
 class DiscoveryMap extends StatefulWidget {
   final String action;
   final int limit;
+  final Json params;
+  final ValueChanged<Json>? onRecordSelected;
   final Json coordinates;
   final ValueChanged<Json>? onCoordinatesChanged;
   const DiscoveryMap({
     super.key,
     required this.action,
     this.limit = 60,
+    this.params = const {},
+    this.onRecordSelected,
     required this.coordinates,
     this.onCoordinatesChanged,
   });
@@ -55,6 +59,11 @@ class _DiscoveryMapState extends State<DiscoveryMap> {
       center = {...center, ...widget.coordinates};
       map.flyTo(center['latitude'], center['longitude'], zoom: 12.5);
       fetch();
+    } else if (old.action != widget.action ||
+        old.params.toString() != widget.params.toString()) {
+      selected = null;
+      records.clear();
+      fetch();
     }
   }
 
@@ -65,9 +74,10 @@ class _DiscoveryMapState extends State<DiscoveryMap> {
       error = null;
     });
     try {
-      final response = await AppScope.of(
-        context,
-      ).api.call(widget.action, body: {...center, 'limit': widget.limit});
+      final response = await AppScope.of(context).api.call(
+        widget.action,
+        body: {...center, ...widget.params, 'limit': widget.limit},
+      );
       if (mounted && generation == current) {
         setState(() {
           records
@@ -164,22 +174,35 @@ class _DiscoveryMapState extends State<DiscoveryMap> {
                 'latitude': point['latitude'],
                 'longitude': point['longitude'],
               };
+              widget.onCoordinatesChanged?.call(center);
               fetch();
             });
           },
           onMarker: (id) {
             final record = records.where((r) => recordId(r) == id).firstOrNull;
-            if (record != null) setState(() => selected = author(record));
+            if (record == null) return;
+            if (widget.onRecordSelected != null) {
+              widget.onRecordSelected!(record);
+            } else {
+              setState(() => selected = author(record));
+            }
           },
           onPress: () => setState(() => selected = null),
         ),
       ),
       if (loading)
-        const Positioned(
-          top: 100,
+        Positioned(
+          top: MediaQuery.paddingOf(context).top,
           left: 0,
           right: 0,
-          child: LinearProgressIndicator(),
+          child: const LinearProgressIndicator(),
+        ),
+      if (!loading && error == null && records.isEmpty)
+        Positioned(
+          top: MediaQuery.paddingOf(context).top + 8,
+          left: 16,
+          right: 16,
+          child: ScreenStatus(title: context.l10n.noResults, compact: true),
         ),
       if (error != null)
         Positioned(

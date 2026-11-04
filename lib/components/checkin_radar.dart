@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/api.dart';
+import '../core/checkin_data.dart';
 import '../core/session.dart';
 import '../core/mobile_spring.dart';
 import '../core/radar_geometry.dart';
@@ -11,21 +12,111 @@ import '../design/app_design.dart';
 import 'components.dart';
 import 'glass_surface.dart';
 
-List<Json> checkInTags(BuildContext context) {
-  final data = AppScope.of(context).system;
-  final raw = object(data['data']).isNotEmpty ? object(data['data']) : data;
-  return (raw['checkin_tag_types'] as List? ?? [])
-      .map(object)
-      .where((t) => t['is_visible'] != false && string(t['tag']).isNotEmpty)
-      .toList();
-}
+List<Json> checkInTags(BuildContext context) =>
+    checkInTagRecords(AppScope.of(context).system);
 
 String checkInTagLabel(BuildContext context, String tag) {
   final item = checkInTags(context).where((t) => t['tag'] == tag).firstOrNull;
-  return plainText(
-    item?['name'] ?? tag,
-    language: Localizations.localeOf(context).languageCode,
+  return checkInTagText(
+    item ?? {'tag': tag},
+    Localizations.localeOf(context).languageCode,
   );
+}
+
+/// One artwork owner for the picker, radar and selected-tag preview. The
+/// server's 256px thumbnail is enough for these controls; AppImage owns
+/// decoding, placeholders and network errors as it does for all app media.
+class CheckInTagArtwork extends StatelessWidget {
+  final Json tag;
+  final double size;
+  final Color? color;
+  const CheckInTagArtwork({
+    super.key,
+    required this.tag,
+    required this.size,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final source = checkInTagImage(tag);
+    if (source != null) {
+      return ExcludeSemantics(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppDesign.controlCorner),
+          child: AppImage(
+            source: source,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+    return SizedBox.square(
+      dimension: size,
+      child: FutureBuilder<_TagArtwork>(
+        future: _TagArtwork.load(DefaultAssetBundle.of(context)),
+        builder: (context, snapshot) => Center(
+          child: _TagGlyph(
+            snapshot.data?.glyphs[string(tag['icon'])],
+            size * .6,
+            color ?? AppPalette.of(context).text,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The artwork strip shared by every production post-card presentation.
+/// Uploaded photos remain owned by MediaAttachments; these are check-in tags.
+class CheckInPostTags extends StatelessWidget {
+  final Json post;
+  const CheckInPostTags({super.key, required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    final tags = checkInPostTags(post, AppScope.of(context).system);
+    if (tags.isEmpty) return const SizedBox.shrink();
+    final language = Localizations.localeOf(context).languageCode;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(
+        AppDesign.inset,
+        8,
+        AppDesign.inset,
+        12,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final tag in tags)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8),
+              child: SizedBox(
+                width: AppDesign.checkInPostTagWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CheckInTagArtwork(
+                      tag: tag,
+                      size: AppDesign.checkInPostArtworkSize,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      checkInTagText(tag, language),
+                      textAlign: TextAlign.center,
+                      style: AppDesign.font(13),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _TagArtwork {
@@ -120,10 +211,12 @@ class CheckInTagPreview extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _TagGlyph(
-                        art?.glyphs[string(data['icon'])],
-                        20,
-                        foreground,
+                      Center(
+                        child: CheckInTagArtwork(
+                          tag: data,
+                          size: 48,
+                          color: foreground,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Padding(
@@ -195,7 +288,6 @@ class _CheckInRadarState extends State<CheckInRadar>
   }
 
   Offset origin = Offset.zero, start = Offset.zero;
-  Json glyphs = {};
   List<Json> gradients = [];
   bool started = false;
   @override
@@ -211,7 +303,6 @@ class _CheckInRadarState extends State<CheckInRadar>
     final art = await _TagArtwork.load(DefaultAssetBundle.of(context));
     if (mounted) {
       setState(() {
-        glyphs = art.glyphs;
         gradients = art.gradients;
       });
     }
@@ -349,7 +440,6 @@ class _CheckInRadarState extends State<CheckInRadar>
                                     tags[i]['tag'],
                                   ),
                                   distance: (cells[i] + pan).distance,
-                                  glyphs: glyphs,
                                   gradients: gradients,
                                   onPressed: () {
                                     snap(
@@ -432,14 +522,13 @@ class _CheckInRadarState extends State<CheckInRadar>
 }
 
 class _CheckInTag extends StatefulWidget {
-  final Json tag, glyphs;
+  final Json tag;
   final List<Json> gradients;
   final bool selected;
   final double distance;
   final VoidCallback onPressed;
   const _CheckInTag({
     required this.tag,
-    required this.glyphs,
     required this.gradients,
     required this.selected,
     required this.distance,
@@ -495,11 +584,16 @@ class _CheckInTagState extends State<_CheckInTag>
         ? 1 - .08 * widget.distance / 260
         : .92 - .24 * ((widget.distance - 260) / 220).clamp(0, 1);
     final label = checkInTagLabel(context, string(widget.tag['tag']));
-    final glyph = widget.glyphs[string(widget.tag['icon'])];
     final foreground = widget.selected && gradient.isNotEmpty
         ? color(gradient['textColor'])
         : Theme.of(context).colorScheme.onSurface;
-    final image = _TagGlyph(glyph, widget.selected ? 34 : 28, foreground);
+    final image = ClipOval(
+      child: CheckInTagArtwork(
+        tag: widget.tag,
+        size: checkInTagImage(widget.tag) != null ? 76 : 46,
+        color: foreground,
+      ),
+    );
     return AnimatedBuilder(
       animation: scale,
       builder: (context, _) => Transform.scale(

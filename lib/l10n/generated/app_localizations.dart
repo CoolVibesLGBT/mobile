@@ -3447,6 +3447,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New activity in this category will appear here.'**
   String get notificationEmptyBody;
+
+  /// No description provided for @checkInSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search activities, places or check-ins'**
+  String get checkInSearchHint;
+
+  /// No description provided for @checkInsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No check-ins yet'**
+  String get checkInsEmpty;
+
+  /// No description provided for @checkInsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a place, share what you want to do and meet people.'**
+  String get checkInsEmptyMessage;
+
+  /// No description provided for @checkInActivitySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like to do?'**
+  String get checkInActivitySearchHint;
+
+  /// No description provided for @checkInLocationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a place to check in.'**
+  String get checkInLocationRequired;
 }
 
 class _AppLocalizationsDelegate

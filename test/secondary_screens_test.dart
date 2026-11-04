@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coolvibes/app.dart';
+import 'package:coolvibes/l10n/l10n.dart';
 import 'package:coolvibes/components/components.dart';
 import 'package:coolvibes/components/classified_card.dart';
 import 'package:coolvibes/core/api.dart';
@@ -297,7 +298,12 @@ void main() {
   ) async {
     final api = SecondaryApi()..offline = true;
     final session = await mount(tester, const NotificationsScreen(), api);
-    expect(find.text('Offline fixture'), findsOneWidget);
+    final safeMessage = tester
+        .element(find.byType(NotificationsScreen))
+        .l10n
+        .unableToReachTheServiceCheck;
+    expect(find.text(safeMessage), findsOneWidget);
+    expect(find.text('Offline fixture'), findsNothing);
     api
       ..offline = false
       ..notices = [];
@@ -307,6 +313,7 @@ void main() {
         .retry!();
     await pumpUI(tester);
     expect(find.text('Offline fixture'), findsNothing);
+    expect(find.text(safeMessage), findsNothing);
     expect(find.byType(NotificationRow), findsNothing);
     expect(find.byType(ScreenStatus), findsOneWidget);
     await close(tester, session);

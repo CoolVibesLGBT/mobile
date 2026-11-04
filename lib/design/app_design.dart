@@ -384,6 +384,13 @@ abstract final class AppDesign {
   static const articleMenuHeadingSizes = [24.0, 21.0, 19.0, 18.0, 17.0, 16.0];
   static const articleHeadingSizes = [22.0, 20.0, 18.0, 17.0, 16.0, 15.0];
   static const headerHeight = 44.0;
+  // React Native reference components/RadarUserCard.tsx constants/layout.
+  static const radarExpandedAvatarSize = 110.0;
+  static const radarIdentityMinHeight = 70.0;
+  static const radarIdentityGap = 15.0;
+  static const radarActionsGap = 25.0;
+  static const radarActionSize = 70.0;
+  static const radarMainActionSize = 80.0;
   static double get headerTitlebarGap =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS ? 10.0 : 0.0;
   static double headerInset(BuildContext context) =>
@@ -394,6 +401,9 @@ abstract final class AppDesign {
   static const fontFamily = 'CupertinoSystemText';
   static const displayFamily = 'CupertinoSystemDisplay';
   static const controlCorner = 10.0;
+  // Active web checkin-artwork.css: 5.5rem art in a 6.5rem post-tag column.
+  static const checkInPostArtworkSize = 88.0;
+  static const checkInPostTagWidth = 104.0;
   // Source NativeStyle.groupRadius (inset form/settings sections).
   static const groupCorner = 26.0;
 

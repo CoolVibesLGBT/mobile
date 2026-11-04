@@ -152,14 +152,16 @@ class _SheetLayout extends StatelessWidget {
             // is true and the sheet is nearly full.
             final contentSettings =
                 (maintainContentGlass && expandProgressValue > 0.9)
-                    ? (fullStateContentSettings ??
-                        pulsedSettings.copyWith(
-                          lightIntensity:
-                              pulsedSettings.lightIntensity.clamp(0.4, 1.0),
-                          saturation: pulsedSettings.saturation.clamp(1.5, 3.0),
-                          blur: pulsedSettings.blur.clamp(15.0, 40.0),
-                        ))
-                    : pulsedSettings;
+                ? (fullStateContentSettings ??
+                      pulsedSettings.copyWith(
+                        lightIntensity: pulsedSettings.lightIntensity.clamp(
+                          0.4,
+                          1.0,
+                        ),
+                        saturation: pulsedSettings.saturation.clamp(1.5, 3.0),
+                        blur: pulsedSettings.blur.clamp(15.0, 40.0),
+                      ))
+                : pulsedSettings;
 
             // Compute dynamic glass visibility for current expansion state.
             final bool isFullyExpanded = expandProgressValue > 0.98;
@@ -169,8 +171,9 @@ class _SheetLayout extends StatelessWidget {
             // sheet's own surface out as it closed; Apple instead keeps the
             // surface opaque and just slides it off the bottom (only the
             // background dim fades). See discussions #130 / #156.
-            final double glassVisibility =
-                isFullyExpanded ? (maintainContentGlass ? 1.0 : 0.0) : 1.0;
+            final double glassVisibility = isFullyExpanded
+                ? (maintainContentGlass ? 1.0 : 0.0)
+                : 1.0;
 
             // Fade glass uniformly via settings rather than an Opacity widget.
             //
@@ -187,8 +190,10 @@ class _SheetLayout extends StatelessWidget {
               glassColor: contentSettings.glassColor.withValues(
                 alpha: contentSettings.glassColor.a * glassVisibility,
               ),
-              blur: (contentSettings.blur * glassVisibility)
-                  .clamp(0.001, double.infinity),
+              blur: (contentSettings.blur * glassVisibility).clamp(
+                0.001,
+                double.infinity,
+              ),
               thickness: contentSettings.thickness * glassVisibility,
             );
 
@@ -237,80 +242,97 @@ class _SheetLayout extends StatelessWidget {
                     //    AdaptiveGlass prevents the dual-stencil fragmentation
                     //    that caused ghosting in Impeller Premium mode.
                     Positioned.fill(
-                      child: AdaptiveGlass(
-                        shape: shape,
-                        settings: currentSettings,
-                        quality: effectiveQuality,
-                        platformViewBackdrop: platformViewBackdrop,
-                        useOwnLayer: true,
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          children: [
-                            // 3. Solid fill — inside AdaptiveGlass so it shares
-                            //    the same SDF mask and clip path. Always rendered
-                            //    (transparent when colorOpacity≈0) to keep the
-                            //    Stack structure stable — inserting/removing this
-                            //    child would shift GlassGlow's slot index, causing
-                            //    Flutter to tear down its subtree and fire
-                            //    initState on all child State objects.
-                            Positioned.fill(
-                              child: DecoratedBox(
-                                key: const Key('glass_modal_sheet_fill'),
-                                decoration: BoxDecoration(
-                                  color: effectiveExpandedColor.withValues(
-                                    alpha: colorOpacity,
+                      child: ClipRRect(
+                        // Forward the sheet boundary to iOS platform-view
+                        // mutators as well as Flutter backdrop filters.
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(currentTopRadius),
+                          bottom: Radius.circular(currentBottomRadius),
+                        ),
+                        child: AdaptiveGlass(
+                          shape: shape,
+                          settings: currentSettings,
+                          quality: effectiveQuality,
+                          platformViewBackdrop: platformViewBackdrop,
+                          useOwnLayer: true,
+                          clipBehavior: Clip.antiAlias,
+                          child: Stack(
+                            children: [
+                              // 3. Solid fill — inside AdaptiveGlass so it shares
+                              //    the same SDF mask and clip path. Always rendered
+                              //    (transparent when colorOpacity≈0) to keep the
+                              //    Stack structure stable — inserting/removing this
+                              //    child would shift GlassGlow's slot index, causing
+                              //    Flutter to tear down its subtree and fire
+                              //    initState on all child State objects.
+                              Positioned.fill(
+                                child: DecoratedBox(
+                                  key: const Key('glass_modal_sheet_fill'),
+                                  decoration: BoxDecoration(
+                                    color: effectiveExpandedColor.withValues(
+                                      alpha: colorOpacity,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            // 4. Glow overlay + content.
-                            Positioned.fill(
-                              child: Builder(builder: (innerContext) {
-                                final isDark =
-                                    GlassTheme.brightnessOf(innerContext) ==
+                              // 4. Glow overlay + content.
+                              Positioned.fill(
+                                child: Builder(
+                                  builder: (innerContext) {
+                                    final isDark =
+                                        GlassTheme.brightnessOf(innerContext) ==
                                         Brightness.dark;
-                                return GlassGlow(
-                                  glowColor: (enableInteractionGlow &&
-                                          glassOpacity > 0.05 &&
-                                          expandProgress < 0.9)
-                                      ? (glowColor ??
-                                          (isDark
-                                              ? CupertinoColors.white
-                                                  .withValues(
-                                                      alpha: GlassDefaults
-                                                          .specularLightAlpha)
-                                              : CupertinoColors.black
-                                                  .withValues(
-                                                      alpha: GlassDefaults
-                                                          .specularDarkAlpha)))
-                                      : const Color(0x00000000),
-                                  glowRadius: glowRadius,
-                                  hitTestBehavior: HitTestBehavior.translucent,
-                                  pulse: (enableSaturationGlow &&
-                                          expandProgress < 0.9)
-                                      ? saturationAnimation.value
-                                      : 0,
-                                  child: Stack(
-                                    children: [
-                                      Positioned.fill(
-                                        // Replaces Material(color: transparent) — SizedBox.expand
-                                        // provides identical visual output for a glass sheet child.
-                                        child: SizedBox.expand(child: child!),
+                                    return GlassGlow(
+                                      glowColor:
+                                          (enableInteractionGlow &&
+                                              glassOpacity > 0.05 &&
+                                              expandProgress < 0.9)
+                                          ? (glowColor ??
+                                                (isDark
+                                                    ? CupertinoColors.white
+                                                          .withValues(
+                                                            alpha: GlassDefaults
+                                                                .specularLightAlpha,
+                                                          )
+                                                    : CupertinoColors.black
+                                                          .withValues(
+                                                            alpha: GlassDefaults
+                                                                .specularDarkAlpha,
+                                                          )))
+                                          : const Color(0x00000000),
+                                      glowRadius: glowRadius,
+                                      hitTestBehavior:
+                                          HitTestBehavior.translucent,
+                                      pulse:
+                                          (enableSaturationGlow &&
+                                              expandProgress < 0.9)
+                                          ? saturationAnimation.value
+                                          : 0,
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            // Replaces Material(color: transparent) — SizedBox.expand
+                                            // provides identical visual output for a glass sheet child.
+                                            child: SizedBox.expand(
+                                              child: child!,
+                                            ),
+                                          ),
+                                          if (showDragIndicator)
+                                            Positioned(
+                                              top: 0,
+                                              left: 0,
+                                              right: 0,
+                                              height: 44,
+                                              child: handleZone,
+                                            ),
+                                        ],
                                       ),
-                                      if (showDragIndicator)
-                                        Positioned(
-                                          top: 0,
-                                          left: 0,
-                                          right: 0,
-                                          height: 44,
-                                          child: handleZone,
-                                        ),
-                                    ],
-                                  ),
-                                ); // GlassGlow
-                              }), // Builder
-                            ),
-                          ],
+                                    ); // GlassGlow
+                                  },
+                                ), // Builder
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -339,10 +361,7 @@ class _SheetLayout extends StatelessWidget {
         return LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: const [
-            Color(0x00000000),
-            Color(0xFF000000),
-          ],
+          colors: const [Color(0x00000000), Color(0xFF000000)],
           stops: [0.0, (stop / bounds.height).clamp(0.0, 1.0)],
         ).createShader(bounds);
       },
@@ -414,8 +433,9 @@ class _GlassDragIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     // iOS 26: white at 35% in dark mode, black at 20% in light mode
-    final defaultColor =
-        isDark ? const Color(0x59FFFFFF) : const Color(0x33000000);
+    final defaultColor = isDark
+        ? const Color(0x59FFFFFF)
+        : const Color(0x33000000);
 
     return Semantics(
       label: 'Drag handle',
@@ -463,10 +483,7 @@ class _SheetContent extends StatelessWidget {
           parent: ScrollConfiguration.of(context),
           physics: physics,
         ),
-        child: Padding(
-          padding: padding ?? EdgeInsets.zero,
-          child: child,
-        ),
+        child: Padding(padding: padding ?? EdgeInsets.zero, child: child),
       ),
     );
   }
@@ -504,7 +521,9 @@ class _ExpandFirstScrollPhysics extends ClampingScrollPhysics {
 
   @override
   Simulation? createBallisticSimulation(
-      ScrollMetrics position, double velocity) {
+    ScrollMetrics position,
+    double velocity,
+  ) {
     // The release velocity reaches the list as well as the sheet. Without this
     // a flick the sheet answered by expanding also flings the list the moment
     // the finger lifts.
@@ -561,13 +580,17 @@ class _SheetScrollBehavior extends ScrollBehavior {
 
   @override
   Widget buildScrollbar(
-          BuildContext context, Widget child, ScrollableDetails details) =>
-      parent.buildScrollbar(context, child, details);
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) => parent.buildScrollbar(context, child, details);
 
   @override
   Widget buildOverscrollIndicator(
-          BuildContext context, Widget child, ScrollableDetails details) =>
-      parent.buildOverscrollIndicator(context, child, details);
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) => parent.buildOverscrollIndicator(context, child, details);
 
   @override
   GestureVelocityTrackerBuilder velocityTrackerBuilder(BuildContext context) =>
@@ -684,7 +707,6 @@ class GlassModalSheetStateProvider extends InheritedWidget {
   }
 
   @override
-
   /// Returns true when any field of [info] has changed.
   bool updateShouldNotify(GlassModalSheetStateProvider oldWidget) {
     return info.state != oldWidget.info.state ||
@@ -945,9 +967,10 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.peekBottomRadius,
     this.placement = GlassSheetPlacement.automatic,
   }) : assert(
-            detents.length > 0,
-            'GlassModalSheetScaffold needs at least one detent — add medium '
-            'and/or large (small alone is a floor, not a resting height).');
+         detents.length > 0,
+         'GlassModalSheetScaffold needs at least one detent — add medium '
+         'and/or large (small alone is a floor, not a resting height).',
+       );
 
   @override
   Widget build(BuildContext context) {

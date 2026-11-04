@@ -12,10 +12,29 @@ import 'package:coolvibes/screens/shell.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/ui_driver.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  // The shell mounts Radar too; this toolbar test has no native sensor host.
+  const sensorChannels = [
+    MethodChannel('dev.fluttercommunity.plus/sensors/method'),
+    MethodChannel('dev.fluttercommunity.plus/sensors/accelerometer'),
+  ];
+  setUp(() {
+    for (final channel in sensorChannels) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (_) async => null);
+    }
+  });
+  tearDown(() {
+    for (final channel in sensorChannels) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    }
+  });
   testWidgets('Telegram vectors render at original point sizes', (
     tester,
   ) async {

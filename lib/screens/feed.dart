@@ -25,6 +25,7 @@ import 'profile.dart';
 import 'composer.dart';
 import 'media.dart';
 import '../components/emoticon_view.dart';
+import '../components/checkin_radar.dart';
 
 const _postActionIconSize = 28.0;
 
@@ -771,6 +772,7 @@ class _PostTileState extends State<PostTile> with TickerProviderStateMixin {
                 indicators: true,
                 onTap: widget.detail ? null : openDetail,
               ),
+              CheckInPostTags(post: post),
               if (emoticon.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -1264,11 +1266,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             },
           ),
         ),
-        ComposerScreen(
-          key: ValueKey('comment-${recordId(post)}'),
-          replyTo: recordId(post),
-          inline: true,
-          onSubmitted: () => remote.currentState?.load(),
+        Flexible(
+          child: SingleChildScrollView(
+            // The expanded media picker can exceed the space remaining below
+            // the header, especially with the keyboard or larger text.
+            reverse: true,
+            child: ComposerScreen(
+              key: ValueKey('comment-${recordId(post)}'),
+              replyTo: recordId(post),
+              inline: true,
+              onSubmitted: () => remote.currentState?.load(),
+            ),
+          ),
         ),
       ],
     ),

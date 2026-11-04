@@ -179,8 +179,9 @@ double relativeLuminance(List<num> rgb) {
 }
 
 String darkenToMaxLuminance(String hex, double maxL) {
-  if (!RegExp(r'^#[0-9a-f]{6}$', caseSensitive: false).hasMatch(hex))
+  if (!RegExp(r'^#[0-9a-f]{6}$', caseSensitive: false).hasMatch(hex)) {
     return hex;
+  }
   final rgb = hexToRgb(hex);
   if (relativeLuminance(rgb) <= maxL) return hex;
   double lo = 0, hi = 1;
@@ -715,8 +716,9 @@ ResolvedAppearance resolveTheme(
     background = multiplied(1.024, .573, .18);
     border = multiplied(1.033, .426, .34);
     secondary = multiplied(.956, .17, 1);
-    if (custom != null)
+    if (custom != null) {
       secondary = ensureTextContrast(secondary, hexToRgb(surface), 4.5);
+    }
   } else if (custom == null) {
     final o = hexToRgb(original.accent), a = hexToRgb(accent);
     accent = rgbaToHexa(

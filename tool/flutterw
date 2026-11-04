@@ -8,9 +8,22 @@ case "$(uname -s)" in
   *) sdk_cache="${COOLVIBES_SDK_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/coolvibes}" ;;
 esac
 sdk_dir="$sdk_cache/flutter-$version"
+# Reuse an installed SDK only when its release tag exactly matches the pin.
+# This keeps offline builds reproducible without downloading a second copy.
+if [ ! -x "$sdk_dir/bin/flutter" ] && command -v flutter >/dev/null 2>&1; then
+  installed_flutter=$(command -v flutter)
+  installed_sdk=$(dirname "$(dirname "$(realpath "$installed_flutter")")")
+  installed_version=$(git -C "$installed_sdk" describe --tags --exact-match HEAD 2>/dev/null || true)
+  if [ "$installed_version" = "$version" ]; then
+    sdk_dir="$installed_sdk"
+  fi
+fi
 if [ ! -x "$sdk_dir/bin/flutter" ]; then
   mkdir -p "$sdk_cache"
   git clone --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$sdk_dir"
+fi
+if [ -L "$project_dir/.flutter-sdk" ] && [ "$(readlink "$project_dir/.flutter-sdk")" != "$sdk_dir" ]; then
+  rm "$project_dir/.flutter-sdk"
 fi
 if [ ! -e "$project_dir/.flutter-sdk" ] && [ ! -L "$project_dir/.flutter-sdk" ]; then
   ln -s "$sdk_dir" "$project_dir/.flutter-sdk"

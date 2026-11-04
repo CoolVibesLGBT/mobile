@@ -7,7 +7,7 @@ Flutter uygulaması doğrudan bu dizindedir. React Native kaynak proje değişti
 
 ## Çalıştırma
 
-Proje SDK sürümü `.flutter-version` içinde 3.41.9'a sabitlidir. `tool/flutterw`
+Proje SDK sürümü `.flutter-version` içinde 3.47.9'a sabitlidir. `tool/flutterw`
 bu SDK'yı kullanıcı önbelleğine kurar; sistem genelindeki Flutter'ı değiştirmez.
 Harita üzerindeki yuvarlak blur sınırları Flutter 3.41'in iOS motor düzeltmesini
 gerektirir. VS Code da wrapper'ın oluşturduğu `.flutter-sdk` bağlantısını kullanır.
@@ -25,6 +25,19 @@ Servis adreslerini kaynak kodu değiştirmeden ayarlamak için:
 flutter run --dart-define=API_URL=https://api.coolvibes.lgbt/api \
   --dart-define=SOCKET_URL=wss://socket.coolvibes.app
 ```
+
+## Android release imzası
+
+Release derlemesi debug anahtarıyla imzalanmaz. Uygulamanın mevcut yayın
+anahtarı için git tarafından yok sayılan `android/key.properties` dosyasında
+`storeFile`, `storePassword`, `keyAlias`, `keyPassword` değerlerini tanımlayın.
+`storeFile` mutlak yol veya `android/` dizinine göre bağıl yol olabilir.
+CI'da aynı sırayla `COOLVIBES_KEYSTORE_FILE`, `COOLVIBES_KEYSTORE_PASSWORD`,
+`COOLVIBES_KEY_ALIAS`, `COOLVIBES_KEY_PASSWORD` ortam değişkenleri kullanılabilir;
+ortam değerleri dosyadan önceliklidir. Anahtar veya bilgiler eksikse release
+işlemi açıklayıcı hatayla durur; debug derlemeleri etkilenmez. Anahtar ve
+şifreleri repoya eklemeyin. Hazır olduğunda `flutter build appbundle --release`
+komutunu kullanın.
 
 ## Kayıt CAPTCHA bayrağı
 
@@ -70,6 +83,16 @@ Yerel Go servisiyle iOS kayıt → çıkış → giriş ve üretim Keychain ayar
 geçici anahtar yazma/okuma/silme testi geçti; oluşturulan test hesabı temizlendi.
 Çoklu iletme, aramada seçim koruma ve kısmi hata sonrası tekrar gönderim
 kontrolleri sahte API ile yapıldı; gerçek kullanıcı sohbetlerine mesaj gönderilmedi.
+
+## Son check-in ve iOS doğrulaması (2026-11-04)
+
+Check-in kartları web ile aynı `extras.tags` görsellerini backend'den okur.
+Paylaşım için açık konum seçimi gerekir; aktivite ve check-in araması eklendi.
+Ortak iOS cam/buton ve dar ekran erişilebilirlik düzeltmeleriyle test sonucu:
+**447 geçti, 2 atlandı** (`./tool/flutterw test --no-pub --dart-define=TENOR_API_KEY=`).
+Boş Tenor anahtarı testlerin izole API yolunu seçer. Yerel Xcode/Gradle ortamı
+native derlemeyi engelledi; bu sonuç yayın onayı değildir. Kanıtlar ve açık
+release/parite işleri [Design/verification.md](Design/verification.md) içindedir.
 
 ## Debug ekran kataloğu
 

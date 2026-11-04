@@ -116,7 +116,12 @@ Future<void> openEmoticons(
 
 class AttachmentPreview extends StatelessWidget {
   final AttachmentController controller;
-  const AttachmentPreview({super.key, required this.controller});
+  final bool showLocation;
+  const AttachmentPreview({
+    super.key,
+    required this.controller,
+    this.showLocation = true,
+  });
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: controller,
@@ -151,10 +156,10 @@ class AttachmentPreview extends StatelessWidget {
             ],
           ),
         if (controller.files.any((f) => !'${f['mime']}'.startsWith('audio/')) ||
-            controller.location != null ||
+            showLocation && controller.location != null ||
             controller.emoticon != null)
           SizedBox(
-            height: controller.location == null
+            height: !showLocation || controller.location == null
                 ? 130
                 : (150 + MediaQuery.textScalerOf(context).scale(14) * 3).clamp(
                     210,
@@ -211,7 +216,7 @@ class AttachmentPreview extends StatelessWidget {
                       ],
                     ),
                   ),
-                if (controller.location != null)
+                if (showLocation && controller.location != null)
                   SizedBox(
                     width: 280,
                     child: Stack(

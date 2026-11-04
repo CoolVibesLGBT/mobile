@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -1771,4 +1772,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notificationEmptyBody => 'ستظهر المستجدات في هذه الفئة هنا.';
+
+  @override
+  String get checkInSearchHint => 'ابحث عن أنشطة أو أماكن أو تسجيلات حضور';
+
+  @override
+  String get checkInsEmpty => 'لا توجد تسجيلات حضور بعد';
+
+  @override
+  String get checkInsEmptyMessage =>
+      'اختر مكانًا وشارك ما تريد فعله والتقِ بالآخرين.';
+
+  @override
+  String get checkInActivitySearchHint => 'ماذا تود أن تفعل؟';
+
+  @override
+  String get checkInLocationRequired => 'اختر مكانًا لتسجيل حضورك.';
 }

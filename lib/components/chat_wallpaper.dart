@@ -57,8 +57,9 @@ class _ChatWallpaperState extends State<ChatWallpaper> {
     ).resolve(createLocalImageConfiguration(context));
     late ImageStreamListener listener;
     listener = ImageStreamListener((info, _) {
-      if (mounted && patternAsset == asset)
+      if (mounted && patternAsset == asset) {
         setState(() => pattern = info.image);
+      }
       stream.removeListener(listener);
     });
     stream.addListener(listener);

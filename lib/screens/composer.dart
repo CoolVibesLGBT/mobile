@@ -15,6 +15,7 @@ import '../components/chat_input.dart';
 import '../components/composer_author.dart';
 import '../core/api.dart';
 import '../core/article.dart';
+import '../core/checkin_data.dart';
 import '../components/article_editor.dart';
 import '../core/attachments.dart';
 import '../core/session.dart';
@@ -27,6 +28,7 @@ class ComposerScreen extends StatefulWidget {
   final bool story, checkIn, inline;
   final VoidCallback? onSubmitted;
   final String? replyTo, kind;
+  final Json? initialLocation;
   const ComposerScreen({
     super.key,
     this.story = false,
@@ -35,6 +37,7 @@ class ComposerScreen extends StatefulWidget {
     this.checkIn = false,
     this.replyTo,
     this.kind,
+    this.initialLocation,
   });
   @override
   State<ComposerScreen> createState() => _ComposerScreenState();
@@ -80,8 +83,9 @@ class _ComposerScreenState extends State<ComposerScreen>
   UploadJob? pendingJob;
   String? submittedFingerprint;
   final selectedTags = <String>{};
-  Future<void>? checkInLocation;
-  Json checkInCoordinates = {...defaultDiscoveryCoordinates};
+  final tagSearch = TextEditingController();
+  String tagQuery = '';
+  bool locating = false;
   String get draftKey =>
       'draft.${session?.uploads.owner}.${widget.kind ?? (widget.story
               ? 'story'
@@ -99,22 +103,16 @@ class _ComposerScreenState extends State<ComposerScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (widget.checkIn && widget.initialLocation != null) {
+      final point = coordinatesOf(widget.initialLocation!);
+      if (point != null) {
+        attachments.location = {...widget.initialLocation!, ...point};
+      }
+    }
     if (isArticle) article.addListener(articleChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       session = AppScope.of(context);
-      if (widget.checkIn) {
-        checkInLocation = () async {
-          Json location = {...defaultDiscoveryCoordinates};
-          try {
-            if (!session!.api.isPreview) {
-              final p = await currentPosition();
-              location = {'latitude': p.latitude, 'longitude': p.longitude};
-            }
-          } catch (_) {}
-          if (mounted) checkInCoordinates = location;
-        }();
-      }
       if (!session!.api.isPreview) {
         try {
           final raw = await session!.api.localStorage.read(key: draftKey);
@@ -150,7 +148,7 @@ class _ComposerScreenState extends State<ComposerScreen>
             attachments.files.addAll(
               (value['files'] as List? ?? []).map(object),
             );
-            attachments.location = value['location'] is Map
+            attachments.location ??= value['location'] is Map
                 ? object(value['location'])
                 : null;
             attachments.emoticon = value['emoticon'] is Map
@@ -224,6 +222,7 @@ class _ComposerScreenState extends State<ComposerScreen>
     text.dispose();
     title.dispose();
     tags.dispose();
+    tagSearch.dispose();
     for (final pair in metadata) {
       pair.$1.dispose();
       pair.$2.dispose();
@@ -233,7 +232,14 @@ class _ComposerScreenState extends State<ComposerScreen>
   }
 
   Future<void> send() async {
-    if (busy || attachments.recording) return;
+    if (busy || attachments.recording || widget.checkIn && locating) return;
+    // A discovery map's fallback is a browsing centre, never evidence of
+    // the user's location. Check-ins only use an explicitly selected point.
+    final checkInPoint = coordinatesOf(attachments.location ?? {});
+    if (widget.checkIn && checkInPoint == null) {
+      setState(() => error = context.l10n.checkInLocationRequired);
+      return;
+    }
     final content = text.text.trim();
     if (content.isEmpty && !attachments.hasContent && selectedTags.isEmpty) {
       return;
@@ -255,7 +261,6 @@ class _ComposerScreenState extends State<ComposerScreen>
       error = null;
     });
     try {
-      if (widget.checkIn && checkInLocation != null) await checkInLocation;
       if (!mounted) return;
       if (widget.story && attachments.files.isEmpty) {
         if (content.isEmpty) {
@@ -290,11 +295,10 @@ class _ComposerScreenState extends State<ComposerScreen>
         body.addAll({
           'tags': values,
           'extras': {...object(body['extras']), 'tags': values},
-          'lat': (attachments.location ?? checkInCoordinates)['latitude'],
-          'lng': (attachments.location ?? checkInCoordinates)['longitude'],
-          'latitude': (attachments.location ?? checkInCoordinates)['latitude'],
-          'longitude':
-              (attachments.location ?? checkInCoordinates)['longitude'],
+          'lat': checkInPoint!['latitude'],
+          'lng': checkInPoint['longitude'],
+          'latitude': checkInPoint['latitude'],
+          'longitude': checkInPoint['longitude'],
         });
       }
       if (widget.kind != null) {
@@ -394,6 +398,162 @@ class _ComposerScreenState extends State<ComposerScreen>
     }
   }
 
+  Future<void> chooseCheckInLocation() async {
+    if (busy || locating) return;
+    await pickLocation(context, attachments);
+    if (mounted && coordinatesOf(attachments.location ?? {}) != null) {
+      setState(() => error = null);
+    }
+  }
+
+  Future<void> useCurrentLocation() async {
+    if (busy || locating) return;
+    setState(() {
+      locating = true;
+      error = null;
+    });
+    try {
+      final Json point;
+      if (AppScope.of(context).api.isPreview) {
+        point = {...defaultDiscoveryCoordinates};
+      } else {
+        final position = await currentPosition();
+        point = {
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+        };
+      }
+      if (!mounted) return;
+      attachments.location = {
+        ...point,
+        'address': context.l10n.currentLocation,
+      };
+      attachments.changed();
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => error = context.l10n.yourLocationIsUnavailableCheckLocation,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => locating = false);
+    }
+  }
+
+  void toggleCheckInTag(String tag) {
+    if (busy) return;
+    setState(() {
+      if (!selectedTags.add(tag)) selectedTags.remove(tag);
+      tags.text = selectedTags.join(',');
+    });
+  }
+
+  Widget checkInChoices(BuildContext context) {
+    final l = context.l10n;
+    final available = searchCheckInTags(
+      checkInTags(context),
+      tagQuery,
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    final controls = <Widget>[
+      ListenableBuilder(
+        listenable: attachments,
+        builder: (context, _) {
+          final location = attachments.location;
+          final point = coordinatesOf(location ?? {});
+          final address = string(location?['address']);
+          return AppSection(
+            title: l.location,
+            children: [
+              AppRow(
+                key: const ValueKey('checkin.location'),
+                leading: AppSymbol.icon(
+                  'mappin.and.ellipse',
+                  fallback: Icons.location_on_outlined,
+                  size: 24,
+                  color: AppPalette.of(context).accent,
+                ),
+                title: Text(
+                  point == null
+                      ? l.chooseLocation
+                      : address.isNotEmpty
+                      ? address
+                      : l.selectedLocation,
+                ),
+                subtitle: point == null
+                    ? Text(l.checkInLocationRequired)
+                    : null,
+                onTap: busy || locating ? null : chooseCheckInLocation,
+              ),
+              AppRow(
+                key: const ValueKey('checkin.current_location'),
+                leading: AppSymbol.icon(
+                  'location.fill',
+                  fallback: Icons.my_location,
+                  size: 24,
+                  color: AppPalette.of(context).accent,
+                ),
+                title: Text(locating ? l.locating : l.currentLocation),
+                onTap: busy || locating ? null : useCurrentLocation,
+              ),
+            ],
+          );
+        },
+      ),
+      AppSearchField(
+        key: const ValueKey('checkin.tag_search'),
+        controller: tagSearch,
+        placeholder: l.checkInActivitySearchHint,
+        onChanged: (value) => setState(() => tagQuery = value),
+        onSearch: (value) => setState(() => tagQuery = value),
+      ),
+      if (available.isEmpty)
+        ScreenStatus(
+          compact: true,
+          title: tagQuery.isEmpty ? l.nothingHereYet : l.noResults,
+        )
+      else
+        AppSection(
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          title: selectedTags.isEmpty
+              ? l.tags
+              : '${l.tags} · ${l.selected(selectedTags.length)}',
+          children: const [],
+        ),
+    ];
+    // The backend catalogue can contain hundreds of categories. Build artwork
+    // only as rows enter the viewport instead of loading every photo at once.
+    return ListView.builder(
+      key: const ValueKey('checkin.choices'),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.only(top: 12, bottom: 12),
+      itemCount: controls.length + available.length,
+      itemBuilder: (context, index) {
+        if (index < controls.length) return controls[index];
+        final tag = available[index - controls.length];
+        final key = string(tag['tag']);
+        return AppSection(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          children: [
+            Semantics(
+              selected: selectedTags.contains(key),
+              child: AppRow(
+                key: ValueKey('checkin.tag.$key'),
+                leading: CheckInTagArtwork(
+                  tag: tag,
+                  size: AppDesign.headerHeight,
+                ),
+                title: Text(checkInTagLabel(context, key)),
+                selected: selectedTags.contains(key),
+                onTap: busy ? null : () => toggleCheckInTag(key),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget editor(BuildContext context) => MessageField(
     controller: text,
     minLines: widget.story ? 2 : 6,
@@ -419,69 +579,23 @@ class _ComposerScreenState extends State<ComposerScreen>
       final input = ChatInput(
         controller: text,
         attachments: attachments,
-        sending: busy,
+        sending: busy || widget.checkIn && locating,
+        showLocationPreview: !widget.checkIn,
         onSend: send,
         onChanged: (_) => scheduleDraft(),
         hasExtraContent: selectedTags.isNotEmpty,
         placeholder: widget.checkIn
             ? context.l10n.shareACheckIn
             : context.l10n.writeAComment,
-        helper: selectedTags.isEmpty
-            ? null
-            : SizedBox(
-                height: 104,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  children: [
-                    for (final tag in selectedTags)
-                      Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 8),
-                        child: CheckInTagPreview(
-                          tag: tag,
-                          onRemove: () => setState(() {
-                            selectedTags.remove(tag);
-                            tags.text = selectedTags.join(',');
-                          }),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
       );
       final content = Column(
         mainAxisSize: widget.inline ? MainAxisSize.min : MainAxisSize.max,
         children: [
-          if (widget.checkIn)
-            Expanded(
-              child: CheckInRadar(
-                selected: selectedTags,
-                onSelect: (tag) => setState(() {
-                  if (!selectedTags.add(tag)) selectedTags.remove(tag);
-                  tags.text = selectedTags.join(',');
-                }),
-                onClear: () => setState(() {
-                  selectedTags.clear();
-                  tags.clear();
-                }),
-              ),
-            ),
+          if (widget.checkIn) Expanded(child: checkInChoices(context)),
           if (error != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  error!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
+            Semantics(
+              liveRegion: true,
+              child: ScreenStatus(compact: true, error: error),
             ),
           input,
         ],
@@ -489,8 +603,11 @@ class _ComposerScreenState extends State<ComposerScreen>
       return widget.inline
           ? content
           : AppScaffold(
-              appBar: AppHeader(title: const Text('Check-in')),
-              body: content,
+              appBar: AppHeader(title: Text(context.l10n.checkIn)),
+              body: Padding(
+                padding: EdgeInsets.only(top: AppDesign.headerInset(context)),
+                child: content,
+              ),
             );
     }
     return AppScaffold(

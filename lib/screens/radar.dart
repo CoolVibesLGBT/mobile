@@ -44,7 +44,7 @@ class _RadarScreenState extends State<RadarScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!started && TickerMode.of(context)) {
+    if (!started && TickerMode.valuesOf(context).enabled) {
       started = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) fetch();

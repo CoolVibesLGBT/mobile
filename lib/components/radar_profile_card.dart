@@ -43,6 +43,7 @@ class _RadarProfileCardState extends State<RadarProfileCard>
   }
 
   Future<void> load() async {
+    if (!mounted) return;
     final nickname = widget.user['username'] ?? widget.user['nickname'];
     if (nickname == null) return;
     try {
@@ -160,9 +161,8 @@ class _RadarProfileCardState extends State<RadarProfileCard>
             widget.topInset + viewportHeight / 2 - cardDiameter / 2 - 60;
         final expandedY = widget.topInset + 20;
         final top = lerp(collapsedY, expandedY);
-        // Keep the profile portrait at a stable, screen-centered size while
-        // the surrounding identity and actions animate.
-        final diameter = cardDiameter;
+        // RadarUserCard's expanded identity stays above the scrolling details.
+        final diameter = lerp(cardDiameter, AppDesign.radarExpandedAvatarSize);
         final user = profile ?? widget.user;
         final dob = DateTime.tryParse(string(user['date_of_birth']));
         final now = DateTime.now();
@@ -179,12 +179,11 @@ class _RadarProfileCardState extends State<RadarProfileCard>
           0.0,
           1.0,
         );
-        final backdropTint = dark
-            ? AppDesign.glassClearDark
-            : AppDesign.glassPanelLight;
         Widget action(String value) {
           final main = value == 'chat';
-          final size = main ? 80.0 : 70.0;
+          final size = main
+              ? AppDesign.radarMainActionSize
+              : AppDesign.radarActionSize;
           return AppPressable(
             label: {
               'dislike': context.l10n.radarActionDislike,
@@ -240,9 +239,20 @@ class _RadarProfileCardState extends State<RadarProfileCard>
                 controller: scroll,
                 physics: expanded ? null : const NeverScrollableScrollPhysics(),
                 slivers: [
-                  SliverToBoxAdapter(
+                  PinnedHeaderSliver(
                     child: Stack(
                       children: [
+                        if (expanded)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: GlassSurface(
+                                key: const ValueKey('radar.profile.backdrop'),
+                                radius: AppDesign.groupCorner,
+                                useOwnLayer: true,
+                                child: const SizedBox.expand(),
+                              ),
+                            ),
+                          ),
                         Padding(
                           padding: EdgeInsets.only(
                             top: top.clamp(0.0, double.infinity),
@@ -308,7 +318,9 @@ class _RadarProfileCardState extends State<RadarProfileCard>
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 15),
+                              const SizedBox(
+                                height: AppDesign.radarIdentityGap,
+                              ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AppDesign.inset,
@@ -316,7 +328,9 @@ class _RadarProfileCardState extends State<RadarProfileCard>
                                 child: ConstrainedBox(
                                   key: const ValueKey('radar.profile.identity'),
                                   constraints: BoxConstraints(
-                                    minHeight: 70 * fontScale,
+                                    minHeight:
+                                        AppDesign.radarIdentityMinHeight *
+                                        fontScale,
                                   ),
                                   child: Column(
                                     children: [
@@ -398,7 +412,7 @@ class _RadarProfileCardState extends State<RadarProfileCard>
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 25),
+                              const SizedBox(height: AppDesign.radarActionsGap),
                               Row(
                                 key: const ValueKey('radar.profile.actions'),
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -441,6 +455,17 @@ class _RadarProfileCardState extends State<RadarProfileCard>
                       ),
                     ),
                 ],
+              ),
+            ),
+            PositionedDirectional(
+              end: AppDesign.inset,
+              top: widget.topInset + AppDesign.radarIdentityGap,
+              child: AppIconButton(
+                key: const ValueKey('radar.profile.close'),
+                glass: true,
+                tooltip: context.l10n.close,
+                icon: const Icon(Icons.keyboard_arrow_down),
+                onPressed: widget.onClose,
               ),
             ),
           ],

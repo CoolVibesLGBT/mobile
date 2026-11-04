@@ -42,7 +42,7 @@ class _AppLottieState extends State<AppLottie>
     final animate =
         foreground &&
         widget.autoplay &&
-        TickerMode.of(context) &&
+        TickerMode.valuesOf(context).enabled &&
         !MediaQuery.disableAnimationsOf(context);
     if (animate) {
       if (widget.loop) {

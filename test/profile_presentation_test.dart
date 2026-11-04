@@ -197,7 +197,7 @@ void main() {
       await album().reload();
       await pumpUI(tester);
       expect(album().records, isEmpty);
-      expect(album().error, 'Album forbidden');
+      expect(album().error, tester.element(list).l10n.errorForbidden);
       await finishProfile(tester, session);
     },
   );
@@ -462,7 +462,12 @@ void main() {
         ..profileError = ApiException('Profile unavailable', 403);
       final session = await mountProfile(tester, api);
       expect(find.byType(ProfileHeader), findsNothing);
-      expect(find.text('Profile unavailable'), findsOneWidget);
+      expect(
+        find.text(
+          tester.element(find.byType(ProfileScreen)).l10n.errorForbidden,
+        ),
+        findsOneWidget,
+      );
       api.profileError = null;
       final state = tester.widget<ScreenStatus>(find.byType(ScreenStatus));
       state.retry!();
@@ -503,7 +508,13 @@ void main() {
     expect(list.records.length, 24);
     await refreshing;
     await pumpUI(tester);
-    expect(list.records.length, 12);
+    // Reload fills the still-scrolled viewport with the next page again.
+    expect(list.records.length, 24);
+    final refreshedPages = api.calls
+        .where((c) => c.action == 'user.fetch.posts')
+        .toList();
+    expect(refreshedPages.length, 4);
+    expect(refreshedPages.last.body['cursor'], 'next');
     await finishProfile(tester, session);
   });
 }

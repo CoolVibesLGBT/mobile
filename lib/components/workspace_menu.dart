@@ -15,10 +15,10 @@ class WorkspaceMenuButton extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox.square(
     dimension: 44,
     child: GlassButton(
-      child: Avatar(AppScope.of(context).user, radius: 18),
       label: context.l10n.menu,
       color: AppPalette.of(context).text,
       onPressed: () => open(context, const MenuScreen()),
+      child: Avatar(AppScope.of(context).user, radius: 18),
     ),
   );
 }

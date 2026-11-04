@@ -182,7 +182,13 @@ void main() {
       await tester.tap(action('Gönder'));
       await settle(tester);
       expect(tester.widget<TextField>(editor).controller!.text, isEmpty);
-      expect(find.text('Yorum denemesi'), findsOneWidget);
+      // The reply is below the original post in the lazy list.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+      await settle(tester);
+      expect(
+        find.textContaining('Yorum denemesi', findRichText: true),
+        findsOneWidget,
+      );
       expect(api.comments.length, 1);
       await tester.pumpWidget(const SizedBox());
       active.dispose();
@@ -198,8 +204,17 @@ void main() {
           home: Builder(
             builder: (context) => Scaffold(
               body: TextButton(
-                onPressed: () =>
-                    sheet(context, const ComposerScreen(checkIn: true)),
+                onPressed: () => sheet(
+                  context,
+                  const ComposerScreen(
+                    checkIn: true,
+                    initialLocation: {
+                      'latitude': 41.0082,
+                      'longitude': 28.9784,
+                      'address': 'Seçilen mekan',
+                    },
+                  ),
+                ),
                 child: const Text('Aç'),
               ),
             ),
@@ -208,7 +223,10 @@ void main() {
       );
       await tester.tap(find.text('Aç'));
       await settle(tester);
-      await tester.tap(action('Kahve'));
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('checkin.tag.coffee')),
+      );
+      await tester.tap(find.byKey(const ValueKey('checkin.tag.coffee')));
       await tester.pump();
       expect(action('Gönder'), findsOneWidget);
       await tester.tap(action('Gönder'));
@@ -295,9 +313,7 @@ void main() {
       expect(page.bottom, lessThanOrEqualTo(874.5));
       // Dragging the map enters picking: the send button rests 14pt above
       // the home indicator, inside the screen.
-      tester
-          .widget<GameMap>(find.byType(GameMap))
-          .onMoveStart!(true);
+      tester.widget<GameMap>(find.byType(GameMap)).onMoveStart!(true);
       for (var i = 0; i < 30; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }

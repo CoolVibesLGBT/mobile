@@ -421,7 +421,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         slivers: [
           SliverFillRemaining(
-            hasScrollBody: false,
+            // ScreenStatus owns a scroll view and LayoutBuilder. Keep bounded
+            // viewport constraints rather than requesting intrinsic heights.
             child: ScreenStatus(
               title: context.l10n.profileActivityPrivate,
               animation: 'error',

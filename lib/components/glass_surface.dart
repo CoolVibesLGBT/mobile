@@ -1,6 +1,9 @@
 import 'dart:ui' as ui;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'app_pressable.dart';
 import 'package:flutter/rendering.dart';
 import '../design/app_design.dart';
 import '../vendor/liquid_glass_widgets/liquid_glass_widgets.dart' as liquid;
@@ -247,9 +250,11 @@ liquid.LiquidGlassSettings appGlassSettings(
 liquid.LiquidGlassSettings sheetGlass(BuildContext context, {Color? tint}) =>
     appGlassSettings(context, role: GlassSurfaceRole.sheet, tint: tint);
 
-/// The application's single glass surface, backed by the vendored renderer.
+/// The application's single glass surface: UIKit on iOS, vendored elsewhere.
 /// Gestures remain owned by AppPressable; nested controls share this material.
 class GlassSurface extends StatelessWidget {
+  static bool get native =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
   final Widget child;
   final double radius;
   final Color? tint;
@@ -279,6 +284,46 @@ class GlassSurface extends StatelessWidget {
   );
 
   Widget _build(BuildContext context, bool overPlatformView) {
+    if (native) {
+      final surface = Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Positioned.fill(
+            child: ExcludeSemantics(
+              child: IgnorePointer(
+                child: _NativeGlassSurface(
+                  radius: radius,
+                  circular: circular,
+                  topOnly: topOnly,
+                  clear: clear,
+                  tint: tint,
+                ),
+              ),
+            ),
+          ),
+          ClipPath(
+            clipper: ShapeBorderClipper(
+              shape: circular
+                  ? const CircleBorder()
+                  : RoundedSuperellipseBorder(
+                      borderRadius: topOnly
+                          ? BorderRadius.vertical(top: Radius.circular(radius))
+                          : BorderRadius.circular(radius),
+                    ),
+            ),
+            child: child,
+          ),
+        ],
+      );
+      return onPressed == null
+          ? surface
+          : AppPressable(
+              label: '',
+              style: AppPressStyle.glass,
+              onPressed: onPressed,
+              child: surface,
+            );
+    }
     final settings = appGlassSettings(
       context,
       tint: tint,
@@ -309,6 +354,7 @@ class GlassSurface extends StatelessWidget {
         settings: effectiveSettings,
         quality: role.quality,
         child: liquid.GlassContainer(
+          settings: effectiveSettings,
           useOwnLayer: useOwnLayer,
           platformViewBackdrop: overPlatformView,
           shape: shape,
@@ -331,14 +377,64 @@ class GlassSurface extends StatelessWidget {
     );
     return onPressed == null
         ? surface
-        : Semantics(
-            button: true,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onPressed,
-              child: surface,
-            ),
+        : AppPressable(
+            label: '',
+            style: AppPressStyle.glass,
+            onPressed: onPressed,
+            child: surface,
           );
+  }
+}
+
+/// UIKit owns the material; AppPressable remains the sole gesture owner.
+/// Updating the channel preserves the platform view during theme changes.
+class _NativeGlassSurface extends StatefulWidget {
+  final double radius;
+  final bool circular, topOnly, clear;
+  final Color? tint;
+  const _NativeGlassSurface({
+    required this.radius,
+    required this.circular,
+    required this.topOnly,
+    required this.clear,
+    required this.tint,
+  });
+
+  @override
+  State<_NativeGlassSurface> createState() => _NativeGlassSurfaceState();
+}
+
+class _NativeGlassSurfaceState extends State<_NativeGlassSurface> {
+  MethodChannel? _channel;
+  Map<String, Object?>? _sent;
+
+  @override
+  Widget build(BuildContext context) {
+    final params = <String, Object?>{
+      'radius': widget.radius,
+      'circular': widget.circular,
+      'topOnly': widget.topOnly,
+      'clear': widget.clear,
+      'tint': widget.tint?.toARGB32(),
+      'dark': Theme.of(context).brightness == Brightness.dark,
+      'reduceTransparency': liquid.GlassAccessibilityData.of(
+        context,
+      ).reduceTransparency,
+    };
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _channel == null || mapEquals(_sent, params)) return;
+      _sent = params;
+      _channel!.invokeMethod<void>('update', params);
+    });
+    return UiKitView(
+      viewType: 'coolvibes/glass',
+      creationParams: params,
+      creationParamsCodec: const StandardMessageCodec(),
+      onPlatformViewCreated: (id) {
+        _channel = MethodChannel('coolvibes/glass_$id');
+        _sent = params;
+      },
+    );
   }
 }
 

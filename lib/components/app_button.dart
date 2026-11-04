@@ -6,9 +6,8 @@ import 'app_pressable.dart';
 import '../vendor/liquid_glass_widgets/liquid_glass_widgets.dart' as liquid;
 import '../design/app_design.dart';
 
-/// Every glass button is the vendored Liquid Glass button: it owns the press
-/// (stretch, glow, scale, disabled state) and the material, the same on every
-/// platform. [radius] null draws a capsule/circle.
+/// Shared button contract: UIKit material on iOS, vendored glass elsewhere.
+/// [radius] null draws a capsule/circle.
 Widget _liquidButton({
   required Widget child,
   required VoidCallback? onPressed,
@@ -21,6 +20,26 @@ Widget _liquidButton({
   double disabledOpacity = .5,
 }) => PlatformBackdrop.listen((context, overPlatformView) {
   final role = surfaceRole ?? AppBarScope.surfaceRoleOf(context);
+  if (GlassSurface.native) {
+    return AppPressable(
+      label: label,
+      onPressed: onPressed,
+      style: AppPressStyle.glass,
+      child: Opacity(
+        opacity: onPressed == null ? disabledOpacity : 1,
+        child: SizedBox(
+          width: width,
+          height: height,
+          child: GlassSurface(
+            radius: radius ?? (height != null ? height / 2 : 1000),
+            tint: tint,
+            role: role,
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
   return PlatformBackdropUnderlay(
     shape: radius == null
         ? const StadiumBorder()
@@ -501,6 +520,10 @@ class AppIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final targetSize = dimension.clamp(
+      AppDesign.minimumTarget,
+      double.infinity,
+    );
     final onGlass = !embedded && (glass ?? true);
     final tint = color ?? (onGlass ? palette.text : palette.secondaryLabel);
     final symbol = icon is Icon
@@ -519,7 +542,7 @@ class AppIconButton extends StatelessWidget {
           : icon,
     );
     final face = SizedBox.square(
-      dimension: dimension,
+      dimension: targetSize,
       child: Center(
         child: embedded && prominent
             ? Container(
@@ -556,8 +579,8 @@ class AppIconButton extends StatelessWidget {
         ? _liquidButton(
             label: tooltip ?? '',
             onPressed: onPressed,
-            width: dimension,
-            height: dimension,
+            width: targetSize,
+            height: targetSize,
             tint: backgroundColor ?? (prominent ? palette.accent : null),
             disabledOpacity: backgroundColor != null ? 1 : .5,
             surfaceRole: surfaceRole,
@@ -571,8 +594,8 @@ class AppIconButton extends StatelessWidget {
           );
     if (badge) control = _withBadge(control, palette);
     return SizedBox(
-      width: dimension,
-      height: dimension < 44 ? 44 : dimension,
+      width: targetSize,
+      height: targetSize,
       child: Center(child: control),
     );
   }
@@ -580,7 +603,7 @@ class AppIconButton extends StatelessWidget {
 
 /// The round or capsule glass bar item (NativeWorkspace BarButton): a
 /// symbol, a title or arbitrary [child] (the header avatar) on interactive
-/// glass that swells under the finger. Drawn by Flutter on every platform.
+/// glass that swells under the finger. UIKit supplies the iOS material.
 class GlassButton extends StatelessWidget {
   final String? symbol, title;
   final Widget? child;
@@ -637,7 +660,7 @@ class GlassButton extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppDesign.font(
-                          MediaQuery.textScalerOf(context).scale(fontSize),
+                          fontSize,
                           weight: FontWeight.w600,
                           color: foreground,
                         ),

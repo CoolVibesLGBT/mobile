@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 /// One shared drift signal for a whole radar screen — the device's tilt
@@ -18,9 +19,10 @@ class RadarMotion extends ChangeNotifier {
   Timer? _timeout;
 
   RadarMotion(TickerProvider vsync) {
-    _auto = AnimationController(vsync: vsync, duration: const Duration(seconds: 24))
-      ..addListener(notifyListeners)
-      ..repeat();
+    _auto =
+        AnimationController(vsync: vsync, duration: const Duration(seconds: 24))
+          ..addListener(notifyListeners)
+          ..repeat();
     // sensors_plus only ships android/ios/web implementations (see its
     // pubspec); every method on its channel — including the sampling-period
     // setup accelerometerEventStream() does internally, outside the stream's
@@ -31,9 +33,27 @@ class RadarMotion extends ChangeNotifier {
     if (kIsWeb ||
         defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS) {
-      _sensor = accelerometerEventStream(
-        samplingPeriod: SensorInterval.uiInterval,
-      ).listen(_onReading, onError: (_) {}, cancelOnError: true);
+      // sensors_plus starts sampling with an unawaited channel Future before
+      // returning its stream. Stream.onError cannot catch that setup failure
+      // on a simulator or a device without this sensor. Keep the automatic
+      // motion fallback; unexpected programming errors remain reportable.
+      runZonedGuarded(
+        () {
+          _sensor = accelerometerEventStream(
+            samplingPeriod: SensorInterval.uiInterval,
+          ).listen(_onReading, onError: (_) {}, cancelOnError: true);
+        },
+        (error, stack) {
+          if (error is MissingPluginException || error is PlatformException) {
+            _sensor?.cancel();
+            _sensor = null;
+          } else {
+            FlutterError.reportError(
+              FlutterErrorDetails(exception: error, stack: stack),
+            );
+          }
+        },
+      );
     }
   }
 
@@ -103,9 +123,7 @@ class DriftingImage extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, box) => ClipRect(
         child: AnimatedBuilder(
-          animation: extra == null
-              ? motion
-              : Listenable.merge([motion, extra]),
+          animation: extra == null ? motion : Listenable.merge([motion, extra]),
           builder: (context, _) {
             final maxDx = box.maxWidth * (scale - 1) / 2;
             final maxDy = box.maxHeight * (scale - 1) / 2;
@@ -154,15 +172,13 @@ class FlashFreeCrossFade extends StatefulWidget {
 
 class _FlashFreeCrossFadeState extends State<FlashFreeCrossFade>
     with SingleTickerProviderStateMixin {
-  late final controller = AnimationController(
-    vsync: this,
-    duration: widget.duration,
-    value: 1,
-  )..addStatusListener((status) {
-    if (status == AnimationStatus.completed && mounted) {
-      setState(() => outgoing = null);
-    }
-  });
+  late final controller =
+      AnimationController(vsync: this, duration: widget.duration, value: 1)
+        ..addStatusListener((status) {
+          if (status == AnimationStatus.completed && mounted) {
+            setState(() => outgoing = null);
+          }
+        });
   Widget? outgoing;
   late Widget incoming = widget.child;
 

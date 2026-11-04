@@ -95,6 +95,7 @@ class _AppHeaderState extends State<AppHeader> {
         : actions.length;
     final titleInset =
         16.0 + (laneCount == 0 ? 0 : laneCount * 44 + (laneCount - 1) * 8 + 8);
+    final flexibleLeading = widget.leading != null && widget.title == null;
     final row = SizedBox(
       height: AppDesign.headerHeight,
       child: Stack(
@@ -120,7 +121,16 @@ class _AppHeaderState extends State<AppHeader> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                ?navigation,
+                if (navigation != null)
+                  if (flexibleLeading)
+                    Expanded(
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: navigation,
+                      ),
+                    )
+                  else
+                    navigation,
                 if (moved != null) ...[const SizedBox(width: 8), moved],
                 if (widget.title != null && widget.title is! Text)
                   Expanded(
@@ -163,7 +173,7 @@ class _AppHeaderState extends State<AppHeader> {
                       ),
                     ),
                   )
-                else
+                else if (!flexibleLeading)
                   const Spacer(),
                 for (var i = 0; i < actions.length; i++) ...[
                   if (i > 0 &&

@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -1792,4 +1793,20 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get notificationEmptyBody =>
       'Bu alandaki yeni gelişmeler burada görünecek.';
+
+  @override
+  String get checkInSearchHint => 'Aktivite, yer veya check-in ara';
+
+  @override
+  String get checkInsEmpty => 'Henüz check-in yok';
+
+  @override
+  String get checkInsEmptyMessage =>
+      'Bir yer seç, ne yapmak istediğini paylaş ve insanlarla buluş.';
+
+  @override
+  String get checkInActivitySearchHint => 'Ne yapmak istiyorsun?';
+
+  @override
+  String get checkInLocationRequired => 'Check-in yapmak için bir yer seç.';
 }

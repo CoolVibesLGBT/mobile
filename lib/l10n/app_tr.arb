@@ -557,5 +557,10 @@
   "notificationFilter": "Bildirim türü",
   "notificationUnread": "Okunmamış",
   "notificationEmpty": "Yeni bildirim yok",
-  "notificationEmptyBody": "Bu alandaki yeni gelişmeler burada görünecek."
+  "notificationEmptyBody": "Bu alandaki yeni gelişmeler burada görünecek.",
+  "checkInSearchHint": "Aktivite, yer veya check-in ara",
+  "checkInsEmpty": "Henüz check-in yok",
+  "checkInsEmptyMessage": "Bir yer seç, ne yapmak istediğini paylaş ve insanlarla buluş.",
+  "checkInActivitySearchHint": "Ne yapmak istiyorsun?",
+  "checkInLocationRequired": "Check-in yapmak için bir yer seç."
 }

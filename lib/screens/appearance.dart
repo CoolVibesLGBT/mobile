@@ -801,8 +801,9 @@ class _ChatBackgroundScreenState extends State<ChatBackgroundScreen> {
           const Wallpaper(kind: 'image', colors: ['#e6ebee'], intensity: 0),
           image: target,
         );
-        if (previous != null && previous != target)
+        if (previous != null && previous != target) {
           File(previous).delete().ignore();
+        }
       } catch (_) {
         if (mounted) setState(() => failed = true);
       } finally {

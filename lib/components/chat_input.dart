@@ -21,6 +21,9 @@ class ChatInput extends StatefulWidget {
   final TextEditingController controller;
   final AttachmentController attachments;
   final bool sending, editing, expanded, hasExtraContent;
+
+  /// Check-in forms already show an editable location row above the input.
+  final bool showLocationPreview;
   final String? placeholder;
   final VoidCallback onSend;
   final ValueChanged<String> onChanged;
@@ -45,6 +48,7 @@ class ChatInput extends StatefulWidget {
     this.onPanelExpansionChanged,
     this.expanded = false,
     this.hasExtraContent = false,
+    this.showLocationPreview = true,
     this.placeholder,
     this.helper,
     this.sendOptions = const [],
@@ -375,7 +379,10 @@ class _ChatInputState extends State<ChatInput>
                 ),
               ),
             ),
-            AttachmentPreview(controller: widget.attachments),
+            AttachmentPreview(
+              controller: widget.attachments,
+              showLocation: widget.showLocationPreview,
+            ),
             // Expanded composer toolbar: a hairline, then tool glyphs in the
             // label colour (attach, voice) and the emoji key on the trailing side.
             Container(
@@ -540,6 +547,7 @@ class _ChatInputState extends State<ChatInput>
                               if (!widget.editing)
                                 AttachmentPreview(
                                   controller: widget.attachments,
+                                  showLocation: widget.showLocationPreview,
                                 ),
                             ],
                           ),

@@ -219,7 +219,8 @@ class _LoopingVideoState extends State<_LoopingVideo> {
 
   void playback() {
     if (!ready || !mounted) return;
-    if (TickerMode.of(context) && !MediaQuery.disableAnimationsOf(context)) {
+    if (TickerMode.valuesOf(context).enabled &&
+        !MediaQuery.disableAnimationsOf(context)) {
       controller.play();
     } else {
       controller.pause();

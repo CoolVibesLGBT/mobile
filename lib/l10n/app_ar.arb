@@ -557,5 +557,10 @@
   "notificationFilter": "نوع الإشعار",
   "notificationUnread": "غير مقروءة",
   "notificationEmpty": "لا توجد إشعارات هنا",
-  "notificationEmptyBody": "ستظهر المستجدات في هذه الفئة هنا."
+  "notificationEmptyBody": "ستظهر المستجدات في هذه الفئة هنا.",
+  "checkInSearchHint": "ابحث عن أنشطة أو أماكن أو تسجيلات حضور",
+  "checkInsEmpty": "لا توجد تسجيلات حضور بعد",
+  "checkInsEmptyMessage": "اختر مكانًا وشارك ما تريد فعله والتقِ بالآخرين.",
+  "checkInActivitySearchHint": "ماذا تود أن تفعل؟",
+  "checkInLocationRequired": "اختر مكانًا لتسجيل حضورك."
 }

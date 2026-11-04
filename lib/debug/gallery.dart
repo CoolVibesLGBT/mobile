@@ -109,6 +109,12 @@ final debugDestinations = <DebugDestination>[
     (_) => const LocationPickerScreen(teleport: true),
   ),
   DebugDestination(
+    'checkins.map',
+    'Keşfet',
+    'Check-in / harita',
+    (_) => const CheckInsScreen(initialView: 'map'),
+  ),
+  DebugDestination(
     'checkins.list',
     'Keşfet',
     'Check-in / liste',
@@ -373,7 +379,7 @@ final debugDestinations = <DebugDestination>[
     'checkin.create',
     'İçerik',
     'Check-in oluştur',
-    (context) => const ComposerScreen(checkIn: true),
+    (context) => AppForms.checkIn(context),
   ),
   DebugDestination(
     'media.viewer',

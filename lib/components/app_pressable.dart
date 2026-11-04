@@ -68,7 +68,7 @@ class AppPressable extends StatefulWidget {
 }
 
 class _AppPressableState extends State<AppPressable>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   bool pressed = false;
   bool get enabled =>
       widget.enabled &&
@@ -190,6 +190,19 @@ class _AppPressableState extends State<AppPressable>
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) return;
+    _resetGlass();
+    if (pressed) highlight(false);
+  }
+
+  @override
   void didUpdateWidget(AppPressable oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!enabled && pressed) {
@@ -210,13 +223,14 @@ class _AppPressableState extends State<AppPressable>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _glassAnimation?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final reduced = MediaQuery.disableAnimationsOf(context);
+    final reduced = _reduceMotion;
     final child = ConstrainedBox(
       constraints: const BoxConstraints(
         minWidth: AppDesign.minimumTarget,
@@ -244,15 +258,15 @@ class _AppPressableState extends State<AppPressable>
         child: child,
       ),
       AppPressStyle.tag => Transform.scale(
-        scale: pressed ? .92 : 1,
+        scale: pressed && !reduced ? .92 : 1,
         child: Opacity(opacity: pressed ? .85 : 1, child: child),
       ),
       AppPressStyle.radar => Transform.scale(
-        scale: pressed ? .9 : 1,
+        scale: pressed && !reduced ? .9 : 1,
         child: Opacity(opacity: pressed ? .8 : 1, child: child),
       ),
       AppPressStyle.button => Transform.scale(
-        scale: pressed ? .98 : 1,
+        scale: pressed && !reduced ? .98 : 1,
         child: Opacity(
           opacity: !enabled
               ? widget.disabledOpacity
@@ -277,7 +291,7 @@ class _AppPressableState extends State<AppPressable>
         child: child,
       ),
       AppPressStyle.iconButton => Transform.scale(
-        scale: pressed ? .96 : 1,
+        scale: pressed && !reduced ? .96 : 1,
         child: Opacity(opacity: pressed ? .86 : 1, child: child),
       ),
       AppPressStyle.opacity => Opacity(
@@ -313,22 +327,22 @@ class _AppPressableState extends State<AppPressable>
           onTapDown: enabled ? (_) => highlight(true) : null,
           onTapCancel: () => highlight(false),
           onTapUp: (_) => highlight(false),
-          onTap: widget.onPressed == null
+          onTap: !enabled || widget.onPressed == null
               ? null
               : () {
                   if (widget.haptic) HapticFeedback.selectionClick();
                   widget.onPressed!();
                 },
-          onLongPress: widget.onLongPress == null
+          onLongPress: !enabled || widget.onLongPress == null
               ? null
               : () {
                   highlight(false);
                   widget.onLongPress!();
                 },
-          onLongPressStart: widget.onLongPressStart,
-          onLongPressMoveUpdate: widget.onLongPressMoveUpdate,
-          onLongPressEnd: widget.onLongPressEnd,
-          onLongPressCancel: widget.onLongPressCancel,
+          onLongPressStart: enabled ? widget.onLongPressStart : null,
+          onLongPressMoveUpdate: enabled ? widget.onLongPressMoveUpdate : null,
+          onLongPressEnd: enabled ? widget.onLongPressEnd : null,
+          onLongPressCancel: enabled ? widget.onLongPressCancel : null,
           child: content,
         ),
       ),

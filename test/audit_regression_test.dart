@@ -8,6 +8,7 @@ import 'package:coolvibes/debug/preview_api.dart';
 import 'package:coolvibes/screens/auth.dart';
 import 'package:coolvibes/screens/emoticons.dart';
 import 'package:coolvibes/screens/shell.dart';
+import 'package:coolvibes/l10n/l10n.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -242,7 +243,16 @@ void main() {
       await tester.pump();
       expect(closed, isFalse);
       expect(reacted, isFalse);
-      expect(find.text('Offline'), findsOneWidget);
+      expect(
+        find.text(
+          tester
+              .element(find.byType(RadarProfileCard))
+              .l10n
+              .unableToReachTheServiceCheck,
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Offline'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       session.dispose();
     },
